@@ -1,5 +1,7 @@
 from manim import *
 
+from libs.matrix_transform import MatrixTransform
+
 config.background_color = "#0D1117"
 
 FONT = "JetBrains Mono"
@@ -101,9 +103,11 @@ class TwitterFanOut(Scene):
         self.play(FadeIn(user_a, shift=RIGHT * 0.3))
 
         # Global tweets table
-        tweets_table = make_card("tweets", width=2.4, height=0.7, fill_color="#2D333B", label_color=ORANGE, font_size=18)
+        tweets_table = make_card("tweets", width=2.4, height=0.7, fill_color="#2D333B", label_color=ORANGE,
+                                 font_size=18)
         users_table = make_card("users", width=2.4, height=0.7, fill_color="#2D333B", label_color=PURPLE, font_size=18)
-        follows_table = make_card("follows", width=2.4, height=0.7, fill_color="#2D333B", label_color=TEAL, font_size=18)
+        follows_table = make_card("follows", width=2.4, height=0.7, fill_color="#2D333B", label_color=TEAL,
+                                  font_size=18)
         tables = VGroup(tweets_table, users_table, follows_table).arrange(DOWN, buff=0.3).move_to(ORIGIN + UP * 0.5)
 
         # Show tables first, then arrow from user to tweets table
@@ -190,7 +194,7 @@ class TwitterFanOut(Scene):
 
         # Follower caches
         num_followers = 5
-        follower_names = [f"Follower {i+1}" for i in range(num_followers)]
+        follower_names = [f"Follower {i + 1}" for i in range(num_followers)]
         follower_caches = VGroup()
         for name in follower_names:
             cache = make_card(
@@ -233,7 +237,7 @@ class TwitterFanOut(Scene):
         celeb.move_to(LEFT * 4.5 + UP * 0.5)
         celeb_tweet = make_card("Tweet", width=1.8, height=0.6, fill_color="#2D333B", label_color=YELLOW, font_size=16)
         celeb_tweet.next_to(celeb, RIGHT, buff=0.5)
-        self.play(ReplacementTransform(user_a, celeb))
+        self.play(MatrixTransform(user_a, celeb))
         self.play(FadeIn(celeb_tweet, shift=RIGHT * 0.3))
         self.wait(0.5)
 
@@ -306,7 +310,7 @@ class TwitterFanOut(Scene):
         reg_caches = VGroup()
         for i in range(3):
             c = make_card(
-                f"Cache {i+1}", width=1.8, height=0.4,
+                f"Cache {i + 1}", width=1.8, height=0.4,
                 fill_color="#1C2128", label_color=GREEN, font_size=11,
             )
             reg_caches.add(c)
@@ -383,4 +387,3 @@ class TwitterFanOut(Scene):
         self.wait(3)
 
         self.play(FadeOut(*self.mobjects))
-
