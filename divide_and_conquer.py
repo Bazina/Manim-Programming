@@ -2,7 +2,8 @@ import random
 
 from manim import *
 
-from programming_library import create_array_of_numbers, move_pointer
+from libs.utils import move_pointer
+from libs.array_creation import create_array_of_numbers
 
 config.background_color = "#0D1117"
 text_buffer = 0.18
