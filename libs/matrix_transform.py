@@ -14,7 +14,6 @@ import random as _rand
 
 import numpy as np
 from manim import (
-    GREEN,
     GREEN_A,
     Animation,
     FadeIn,
@@ -85,7 +84,7 @@ def _build_dense_column(
             font=_FONT,
             font_size=font_size,
             fill_color=GREEN_A,
-            fill_opacity=rng.uniform(0.6, 1.0),
+            fill_opacity=rng.uniform(0.8, 1.0),
             stroke_width=0,
             weight="BOLD",
         )
@@ -125,11 +124,11 @@ class MatrixTransform(AnimationGroup):
         self,
         mobject: Mobject,
         target_mobject: Mobject,
-        num_cols: int = 12,
-        font_size: int = 10,
+        num_cols: int = 20,
+        font_size: int = 8,
         run_time: float = 2.5,
         scroll_speed: float = 4.0,
-        box_padding: float = 0.2,
+        box_padding: float = 0.15,
         **kwargs,
     ) -> None:
         self.source = mobject
@@ -139,11 +138,10 @@ class MatrixTransform(AnimationGroup):
         w = max(mobject.width, target_mobject.width, 1.2) + box_padding * 2
         h = max(mobject.height, target_mobject.height, 0.8) + box_padding * 2
 
-        # Bounding box
+        # Invisible bounding box (no border)
         box = Rectangle(
             width=w, height=h,
-            stroke_color=GREEN,
-            stroke_width=2,
+            stroke_width=0,
             fill_opacity=0,
         ).move_to(center)
         self._box = box
@@ -152,7 +150,7 @@ class MatrixTransform(AnimationGroup):
         y_bottom = center[1] - h / 2
         x_left = center[0] - w / 2
         col_spacing = w / max(num_cols, 1)
-        row_spacing = 0.18  # dense rows
+        row_spacing = 0.12  # very dense rows
 
         rng = _rand.Random(42)
 
