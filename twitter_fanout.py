@@ -1,7 +1,5 @@
 from manim import *
 
-from libs.matrix_transform import MatrixTransform
-
 config.background_color = "#0D1117"
 
 FONT = "JetBrains Mono"
@@ -232,12 +230,25 @@ class TwitterFanOut(Scene):
         # Transition to celebrity problem
         self.play(FadeOut(arrows), FadeOut(follower_caches), FadeOut(tweet_box), FadeOut(stats_group))
 
-        # Celebrity scenario
+        # Celebrity scenario — morph circle, swap text char by char
         celeb = make_user_icon("Celebrity", color=YELLOW, radius=0.4, font_size=18)
         celeb.move_to(LEFT * 4.5 + UP * 0.5)
         celeb_tweet = make_card("Tweet", width=1.8, height=0.6, fill_color="#2D333B", label_color=YELLOW, font_size=16)
         celeb_tweet.next_to(celeb, RIGHT, buff=0.5)
-        self.play(MatrixTransform(user_a, celeb))
+
+        # Morph circle + remove old label letter by letter simultaneously
+        self.play(
+            Transform(user_a[0], celeb[0]),
+            RemoveTextLetterByLetter(user_a[1], time_per_char=0.06),
+        )
+        # Add celebrity label letter by letter
+        celeb_label = celeb[1]
+        celeb_label.next_to(user_a[0], DOWN, buff=0.15)
+        self.play(AddTextLetterByLetter(celeb_label, time_per_char=0.06))
+        # Keep references consistent for the rest of the scene
+        self.remove(user_a)
+        self.add(celeb)
+
         self.play(FadeIn(celeb_tweet, shift=RIGHT * 0.3))
         self.wait(0.5)
 
