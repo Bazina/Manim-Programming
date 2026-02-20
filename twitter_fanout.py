@@ -21,11 +21,21 @@ def make_card(label_text, width=2.2, height=0.8, fill_color=CARD_BG, label_color
     return VGroup(rect, label)
 
 
-def make_user_icon(name, color=BLUE, radius=0.3, font_size=16):
-    circle = Circle(radius=radius, fill_color=color, fill_opacity=0.8, stroke_color=WHITE, stroke_width=1.5)
-    icon_label = make_label(name, font_size=font_size, color=WHITE)
-    icon_label.next_to(circle, DOWN, buff=0.15)
-    return VGroup(circle, icon_label)
+def make_user_icon(name, color=BLUE, radius=0.3, font_size=16, image_path=None):
+    if image_path is not None:
+        img = ImageMobject(image_path)
+        img.set(height=2 * radius)
+        icon_label = make_label(name, font_size=font_size, color=WHITE)
+        icon_label.next_to(img, DOWN, buff=0.15)
+        result = Group(img, icon_label)
+        # Expose img so arrows can anchor to it
+        result.circle = img
+        return result
+    else:
+        circle = Circle(radius=radius, fill_color=color, fill_opacity=0.8, stroke_color=WHITE, stroke_width=1.5)
+        icon_label = make_label(name, font_size=font_size, color=WHITE)
+        icon_label.next_to(circle, DOWN, buff=0.15)
+        return VGroup(circle, icon_label)
 
 
 class TwitterFanOut(Scene):
@@ -96,7 +106,7 @@ class TwitterFanOut(Scene):
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
 
         # User posting
-        user_a = make_user_icon("User A", color=BLUE_D)
+        user_a = make_user_icon("User A", color=BLUE_D, image_path="assets/person.png")
         user_a.move_to(LEFT * 5 + UP * 1.5)
         self.play(FadeIn(user_a, shift=RIGHT * 0.3))
 
@@ -112,7 +122,7 @@ class TwitterFanOut(Scene):
         self.play(FadeIn(tables, shift=DOWN * 0.2))
 
         write_arrow = Arrow(
-            user_a[0].get_right(), tweets_table.get_left(),
+            user_a.circle.get_right(), tweets_table.get_left(),
             buff=0.15, stroke_width=3, color=ORANGE, tip_length=0.15,
         )
         write_label = make_label("INSERT", font_size=14, color=ORANGE)
@@ -122,12 +132,12 @@ class TwitterFanOut(Scene):
         self.wait(1)
 
         # Follower requesting timeline
-        follower = make_user_icon("Follower", color=GREEN_D)
+        follower = make_user_icon("Follower", color=GREEN_D, image_path="assets/person.png")
         follower.move_to(RIGHT * 5 + UP * 1.5)
         self.play(FadeIn(follower, shift=LEFT * 0.3))
 
         read_arrow = Arrow(
-            follower[0].get_left(), tweets_table.get_right(),
+            follower.circle.get_left(), tweets_table.get_right(),
             buff=0.15, stroke_width=3, color=GREEN, tip_length=0.15,
         )
         read_label = make_label("SELECT + JOIN", font_size=14, color=GREEN)
@@ -180,7 +190,7 @@ class TwitterFanOut(Scene):
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
 
         # User posts a tweet
-        user_a = make_user_icon("User A", color=BLUE_D)
+        user_a = make_user_icon("User A", color=BLUE_D, image_path="assets/person.png")
         user_a.move_to(LEFT * 4.5 + UP * 1)
 
         tweet_box = make_card("New Tweet", width=2, height=0.6, fill_color="#2D333B", label_color=ORANGE, font_size=16)
@@ -231,19 +241,20 @@ class TwitterFanOut(Scene):
         self.play(FadeOut(arrows), FadeOut(follower_caches), FadeOut(tweet_box), FadeOut(stats_group))
 
         # Celebrity scenario — morph circle, swap text char by char
-        celeb = make_user_icon("Celebrity", color=YELLOW, radius=0.4, font_size=18)
+        celeb = make_user_icon("Taylor Swift", color=YELLOW, radius=0.4, font_size=16, image_path="assets/taylor.png")
         celeb.move_to(LEFT * 4.5 + UP * 0.5)
         celeb_tweet = make_card("Tweet", width=1.8, height=0.6, fill_color="#2D333B", label_color=YELLOW, font_size=16)
         celeb_tweet.next_to(celeb, RIGHT, buff=0.5)
 
-        # Morph circle + remove old label letter by letter simultaneously
+        # Morph: cross-fade images + remove old label letter by letter
         self.play(
-            Transform(user_a[0], celeb[0]),
+            FadeOut(user_a[0]),                       # fade out person image
+            FadeIn(celeb[0]),                          # fade in taylor image
             RemoveTextLetterByLetter(user_a[1], time_per_char=0.06),
         )
         # Add celebrity label letter by letter
         celeb_label = celeb[1]
-        celeb_label.next_to(user_a[0], DOWN, buff=0.15)
+        celeb_label.next_to(celeb[0], DOWN, buff=0.15)
         self.play(AddTextLetterByLetter(celeb_label, time_per_char=0.06))
         # Keep references consistent for the rest of the scene
         self.remove(user_a)
@@ -265,7 +276,7 @@ class TwitterFanOut(Scene):
                 many_caches.add(mini)
         many_caches.arrange_in_grid(rows=rows, cols=cols, buff=0.1).move_to(RIGHT * 3 + UP * 0.5)
 
-        dots_label = make_label("... x 30 Million", font_size=16, color=RED)
+        dots_label = make_label("... x 79 Million", font_size=16, color=RED)
         dots_label.next_to(many_caches, DOWN, buff=0.2)
 
         self.play(FadeIn(many_caches, shift=LEFT * 0.2), FadeIn(dots_label))
@@ -286,7 +297,7 @@ class TwitterFanOut(Scene):
         self.wait(1)
 
         # Warning text
-        celeb_warning = make_label("1 tweet = 30M+ writes to caches!", font_size=24, color=RED)
+        celeb_warning = make_label("1 tweet = 79M+ writes to caches!", font_size=24, color=RED)
         celeb_warning.to_edge(DOWN, buff=0.7)
         self.play(AddTextLetterByLetter(celeb_warning, time_per_char=0.03))
         self.play(Indicate(celeb_warning, color=RED, scale_factor=1.2))
@@ -315,7 +326,7 @@ class TwitterFanOut(Scene):
         left_sub.next_to(left_title, DOWN, buff=0.15)
         self.play(FadeIn(left_title), FadeIn(left_sub))
 
-        reg_user = make_user_icon("User", color=BLUE_D, radius=0.25, font_size=12)
+        reg_user = make_user_icon("User", color=BLUE_D, radius=0.25, font_size=12, image_path="assets/person.png")
         reg_user.move_to(LEFT * 5 + UP * 0.2)
 
         reg_caches = VGroup()
@@ -331,21 +342,21 @@ class TwitterFanOut(Scene):
         reg_arrows = VGroup()
         for c in reg_caches:
             a = Arrow(
-                reg_user[0].get_right(), c.get_left(),
+                reg_user.circle.get_right(), c.get_left(),
                 buff=0.1, stroke_width=2, color=YELLOW, tip_length=0.12,
             )
             reg_arrows.add(a)
         self.play(AnimationGroup(*[GrowArrow(a) for a in reg_arrows], lag_ratio=0.1))
         self.wait(0.5)
 
-        # ── Right side: Celebrities → Pull ──
-        right_title = make_label("Celebrities", font_size=20, color=YELLOW)
+        # ── Right side: Taylor Swift → Pull ──
+        right_title = make_label("Taylor Swift", font_size=20, color=YELLOW)
         right_title.move_to(RIGHT * 3.5 + UP * 2)
         right_sub = make_label("Fan-out on Read (Pull)", font_size=14, color=GREY_A)
         right_sub.next_to(right_title, DOWN, buff=0.15)
         self.play(FadeIn(right_title), FadeIn(right_sub))
 
-        celeb = make_user_icon("Celebrity", color=YELLOW, radius=0.25, font_size=12)
+        celeb = make_user_icon("Taylor Swift", color=YELLOW, radius=0.25, font_size=10, image_path="assets/taylor.png")
         celeb.move_to(RIGHT * 1.3 + UP * 0.3)
 
         tweets_db = make_card(
@@ -356,7 +367,7 @@ class TwitterFanOut(Scene):
 
         self.play(FadeIn(celeb), FadeIn(tweets_db))
         celeb_arrow = Arrow(
-            celeb[0].get_right(), tweets_db.get_left(),
+            celeb.circle.get_right(), tweets_db.get_left(),
             buff=0.1, stroke_width=2, color=ORANGE, tip_length=0.12,
         )
         self.play(GrowArrow(celeb_arrow))
