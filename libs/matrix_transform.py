@@ -124,11 +124,11 @@ class MatrixTransform(AnimationGroup):
         self,
         mobject: Mobject,
         target_mobject: Mobject,
-        num_cols: int = 20,
-        font_size: int = 8,
-        run_time: float = 2.5,
-        scroll_speed: float = 4.0,
-        box_padding: float = 0.15,
+        num_cols: int = 30,
+        font_size: int = 6,
+        run_time: float = 1.0,
+        scroll_speed: float = 5.0,
+        box_padding: float = 0.1,
         **kwargs,
     ) -> None:
         self.source = mobject
@@ -150,7 +150,7 @@ class MatrixTransform(AnimationGroup):
         y_bottom = center[1] - h / 2
         x_left = center[0] - w / 2
         col_spacing = w / max(num_cols, 1)
-        row_spacing = 0.12  # very dense rows
+        row_spacing = 0.08  # very dense rows
 
         rng = _rand.Random(42)
 
@@ -175,12 +175,12 @@ class MatrixTransform(AnimationGroup):
 
         self._rain_columns = columns
 
-        # Timing: box appears, rain scrolls, source fades → target fades in, rain+box fade
-        t_fade_out = run_time * 0.35
-        t_fade_in = run_time * 0.35
-        t_wait_before_in = run_time * 0.50
+        # Timing: rain covers object, source/target swap underneath, rain lifts
+        t_fade_out = run_time * 0.25
+        t_fade_in = run_time * 0.25
+        t_wait_before_in = run_time * 0.45
 
-        # Source fades out in first portion
+        # Source fades out quickly in first portion
         fade_out_anim = FadeOut(mobject, run_time=t_fade_out)
 
         # Target fades in after midpoint
@@ -190,23 +190,17 @@ class MatrixTransform(AnimationGroup):
             FadeIn(target_mobject, run_time=t_fade_in),
         )
 
-        # Box: fade in quickly at start, fade out at end
-        box_in = FadeIn(box, run_time=run_time * 0.10)
-        box_hold = Animation(box, run_time=run_time * 0.75)
-        box_out = FadeOut(box, run_time=run_time * 0.15)
-        box_anim = Succession(box_in, box_hold, box_out)
-
-        # Rain: visible during middle, fade out at the end
-        rain_out = FadeOut(columns, run_time=run_time * 0.15)
-        rain_hold = Animation(columns, run_time=run_time * 0.85)
-        rain_fade = Succession(rain_hold, rain_out)
+        # Rain: fade in fast, hold, fade out fast
+        rain_in = FadeIn(columns, run_time=run_time * 0.08)
+        rain_hold = Animation(columns, run_time=run_time * 0.82)
+        rain_out = FadeOut(columns, run_time=run_time * 0.10)
+        rain_anim = Succession(rain_in, rain_hold, rain_out)
 
         super().__init__(
             *col_anims,
             fade_out_anim,
             fade_in_anim,
-            box_anim,
-            rain_fade,
+            rain_anim,
             run_time=run_time,
             **kwargs,
         )
