@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from manim import *
@@ -13,7 +14,6 @@ from libs.ddia_components import (
 )
 
 config.background_color = "#0D1117"
-
 
 
 class DataIntensiveIntro(Scene):
@@ -36,16 +36,19 @@ class DataIntensiveIntro(Scene):
         icon.next_to(title, UP, buff=0.5)
 
         self.play(FadeIn(icon, shift=DOWN * 0.3))
+        self.wait(0.5)
         self.play(AddTextLetterByLetter(title, time_per_char=0.05))
+        self.wait(0.5)
         self.play(FadeIn(subtitle, shift=UP * 0.2))
-        self.wait(2)
+        self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 2: Data-Intensive vs Compute-Intensive ─────────────────
     def scene_comparison(self):
-        header = make_label("Data-Intensive vs Compute-Intensive", font_size=30, color=ORANGE)
+        header = make_label("Compute-Intensive vs Data-Intensive", font_size=30, color=ORANGE)
         header.to_edge(UP, buff=0.5)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
 
         # ── Left: Compute-Intensive ──
         left_icon = make_icon(ICON_SERVER, color=GREY_A, height=0.6)
@@ -83,25 +86,26 @@ class DataIntensiveIntro(Scene):
 
         # Animate
         self.play(FadeIn(left_group, shift=RIGHT * 0.3))
-        self.wait(0.5)
+        self.wait(1.5)
         self.play(FadeIn(right_group, shift=LEFT * 0.3))
-        self.wait(1)
+        self.wait(2)
 
         # Emphasize data-intensive bullets one by one
         for bullet in right_bullets:
             self.play(Indicate(bullet, color=YELLOW, scale_factor=1.3))
+            self.wait(0.5)
 
         # VS label
         vs_label = make_label("VS", font_size=28, color=ORANGE)
         vs_label.move_to(ORIGIN + DOWN * 0.3)
         self.play(FadeIn(vs_label, scale=1.5))
-        self.wait(0.5)
+        self.wait(1)
 
         # Bottom highlight
         highlight = make_label("Most modern apps are data-intensive!", font_size=24, color=YELLOW)
         highlight.to_edge(DOWN, buff=0.6)
         self.play(AddTextLetterByLetter(highlight, time_per_char=0.03))
-        self.wait(2)
+        self.wait(3)
 
         self.play(FadeOut(*self.mobjects))
 
@@ -116,86 +120,92 @@ class DataIntensiveIntro(Scene):
         ch1_title = make_label("Too Many Requests", font_size=22, color=ORANGE)
         ch1_title.next_to(header, DOWN, buff=0.4)
         self.play(FadeIn(ch1_title, shift=UP * 0.2))
-        self.wait(0.5)
+        self.wait(1)
 
-        # Server in the center
+        # Server on the right
         server = make_icon_card("Server", ICON_SERVER, color=BLUE, width=1.6, height=1.1, font_size=11)
-        server.move_to(ORIGIN + DOWN * 0.5)
+        server.move_to(RIGHT * 2 + DOWN * 0.3)
         self.play(FadeIn(server, shift=UP * 0.2))
-        self.wait(0.5)
+        self.wait(1)
 
-        # Many user arrows bombarding the server from the left
-        user_positions = [
-            LEFT * 5 + UP * 1.5 + DOWN * 0.5,
-            LEFT * 5 + UP * 0.5 + DOWN * 0.5,
-            LEFT * 5 + DOWN * 0.5,
-            LEFT * 5 + DOWN * 1.5 + DOWN * 0.5,
-            LEFT * 4.5 + UP * 1.0 + DOWN * 0.5,
-            LEFT * 4.5 + DOWN * 1.0 + DOWN * 0.5,
-        ]
-        user_dots = VGroup()
-        user_arrows = VGroup()
-        for pos in user_positions:
-            dot = Dot(pos, radius=0.08, color=ORANGE)
-            user_dots.add(dot)
-            arr = Arrow(
-                pos, server.get_left(),
-                buff=0.15, stroke_width=1.5, color=ORANGE, tip_length=0.1,
-            )
-            user_arrows.add(arr)
-
-        # Stats on the right
+        # Stats below the server (avoids arrow overlap)
         stats = VGroup(
             make_label("100K req/s", font_size=18, color=ORANGE),
             make_label("Peak hours = 10×", font_size=14, color=GREY_A),
         ).arrange(DOWN, buff=0.1)
-        stats.move_to(RIGHT * 4 + DOWN * 0.5)
-
-        self.play(
-            FadeIn(user_dots),
-            AnimationGroup(*[GrowArrow(a) for a in user_arrows], lag_ratio=0.05),
-            FadeIn(stats, shift=LEFT * 0.2),
-        )
+        stats.next_to(server, DOWN, buff=0.4)
+        self.play(FadeIn(stats, shift=UP * 0.2))
         self.wait(1)
 
-        # Flash the server to show stress
-        self.play(
-            Indicate(server, color=RED, scale_factor=1.1),
-        )
-        self.wait(1.5)
+        # User dots (static, on the left)
+        user_positions = [
+            LEFT * 5 + UP * 1.0,
+            LEFT * 5 + UP * 0.2,
+            LEFT * 5 + DOWN * 0.6,
+            LEFT * 5 + DOWN * 1.4,
+            LEFT * 4.0 + UP * 0.6,
+            LEFT * 4.0 + DOWN * 0.2,
+            LEFT * 4.0 + DOWN * 1.0,
+        ]
+        user_dots = VGroup(*[Dot(pos, radius=0.08, color=ORANGE) for pos in user_positions])
+        self.play(FadeIn(user_dots))
+        self.wait(0.5)
+
+        # Loop: 3 waves of arrows hitting the server
+        for wave in range(3):
+            arrows = VGroup()
+            for pos in user_positions:
+                arr = Arrow(
+                    pos, server.get_left(),
+                    buff=0.15, stroke_width=1.5, color=ORANGE, tip_length=0.1,
+                )
+                arrows.add(arr)
+
+            self.play(
+                AnimationGroup(*[GrowArrow(a) for a in arrows], lag_ratio=0.04),
+                run_time=0.6,
+            )
+            # Flash server on each hit
+            self.play(
+                Indicate(server, color=RED, scale_factor=1.08),
+                run_time=0.4,
+            )
+            self.play(FadeOut(arrows), run_time=0.3)
+
+        self.wait(2)
 
         # Transition out
-        self.play(FadeOut(ch1_title, user_dots, user_arrows, server, stats))
-        self.wait(0.5)
+        self.play(FadeOut(ch1_title, user_dots, server, stats))
+        self.wait(1)
 
         # ── Challenge 2: Huge Responses ────────────────────────────────
         ch2_title = make_label("Huge Responses", font_size=22, color=GREEN)
         ch2_title.next_to(header, DOWN, buff=0.4)
         self.play(FadeIn(ch2_title, shift=UP * 0.2))
-        self.wait(0.5)
+        self.wait(1)
 
         # Client on the left, Server on the right
-        client_card = make_card("Client", width=1.5, height=0.6, fill_color=DARK_BG, label_color=WHITE, font_size=14)
+        client_card = make_card("Client", width=1.8, height=1.1, fill_color=DARK_BG, label_color=WHITE, font_size=14)
         client_card.move_to(LEFT * 4 + DOWN * 0.5)
         server2 = make_icon_card("API Server", ICON_SERVER, color=BLUE, width=1.8, height=1.1, font_size=10)
         server2.move_to(RIGHT * 4 + DOWN * 0.5)
 
         self.play(FadeIn(client_card, shift=RIGHT * 0.2), FadeIn(server2, shift=LEFT * 0.2))
-        self.wait(0.5)
+        self.wait(1)
 
-        # Small request arrow
+        # Small request arrow (slightly above center)
         req_arrow = Arrow(
-            client_card.get_right(), server2.get_left(),
+            client_card.get_right() + UP * 0.2, server2.get_left() + UP * 0.2,
             buff=0.15, stroke_width=2, color=GREY_A, tip_length=0.1,
         )
         req_label = make_label("GET /feed", font_size=11, color=GREY_A)
         req_label.next_to(req_arrow, UP, buff=0.08)
         self.play(GrowArrow(req_arrow), FadeIn(req_label))
-        self.wait(0.5)
+        self.wait(1)
 
-        # HUGE response arrow (thick, emphasized)
+        # HUGE response arrow (slightly below center, thick)
         resp_arrow = Arrow(
-            server2.get_left() + DOWN * 0.4, client_card.get_right() + DOWN * 0.4,
+            server2.get_left() + DOWN * 0.2, client_card.get_right() + DOWN * 0.2,
             buff=0.15, stroke_width=6, color=GREEN, tip_length=0.15,
         )
         resp_label = make_label("50 MB JSON", font_size=14, color=GREEN)
@@ -216,17 +226,17 @@ class DataIntensiveIntro(Scene):
             GrowArrow(resp_arrow), FadeIn(resp_label),
             AnimationGroup(*[GrowFromEdge(b, DOWN) for b in payload_bars], lag_ratio=0.08),
         )
-        self.wait(2)
+        self.wait(3)
 
         self.play(FadeOut(ch2_title, client_card, server2, req_arrow, req_label,
                           resp_arrow, resp_label, payload_bars))
-        self.wait(0.5)
+        self.wait(1)
 
         # ── Challenge 3: Huge Database ─────────────────────────────────
         ch3_title = make_label("Huge Database", font_size=22, color=PURPLE)
         ch3_title.next_to(header, DOWN, buff=0.4)
         self.play(FadeIn(ch3_title, shift=UP * 0.2))
-        self.wait(0.5)
+        self.wait(1)
 
         # Stack of database layers growing
         db_layers = VGroup()
@@ -252,12 +262,12 @@ class DataIntensiveIntro(Scene):
         # Animate layers stacking one by one
         for i, layer in enumerate(db_layers):
             self.play(FadeIn(layer, shift=UP * 0.2), run_time=0.4)
+            self.wait(0.3)
 
-        self.wait(0.5)
+        self.wait(1)
 
         # Total size callout
         total = make_label("Total: 757 TB", font_size=20, color=YELLOW)
-        total.next_to(db_layers, RIGHT, buff=0.8)
 
         # Growth arrow on the right side
         growth_arrow = Arrow(
@@ -265,10 +275,12 @@ class DataIntensiveIntro(Scene):
             buff=0, stroke_width=3, color=YELLOW, tip_length=0.15,
         )
         growth_label = make_label("Growing\nevery day", font_size=12, color=GREY_A)
+
+        total.next_to(growth_arrow, LEFT, buff=0.8)
         growth_label.next_to(growth_arrow, RIGHT, buff=0.15)
 
         self.play(FadeIn(total, shift=LEFT * 0.2), GrowArrow(growth_arrow), FadeIn(growth_label))
-        self.wait(2)
+        self.wait(3)
 
         # Bottom takeaway
         takeaway = make_label(
@@ -286,6 +298,7 @@ class DataIntensiveIntro(Scene):
         header = make_label("5 Standard Building Blocks", font_size=30, color=GREEN)
         header.to_edge(UP, buff=0.5)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
 
         blocks = [
             ("Databases", ICON_DATABASE, BLUE),
@@ -321,7 +334,7 @@ class DataIntensiveIntro(Scene):
                 lag_ratio=0.15,
             )
         )
-        self.wait(1)
+        self.wait(2)
 
         # Add descriptions below each card
         desc_labels = VGroup()
@@ -336,7 +349,7 @@ class DataIntensiveIntro(Scene):
                 lag_ratio=0.1,
             )
         )
-        self.wait(2)
+        self.wait(3)
 
         # Highlight text
         bottom_text = make_label(
@@ -345,7 +358,7 @@ class DataIntensiveIntro(Scene):
         )
         bottom_text.to_edge(DOWN, buff=0.5)
         self.play(AddTextLetterByLetter(bottom_text, time_per_char=0.03))
-        self.wait(2)
+        self.wait(3)
 
         self.play(FadeOut(*self.mobjects))
 
@@ -354,6 +367,7 @@ class DataIntensiveIntro(Scene):
         header = make_label("How They Fit Together", font_size=30, color=PURPLE)
         header.to_edge(UP, buff=0.5)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
 
         # Client
         client_card = make_card("Client", width=1.8, height=0.7, fill_color=DARK_BG, label_color=WHITE, font_size=16)
@@ -369,7 +383,9 @@ class DataIntensiveIntro(Scene):
         app_box = VGroup(app_rect, app_label).move_to(LEFT * 2.5)
 
         self.play(FadeIn(client_card, shift=RIGHT * 0.3))
+        self.wait(0.5)
         self.play(FadeIn(app_box, shift=RIGHT * 0.3))
+        self.wait(0.5)
 
         # Arrow: Client → Application
         client_arrow = Arrow(
@@ -379,7 +395,7 @@ class DataIntensiveIntro(Scene):
         client_label = make_label("API", font_size=12, color=GREY_A)
         client_label.next_to(client_arrow, UP, buff=0.08)
         self.play(GrowArrow(client_arrow), FadeIn(client_label))
-        self.wait(0.5)
+        self.wait(1)
 
         # Building block mini-cards — scattered in a vertical fan on the right
         block_data = [
@@ -413,7 +429,7 @@ class DataIntensiveIntro(Scene):
                 lag_ratio=0.1,
             )
         )
-        self.wait(0.5)
+        self.wait(1.5)
 
         # Arrows from application to each block
         arrows = VGroup()
@@ -434,13 +450,14 @@ class DataIntensiveIntro(Scene):
                 lag_ratio=0.12,
             )
         )
+        self.wait(0.5)
         self.play(
             AnimationGroup(
                 *[FadeIn(l) for l in labels],
                 lag_ratio=0.08,
             )
         )
-        self.wait(1)
+        self.wait(2)
 
         # Combined result arrow back
         result_start = mini_cards[-1].get_left() + DOWN * 0.3
@@ -453,13 +470,13 @@ class DataIntensiveIntro(Scene):
         result_label = make_label("combined result", font_size=11, color=GREEN)
         result_label.next_to(result_arrow, DOWN, buff=0.08)
         self.play(GrowArrow(result_arrow), FadeIn(result_label))
-        self.wait(1)
+        self.wait(2)
 
         # Bottom callout
         callout = make_label("One app — many data systems under the hood", font_size=20, color=YELLOW)
         callout.to_edge(DOWN, buff=0.5)
         self.play(AddTextLetterByLetter(callout, time_per_char=0.03))
-        self.wait(2)
+        self.wait(3)
 
         self.play(FadeOut(*self.mobjects))
 
@@ -468,6 +485,7 @@ class DataIntensiveIntro(Scene):
         header = make_label("The Hard Questions", font_size=32, color=RED)
         header.to_edge(UP, buff=0.5)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
 
         questions = [
             (ICON_CHECK, BLUE, "Reliability",
@@ -499,19 +517,22 @@ class DataIntensiveIntro(Scene):
         # Stagger fade in
         for qg in q_groups:
             self.play(FadeIn(qg, shift=LEFT * 0.3), run_time=0.6)
-            self.wait(0.3)
+            self.wait(0.5)
 
-        self.wait(1)
+        self.wait(2)
 
         # Indicate each row
         for qg in q_groups:
             self.play(Indicate(qg, color=YELLOW, scale_factor=1.05), run_time=0.5)
+            self.wait(0.5)
+
+        self.wait(1)
 
         # Bottom text
         bottom = make_label("These are the core themes of this book.", font_size=20, color=GREY_A)
         bottom.to_edge(DOWN, buff=0.5)
         self.play(AddTextLetterByLetter(bottom, time_per_char=0.03))
-        self.wait(2)
+        self.wait(3)
 
         self.play(FadeOut(*self.mobjects))
 
@@ -520,6 +541,7 @@ class DataIntensiveIntro(Scene):
         title = make_label("Data-Intensive Applications", font_size=36, color=BLUE)
         title.move_to(UP * 1.0)
         self.play(AddTextLetterByLetter(title, time_per_char=0.05))
+        self.wait(1)
 
         # Mini icons row as visual recap
         icon_data = [
@@ -541,7 +563,7 @@ class DataIntensiveIntro(Scene):
                 lag_ratio=0.1,
             )
         )
-        self.wait(1)
+        self.wait(2)
 
         themes = make_label(
             "Reliability · Scalability · Performance · Maintainability",
@@ -549,6 +571,6 @@ class DataIntensiveIntro(Scene):
         )
         themes.move_to(DOWN * 1.2)
         self.play(FadeIn(themes, shift=UP * 0.2))
-        self.wait(3)
+        self.wait(4)
 
         self.play(FadeOut(*self.mobjects))
