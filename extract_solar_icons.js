@@ -25,8 +25,39 @@ const OUT_DIR = path.join(__dirname, "assets", "icons");
 
 // ── helpers ──────────────────────────────────────────────────────────
 
+function escapeRegExp(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Parse the import line to discover which local variable names correspond
+ * to `jsx` and `jsxs`.  The bundler may minify them to any single letter.
+ *
+ * Example import lines:
+ *   import { jsxs as t, jsx as r, Fragment as C } from "react/jsx-runtime";
+ *   import { jsxs as o, jsx as C, Fragment as r } from "react/jsx-runtime";
+ */
+function parseImportNames(mjsContent) {
+  const m = mjsContent.match(
+    /import\s*\{([^}]+)\}\s*from\s*["']react\/jsx-runtime["']/
+  );
+  if (!m) return { jsx: "r", jsxs: "t" }; // fallback
+  const mapping = {};
+  const parts = m[1].split(",");
+  for (const part of parts) {
+    const pair = part.trim().match(/^(\w+)\s+as\s+(\w+)$/);
+    if (pair) mapping[pair[1]] = pair[2];
+  }
+  return {
+    jsx: mapping["jsx"] || "r",
+    jsxs: mapping["jsxs"] || "t",
+  };
+}
+
 /** Turn JSX-like tokens inside a .mjs file into SVG markup for a given variant */
 function extractVariantSVG(mjsContent, variant) {
+  const { jsx, jsxs } = parseImportNames(mjsContent);
+
   // The file stores a Map of [variantName, jsx].
   // We'll use regex to grab the raw attributes from path / circle / rect elements
   // for the requested variant.
@@ -44,13 +75,15 @@ function extractVariantSVG(mjsContent, variant) {
 
   const block = match[0];
 
-  // Extract every element call:  r("tag", { key: "val", ... })
-  const elemRe = /r\("(\w+)",\s*\{([^}]+)\}\)/g;
+  // Extract every element call:  <jsx>|<jsxs>("tag", { key: "val", ... })
+  // Both jsx and jsxs can create SVG elements – we need to match either.
+  const funcPattern = `(?:${escapeRegExp(jsx)}|${escapeRegExp(jsxs)})`;
+  const elemRe = new RegExp(funcPattern + `\\("(\\w+)",\\s*\\{([^}]+)\\}\\)`, "g");
   let elems = [];
-  let m;
-  while ((m = elemRe.exec(block)) !== null) {
-    const tag = m[1];
-    const attrsRaw = m[2];
+  let em;
+  while ((em = elemRe.exec(block)) !== null) {
+    const tag = em[1];
+    const attrsRaw = em[2];
     // Parse key: "value" pairs
     const attrRe = /(\w+):\s*"([^"]*)"/g;
     let attrs = {};
