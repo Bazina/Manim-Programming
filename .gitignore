@@ -130,6 +130,10 @@ dmypy.json
 *~
 .DS_Store
 
+# Node.js
+node_modules/
+package-lock.json
+
 # Manim specific
 media/
 *.mp4
