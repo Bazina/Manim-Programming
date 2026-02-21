@@ -106,7 +106,7 @@ class TwitterFanOut(Scene):
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
 
         # User posting
-        user_a = make_user_icon("User A", color=BLUE_D, image_path="assets/person.png")
+        user_a = make_user_icon("User A", color=BLUE_D, image_path="../../assets/person.png")
         user_a.move_to(LEFT * 5 + UP * 1.5)
         self.play(FadeIn(user_a, shift=RIGHT * 0.3))
 
@@ -132,7 +132,7 @@ class TwitterFanOut(Scene):
         self.wait(1)
 
         # Follower requesting timeline
-        follower = make_user_icon("Follower", color=GREEN_D, image_path="assets/person.png")
+        follower = make_user_icon("Follower", color=GREEN_D, image_path="../../assets/person.png")
         follower.move_to(RIGHT * 5 + UP * 1.5)
         self.play(FadeIn(follower, shift=LEFT * 0.3))
 
@@ -190,7 +190,7 @@ class TwitterFanOut(Scene):
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
 
         # User posts a tweet
-        user_a = make_user_icon("User A", color=BLUE_D, image_path="assets/person.png")
+        user_a = make_user_icon("User A", color=BLUE_D, image_path="../../assets/person.png")
         user_a.move_to(LEFT * 4.5 + UP * 1)
 
         tweet_box = make_card("New Tweet", width=2, height=0.6, fill_color="#2D333B", label_color=ORANGE, font_size=16)
@@ -241,7 +241,7 @@ class TwitterFanOut(Scene):
         self.play(FadeOut(arrows), FadeOut(follower_caches), FadeOut(tweet_box), FadeOut(stats_group))
 
         # Celebrity scenario — morph circle, swap text char by char
-        celeb = make_user_icon("Taylor Swift", color=YELLOW, radius=0.4, font_size=16, image_path="assets/taylor.png")
+        celeb = make_user_icon("Taylor Swift", color=YELLOW, radius=0.4, font_size=16, image_path="../../assets/taylor.png")
         celeb.move_to(LEFT * 4.5 + UP * 0.5)
         celeb_tweet = make_card("Tweet", width=1.8, height=0.6, fill_color="#2D333B", label_color=YELLOW, font_size=16)
         celeb_tweet.next_to(celeb, RIGHT, buff=0.5)
@@ -326,7 +326,7 @@ class TwitterFanOut(Scene):
         left_sub.next_to(left_title, DOWN, buff=0.15)
         self.play(FadeIn(left_title), FadeIn(left_sub))
 
-        reg_user = make_user_icon("User", color=BLUE_D, radius=0.25, font_size=12, image_path="assets/person.png")
+        reg_user = make_user_icon("User", color=BLUE_D, radius=0.25, font_size=12, image_path="../../assets/person.png")
         reg_user.move_to(LEFT * 5 + UP * 0.2)
 
         reg_caches = VGroup()
@@ -356,7 +356,7 @@ class TwitterFanOut(Scene):
         right_sub.next_to(right_title, DOWN, buff=0.15)
         self.play(FadeIn(right_title), FadeIn(right_sub))
 
-        celeb = make_user_icon("Taylor Swift", color=YELLOW, radius=0.25, font_size=10, image_path="assets/taylor.png")
+        celeb = make_user_icon("Taylor Swift", color=YELLOW, radius=0.25, font_size=10, image_path="../../assets/taylor.png")
         celeb.move_to(RIGHT * 1.3 + UP * 0.3)
 
         tweets_db = make_card(
