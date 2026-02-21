@@ -35,7 +35,7 @@ def make_card(label_text, width=2.2, height=0.8, fill_color=CARD_BG, label_color
 
 
 def make_icon(icon_path, color=WHITE, height=0.6):
-    icon = SVGMobject(icon_path, fill_color=color, stroke_color=color, stroke_width=0)
+    icon = SVGMobject(icon_path, fill_color=color)
     icon.set(height=height)
     return icon
 
@@ -254,9 +254,9 @@ class DataIntensiveIntro(Scene):
 
         # Position each card at a distinct Y level with staggered X to avoid overlap
         positions = [
-            RIGHT * 3.0 + UP * 2.2,    # Database — top
-            RIGHT * 5.0 + UP * 1.1,    # Cache
-            RIGHT * 3.0 + ORIGIN,      # Search Index — center
+            RIGHT * 3.0 + UP * 2.2,  # Database — top
+            RIGHT * 5.0 + UP * 1.1,  # Cache
+            RIGHT * 3.0 + ORIGIN,  # Search Index — center
             RIGHT * 5.0 + DOWN * 1.1,  # Stream Proc.
             RIGHT * 3.0 + DOWN * 2.2,  # Batch Proc. — bottom
         ]
@@ -412,4 +412,3 @@ class DataIntensiveIntro(Scene):
         self.wait(3)
 
         self.play(FadeOut(*self.mobjects))
-
