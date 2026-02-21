@@ -11,7 +11,7 @@ config.background_color = "#0D1117"
 class IconTest(Scene):
     def construct(self):
         icons_data = [
-            ("DANGER", ICON_DANGER, RED),
+            ("DANGER", ICON_DANGER, "#A20E00"),
             ("SHIELD", ICON_SHIELD, GREEN),
             ("BUG", ICON_BUG, YELLOW),
             ("SIREN", ICON_SIREN, ORANGE),
