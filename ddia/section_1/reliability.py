@@ -78,7 +78,7 @@ class Reliability(Scene):
             content = VGroup(icon, t, d).arrange(DOWN, buff=0.1)
 
             box = RoundedRectangle(
-                corner_radius=0.12, width=2.6, height=1.5,
+                corner_radius=0.12, width=3, height=1.5,
                 fill_color=DARK_BG, fill_opacity=0.9,
                 stroke_color=color, stroke_width=1.5,
             )
@@ -89,7 +89,7 @@ class Reliability(Scene):
 
         self.play(
             AnimationGroup(
-                *[FadeIn(c, shift=UP * 0.3) for c in cards],
+                *[FadeIn(c, shift=UP * 1) for c in cards],
                 lag_ratio=0.15,
             )
         )
@@ -225,7 +225,7 @@ class Reliability(Scene):
             make_label("• Multi-machine redundancy", font_size=14, color=GREY_A),
         ).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
         solutions.next_to(solution_title, DOWN, buff=0.2)
-        self.play(FadeIn(solutions, shift=UP * 0.1))
+        self.play(FadeIn(solutions, shift=UP * 1))
         self.wait(2)
         self.play(FadeOut(*self.mobjects))
 
