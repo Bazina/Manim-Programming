@@ -24,6 +24,14 @@ ICON_SCALE = "assets/icons/arrows/RoundArrowUpBold.svg"
 ICON_TUNING = "assets/icons/settings/TuningBold.svg"
 ICON_DANGER = "assets/icons/ui/DangerCircleBold.svg"
 ICON_HELP = "assets/icons/ui/HelpBold.svg"
+ICON_SHIELD = "assets/icons/security/ShieldCheckBold.svg"
+ICON_SHIELD_WARNING = "assets/icons/security/ShieldWarningBold.svg"
+ICON_BUG = "assets/icons/it/BugBold.svg"
+ICON_SIREN = "assets/icons/security/SirenBold.svg"
+ICON_USER = "assets/icons/users/UserBold.svg"
+ICON_BOMB = "assets/icons/security/BombBold.svg"
+ICON_LOCK = "assets/icons/security/LockBold.svg"
+ICON_CODE = "assets/icons/it/CodeBold.svg"
 
 
 # ── SQL / code syntax-highlighting color map (VS Code style) ─────────
