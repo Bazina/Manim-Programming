@@ -54,64 +54,143 @@ function parseImportNames(mjsContent) {
   };
 }
 
+/**
+ * Convert a camelCase React SVG attribute name to its kebab-case SVG equivalent.
+ */
+function toSvgAttrName(name) {
+  const map = {
+    fillRule: "fill-rule",
+    clipRule: "clip-rule",
+    strokeWidth: "stroke-width",
+    strokeLinecap: "stroke-linecap",
+    strokeLinejoin: "stroke-linejoin",
+    strokeMiterlimit: "stroke-miterlimit",
+    fillOpacity: "fill-opacity",
+    strokeOpacity: "stroke-opacity",
+    strokeDasharray: "stroke-dasharray",
+    strokeDashoffset: "stroke-dashoffset",
+  };
+  return map[name] || name;
+}
+
+/**
+ * Parse key: "value" pairs from a raw attribute string, stopping before
+ * any `children:` key so we don't bleed into nested elements.
+ */
+function parseAttrs(raw) {
+  // Trim up to (but not including) `children:`
+  const childIdx = raw.indexOf("children:");
+  const attrPart = childIdx >= 0 ? raw.slice(0, childIdx) : raw;
+
+  const attrRe = /(\w+):\s*"([^"]*)"/g;
+  let attrs = {};
+  let a;
+  while ((a = attrRe.exec(attrPart)) !== null) {
+    const svgName = toSvgAttrName(a[1]);
+    let val = a[2];
+    if (val === "currentColor") val = "#FFFFFF";
+    attrs[svgName] = val;
+  }
+  return attrs;
+}
+
+function attrsToString(attrs) {
+  return Object.entries(attrs)
+    .map(([k, v]) => `${k}="${v}"`)
+    .join(" ");
+}
+
+/**
+ * Recursively extract SVG element calls from a block of JSX-like code.
+ * Handles both leaf elements:  jsx("path", { d: "…", fill: "…" })
+ * and group elements:          jsxs("g", { opacity: "0.5", children: [ … ] })
+ *
+ * Returns an array of SVG markup strings.
+ */
+function extractElements(block, jsx, jsxs, indent) {
+  const ind = " ".repeat(indent);
+  const results = [];
+
+  // Match both jsx and jsxs calls that create a named SVG element (not Fragment)
+  // We need to find each call, then figure out its full extent including children.
+  const funcPat = `(?:${escapeRegExp(jsx)}|${escapeRegExp(jsxs)})`;
+  // Match the opening:  func("tagName", {
+  const openRe = new RegExp(funcPat + `\\("(\\w+)",\\s*\\{`, "g");
+
+  let om;
+  while ((om = openRe.exec(block)) !== null) {
+    const tag = om[1];
+    const attrStart = om.index + om[0].length; // right after the opening {
+
+    // Find the matching closing } by counting braces
+    let depth = 1;
+    let pos = attrStart;
+    while (pos < block.length && depth > 0) {
+      if (block[pos] === "{") depth++;
+      else if (block[pos] === "}") depth--;
+      pos++;
+    }
+    // pos now points right after the matching }
+    const innerBlock = block.slice(attrStart, pos - 1);
+
+    const attrs = parseAttrs(innerBlock);
+    const attrStr = attrsToString(attrs);
+
+    // Check if this element has children
+    const childMatch = innerBlock.match(/children:\s*\[/);
+    if (childMatch) {
+      // It's a group element (like <g>) — recurse into its children block
+      const childStart = innerBlock.indexOf("children:") + "children:".length;
+      const childBlock = innerBlock.slice(childStart);
+
+      const childElems = extractElements(childBlock, jsx, jsxs, indent + 2);
+
+      if (childElems.length > 0) {
+        results.push(`${ind}<${tag}${attrStr ? " " + attrStr : ""}>`);
+        results.push(...childElems);
+        results.push(`${ind}</${tag}>`);
+      }
+    } else {
+      // Leaf element (path, circle, rect, etc.)
+      if (attrStr) {
+        results.push(`${ind}<${tag} ${attrStr}/>`);
+      }
+    }
+
+    // Advance openRe past this entire element to avoid re-matching children
+    openRe.lastIndex = pos;
+  }
+
+  return results;
+}
+
 /** Turn JSX-like tokens inside a .mjs file into SVG markup for a given variant */
 function extractVariantSVG(mjsContent, variant) {
   const { jsx, jsxs } = parseImportNames(mjsContent);
 
-  // The file stores a Map of [variantName, jsx].
-  // We'll use regex to grab the raw attributes from path / circle / rect elements
-  // for the requested variant.
-
-  // Find the block for the variant.  Structure:
-  //   ["Bold", /* ... */ r("path", { ... }) ]
+  // Find the block for this variant in the Map
   const variantEsc = variant.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  // Grab everything between  ["<variant>",  and the next  "],  or  "])
-  const blockRe = new RegExp(
-    `\\["${variantEsc}"[\\s\\S]*?children:[\\s\\S]*?\\}\\)\\s*\\]`,
-    "g"
-  );
-  const match = mjsContent.match(blockRe);
-  if (!match) return null;
 
-  const block = match[0];
+  // Locate  ["VariantName",  in the source
+  const startRe = new RegExp(`\\["${variantEsc}"\\s*,`);
+  const startMatch = startRe.exec(mjsContent);
+  if (!startMatch) return null;
 
-  // Extract every element call:  <jsx>|<jsxs>("tag", { key: "val", ... })
-  // Both jsx and jsxs can create SVG elements – we need to match either.
-  const funcPattern = `(?:${escapeRegExp(jsx)}|${escapeRegExp(jsxs)})`;
-  const elemRe = new RegExp(funcPattern + `\\("(\\w+)",\\s*\\{([^}]+)\\}\\)`, "g");
-  let elems = [];
-  let em;
-  while ((em = elemRe.exec(block)) !== null) {
-    const tag = em[1];
-    const attrsRaw = em[2];
-    // Parse key: "value" pairs
-    const attrRe = /(\w+):\s*"([^"]*)"/g;
-    let attrs = {};
-    let a;
-    while ((a = attrRe.exec(attrsRaw)) !== null) {
-      // Convert camelCase React attr names to SVG kebab-case
-      const svgAttr = a[1]
-        .replace("fillRule", "fill-rule")
-        .replace("clipRule", "clip-rule")
-        .replace("strokeWidth", "stroke-width")
-        .replace("strokeLinecap", "stroke-linecap")
-        .replace("strokeLinejoin", "stroke-linejoin")
-        .replace("strokeMiterlimit", "stroke-miterlimit")
-        .replace("fillOpacity", "fill-opacity")
-        .replace("strokeOpacity", "stroke-opacity");
-      attrs[svgAttr] = a[2];
-    }
-    // Replace currentColor with white so it's visible on dark backgrounds
-    // (you can re-color in Manim later)
-    for (const k of Object.keys(attrs)) {
-      if (attrs[k] === "currentColor") attrs[k] = "#FFFFFF";
-    }
-    const attrStr = Object.entries(attrs)
-      .map(([k, v]) => `${k}="${v}"`)
-      .join(" ");
-    elems.push(`  <${tag} ${attrStr}/>`);
+  // From the variant start, find the balanced block by tracking brackets
+  // until we reach the closing  ]  of this variant entry.
+  let depth = 0;
+  let pos = startMatch.index;
+  let started = false;
+  while (pos < mjsContent.length) {
+    const ch = mjsContent[pos];
+    if (ch === "[") { depth++; started = true; }
+    else if (ch === "]") { depth--; }
+    if (started && depth === 0) break;
+    pos++;
   }
+  const block = mjsContent.slice(startMatch.index, pos + 1);
 
+  const elems = extractElements(block, jsx, jsxs, 2);
   if (elems.length === 0) return null;
 
   return [

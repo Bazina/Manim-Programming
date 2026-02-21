@@ -7,17 +7,17 @@ DARK_BG = "#161B22"
 CARD_BG = "#21262D"
 
 # Icon paths (relative to assets_dir which is ./ from manim.cfg root)
-ICON_DATABASE = "assets/icons/ui/DatabaseBoldDuotone.svg"
-ICON_SERVER = "assets/icons/devices/ServerBoldDuotone.svg"
-ICON_SEARCH = "assets/icons/search/MagnifierBoldDuotone.svg"
-ICON_STREAM = "assets/icons/notifications/NotificationUnreadLinesBoldDuotone.svg"
-ICON_STOPWATCH = "assets/icons/time/StopwatchBoldDuotone.svg"
-ICON_CPU_BOLT = "assets/icons/devices/CpuBoltBoldDuotone.svg"
-ICON_CHECK = "assets/icons/ui/CheckCircleBoldDuotone.svg"
-ICON_SCALE = "assets/icons/arrows/RoundArrowUpBoldDuotone.svg"
-ICON_TUNING = "assets/icons/settings/TuningBoldDuotone.svg"
-ICON_DANGER = "assets/icons/ui/DangerCircleBoldDuotone.svg"
-ICON_HELP = "assets/icons/ui/HelpBoldDuotone.svg"
+ICON_DATABASE = "assets/icons/ui/DatabaseBold.svg"
+ICON_SERVER = "assets/icons/devices/ServerBold.svg"
+ICON_SEARCH = "assets/icons/search/MagnifierBold.svg"
+ICON_STREAM = "assets/icons/notifications/NotificationUnreadLinesBold.svg"
+ICON_STOPWATCH = "assets/icons/time/StopwatchBold.svg"
+ICON_CPU_BOLT = "assets/icons/devices/CpuBoltBold.svg"
+ICON_CHECK = "assets/icons/ui/CheckCircleBold.svg"
+ICON_SCALE = "assets/icons/arrows/RoundArrowUpBold.svg"
+ICON_TUNING = "assets/icons/settings/TuningBold.svg"
+ICON_DANGER = "assets/icons/ui/DangerCircleBold.svg"
+ICON_HELP = "assets/icons/ui/HelpBold.svg"
 
 
 def make_label(text, font_size=20, color=WHITE, weight=BOLD):
@@ -217,7 +217,7 @@ class DataIntensiveIntro(Scene):
 
         # Client
         client_card = make_card("Client", width=1.8, height=0.7, fill_color=DARK_BG, label_color=WHITE, font_size=16)
-        client_card.move_to(LEFT * 5.5 + UP * 0.2)
+        client_card.move_to(LEFT * 5.8)
 
         # Application box (central)
         app_rect = RoundedRectangle(
@@ -226,7 +226,7 @@ class DataIntensiveIntro(Scene):
         )
         app_label = make_label("Application", font_size=18, color=PURPLE)
         app_label.move_to(app_rect.get_center())
-        app_box = VGroup(app_rect, app_label).move_to(LEFT * 1.5 + UP * 0.2)
+        app_box = VGroup(app_rect, app_label).move_to(LEFT * 2.5)
 
         self.play(FadeIn(client_card, shift=RIGHT * 0.3))
         self.play(FadeIn(app_box, shift=RIGHT * 0.3))
@@ -241,7 +241,7 @@ class DataIntensiveIntro(Scene):
         self.play(GrowArrow(client_arrow), FadeIn(client_label))
         self.wait(0.5)
 
-        # Building block mini-cards (right side, 2-column grid)
+        # Building block mini-cards — scattered in a vertical fan on the right
         block_data = [
             ("Database", ICON_DATABASE, BLUE),
             ("Cache", ICON_STOPWATCH, ORANGE),
@@ -252,17 +252,27 @@ class DataIntensiveIntro(Scene):
 
         arrow_labels = ["write", "read", "query", "publish", "schedule"]
 
+        # Position each card at a distinct Y level with staggered X to avoid overlap
+        positions = [
+            RIGHT * 3.0 + UP * 2.2,    # Database — top
+            RIGHT * 5.0 + UP * 1.1,    # Cache
+            RIGHT * 3.0 + ORIGIN,      # Search Index — center
+            RIGHT * 5.0 + DOWN * 1.1,  # Stream Proc.
+            RIGHT * 3.0 + DOWN * 2.2,  # Batch Proc. — bottom
+        ]
+
         mini_cards = VGroup()
-        for name, icon_path, color in block_data:
+        for i, (name, icon_path, color) in enumerate(block_data):
             mc = make_icon_card(name, icon_path, color=color, width=1.8, height=1.1, font_size=11)
+            mc.move_to(positions[i])
             mini_cards.add(mc)
 
-        # Arrange in grid: 3 top row, 2 bottom row
-        top_row = VGroup(mini_cards[0], mini_cards[1], mini_cards[2]).arrange(RIGHT, buff=0.25)
-        bottom_row = VGroup(mini_cards[3], mini_cards[4]).arrange(RIGHT, buff=0.25)
-        grid = VGroup(top_row, bottom_row).arrange(DOWN, buff=0.25).move_to(RIGHT * 3.5 + UP * 0.2)
-
-        self.play(FadeIn(grid, shift=LEFT * 0.3))
+        self.play(
+            AnimationGroup(
+                *[FadeIn(mc, shift=LEFT * 0.3) for mc in mini_cards],
+                lag_ratio=0.1,
+            )
+        )
         self.wait(0.5)
 
         # Arrows from application to each block
@@ -293,8 +303,10 @@ class DataIntensiveIntro(Scene):
         self.wait(1)
 
         # Combined result arrow back
+        result_start = mini_cards[-1].get_left() + DOWN * 0.3
+        result_end = app_box.get_right() + DOWN * 0.4
         result_arrow = Arrow(
-            grid.get_left() + DOWN * 0.8, app_box.get_right() + DOWN * 0.4,
+            result_start, result_end,
             buff=0.1, stroke_width=2, color=GREEN, tip_length=0.12,
             path_arc=-0.3,
         )
@@ -375,7 +387,7 @@ class DataIntensiveIntro(Scene):
             (ICON_STOPWATCH, ORANGE),
             (ICON_SEARCH, GREEN),
             (ICON_STREAM, PURPLE),
-            (ICON_SERVER, RED),
+            (ICON_CPU_BOLT, RED),
         ]
         icons_row = VGroup()
         for path, color in icon_data:
