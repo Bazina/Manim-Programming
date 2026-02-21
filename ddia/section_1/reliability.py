@@ -12,6 +12,7 @@ from libs.ddia_components import (
     ICON_SERVER, ICON_DATABASE, ICON_CHECK, ICON_DANGER,
     make_label, make_icon, make_icon_card,
 )
+from libs.custom_colors import TRUE_RED
 
 config.background_color = "#0D1117"
 
@@ -38,9 +39,11 @@ class Reliability(Scene):
         group = VGroup(icon, title, subtitle).arrange(DOWN, buff=0.4)
 
         self.play(FadeIn(icon, shift=DOWN * 0.3))
+        self.wait(0.5)
         self.play(AddTextLetterByLetter(title, time_per_char=0.05))
+        self.wait(0.5)
         self.play(FadeIn(subtitle, shift=UP * 0.2))
-        self.wait(2)
+        self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 2: What is Reliability? ────────────────────────────────
@@ -48,6 +51,7 @@ class Reliability(Scene):
         header = make_label("What Does Reliability Mean?", font_size=30, color=GREEN)
         header.to_edge(UP, buff=0.5)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
 
         # Definition
         definition = make_label(
@@ -56,7 +60,7 @@ class Reliability(Scene):
         )
         definition.next_to(header, DOWN, buff=0.6)
         self.play(FadeIn(definition, shift=UP * 0.2))
-        self.wait(1)
+        self.wait(2)
 
         # Four expectations as cards
         expectations = [
@@ -93,7 +97,7 @@ class Reliability(Scene):
                 lag_ratio=0.15,
             )
         )
-        self.wait(2)
+        self.wait(3)
 
         # Bottom highlight
         bottom = make_label(
@@ -102,7 +106,7 @@ class Reliability(Scene):
         )
         bottom.to_edge(DOWN, buff=0.5)
         self.play(FadeIn(bottom, shift=UP * 0.2))
-        self.wait(2)
+        self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 3: Fault vs Failure ────────────────────────────────────
@@ -110,6 +114,7 @@ class Reliability(Scene):
         header = make_label("Fault ≠ Failure", font_size=32, color=ORANGE)
         header.to_edge(UP, buff=0.5)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
 
         # Left card: Fault
         fault_icon = make_icon(ICON_BUG, color=YELLOW, height=0.6)
@@ -129,8 +134,8 @@ class Reliability(Scene):
         fault_group = VGroup(fault_box, fault_content).move_to(LEFT * 3 + DOWN * 0.3)
 
         # Right card: Failure
-        fail_icon = make_icon(ICON_DANGER, color=RED, height=0.6)
-        fail_title = make_label("Failure", font_size=22, color=RED)
+        fail_icon = make_icon(ICON_DANGER, color=TRUE_RED, height=0.6)
+        fail_title = make_label("Failure", font_size=22, color=TRUE_RED)
         fail_desc = VGroup(
             make_label("The whole system stops", font_size=14, color=GREY_A),
             make_label("serving users", font_size=14, color=GREY_A),
@@ -140,28 +145,28 @@ class Reliability(Scene):
         fail_content = VGroup(fail_icon, fail_title, fail_desc, fail_example).arrange(DOWN, buff=0.2)
         fail_box = RoundedRectangle(
             corner_radius=0.15, width=4.0, height=3.2,
-            fill_color=DARK_BG, fill_opacity=0.9, stroke_color=RED, stroke_width=1.5,
+            fill_color=DARK_BG, fill_opacity=0.9, stroke_color=TRUE_RED, stroke_width=1.5,
         )
         fail_content.move_to(fail_box.get_center())
         fail_group = VGroup(fail_box, fail_content).move_to(RIGHT * 3 + DOWN * 0.3)
 
         self.play(FadeIn(fault_group, shift=RIGHT * 0.3))
-        self.wait(0.5)
+        self.wait(1.5)
         self.play(FadeIn(fail_group, shift=LEFT * 0.3))
-        self.wait(1)
+        self.wait(2)
 
         # Arrow with cross: Fault -/-> Failure (we prevent this!)
         arrow = Arrow(
             fault_group.get_right(), fail_group.get_left(),
             buff=0.2, stroke_width=3, color=WHITE, tip_length=0.15,
         )
-        cross = Text("✗", font_size=28, color=RED, weight=BOLD, stroke_width=0)
+        cross = Text("✗", font_size=28, color=TRUE_RED, weight=BOLD, stroke_width=0)
         cross.move_to(arrow.get_center() + UP * 0.3)
         prevent_label = make_label("Fault Tolerance", font_size=14, color=GREEN)
         prevent_label.next_to(arrow, DOWN, buff=0.15)
 
         self.play(GrowArrow(arrow), FadeIn(cross), FadeIn(prevent_label))
-        self.wait(1)
+        self.wait(2)
 
         # Bottom insight
         insight = make_label(
@@ -170,14 +175,15 @@ class Reliability(Scene):
         )
         insight.to_edge(DOWN, buff=0.5)
         self.play(AddTextLetterByLetter(insight, time_per_char=0.03))
-        self.wait(2)
+        self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 4: Hardware Faults ─────────────────────────────────────
     def scene_hardware_faults(self):
-        header = make_label("1. Hardware Faults", font_size=30, color=RED)
+        header = make_label("1. Hardware Faults", font_size=30, color=TRUE_RED)
         header.to_edge(UP, buff=0.5)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
 
         # Server rack visualization — 6 servers, one goes red
         servers = VGroup()
@@ -196,27 +202,29 @@ class Reliability(Scene):
                 lag_ratio=0.08,
             )
         )
-        self.wait(1)
+        self.wait(2)
 
         # Highlight one server failing (disk crash)
         failing = servers[3]
         fail_flash = SurroundingRectangle(
-            failing, color=RED, buff=0.08, corner_radius=0.1, stroke_width=3,
+            failing, color=TRUE_RED, buff=0.08, corner_radius=0.1, stroke_width=3,
         )
-        fail_label = make_label("Disk crash!", font_size=14, color=RED)
+        fail_label = make_label("Disk crash!", font_size=14, color=TRUE_RED)
         fail_label.next_to(failing, DOWN, buff=0.2)
 
         self.play(Create(fail_flash), FadeIn(fail_label))
+        self.wait(0.5)
         self.play(
-            failing[0].animate.set_stroke(RED, width=2.5),
-            Flash(failing, color=RED, line_length=0.3, flash_radius=0.8),
+            failing[0].animate.set_stroke(TRUE_RED, width=2.5),
+            Flash(failing, color=TRUE_RED, line_length=0.3, flash_radius=0.8),
         )
-        self.wait(1)
+        self.wait(2)
 
         # Show redundancy solution
         solution_title = make_label("Solution: Add Redundancy", font_size=20, color=GREEN)
-        solution_title.to_edge(DOWN, buff=1.2)
-        self.play(FadeIn(solution_title, shift=UP * 0.2))
+        solution_title.to_edge(DOWN * 1.5, buff=1.2)
+        self.play(FadeIn(solution_title, shift=UP))
+        self.wait(1)
 
         solutions = VGroup(
             make_label("• RAID disks", font_size=14, color=GREY_A),
@@ -225,8 +233,8 @@ class Reliability(Scene):
             make_label("• Multi-machine redundancy", font_size=14, color=GREY_A),
         ).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
         solutions.next_to(solution_title, DOWN, buff=0.2)
-        self.play(FadeIn(solutions, shift=UP * 1))
-        self.wait(2)
+        self.play(FadeIn(solutions, shift=UP))
+        self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 5: Software Errors ─────────────────────────────────────
@@ -234,6 +242,7 @@ class Reliability(Scene):
         header = make_label("2. Software Errors", font_size=30, color=PURPLE)
         header.to_edge(UP, buff=0.5)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
 
         # Key difference
         diff_label = make_label(
@@ -242,11 +251,11 @@ class Reliability(Scene):
         )
         diff_label.next_to(header, DOWN, buff=0.4)
         self.play(FadeIn(diff_label, shift=UP * 0.2))
-        self.wait(1)
+        self.wait(2)
 
         # Examples as icon cards
         examples = [
-            (ICON_BUG, RED, "Kernel Bug",
+            (ICON_BUG, TRUE_RED, "Kernel Bug",
              "A bug crashes every\nserver with bad input"),
             (ICON_CODE, ORANGE, "Runaway Process",
              "Uses all shared resources\n(CPU, memory, disk)"),
@@ -278,11 +287,14 @@ class Reliability(Scene):
                 lag_ratio=0.15,
             )
         )
-        self.wait(1)
+        self.wait(2)
 
         # Indicate each
         for c in cards:
-            self.play(Indicate(c, color=YELLOW, scale_factor=1.05), run_time=0.4)
+            self.play(Indicate(c, color=YELLOW, scale_factor=1.05), run_time=0.5)
+            self.wait(0.5)
+
+        self.wait(1)
 
         # Bottom
         bottom = make_label(
@@ -291,7 +303,7 @@ class Reliability(Scene):
         )
         bottom.to_edge(DOWN, buff=0.4)
         self.play(FadeIn(bottom, shift=UP * 0.2))
-        self.wait(2)
+        self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 6: Human Errors ────────────────────────────────────────
@@ -299,6 +311,7 @@ class Reliability(Scene):
         header = make_label("3. Human Errors", font_size=30, color=ORANGE)
         header.to_edge(UP, buff=0.5)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
 
         # Quote
         quote = make_label(
@@ -307,7 +320,7 @@ class Reliability(Scene):
         )
         quote.next_to(header, DOWN, buff=0.4)
         self.play(FadeIn(quote, shift=UP * 0.2))
-        self.wait(1)
+        self.wait(2)
 
         # Approaches to reduce human errors — stacked rows
         approaches = [
@@ -319,7 +332,7 @@ class Reliability(Scene):
              "Unit tests → integration tests → manual QA"),
             (ICON_SHIELD, PURPLE, "Quick Recovery",
              "Easy rollback, gradual rollouts, tools to recompute"),
-            (ICON_SIREN, RED, "Monitoring & Alerts",
+            (ICON_SIREN, TRUE_RED, "Monitoring & Alerts",
              "Performance metrics, error rates, early warning signals"),
         ]
 
@@ -341,16 +354,17 @@ class Reliability(Scene):
 
         for row in rows:
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.5)
-            self.wait(0.2)
+            self.wait(0.5)
 
-        self.wait(2)
+        self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 7: Why Reliability Matters ─────────────────────────────
     def scene_why_it_matters(self):
-        header = make_label("How Important Is Reliability?", font_size=30, color=RED)
+        header = make_label("How Important Is Reliability?", font_size=30, color=TRUE_RED)
         header.to_edge(UP, buff=0.5)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
 
         # "Not just for nuclear power stations"
         note = make_label(
@@ -359,13 +373,13 @@ class Reliability(Scene):
         )
         note.next_to(header, DOWN, buff=0.5)
         self.play(FadeIn(note, shift=UP * 0.2))
-        self.wait(1)
+        self.wait(2)
 
         # Impact examples
         impacts = [
             ("Business Apps", "Lost productivity, legal risks\nfrom incorrect figures", BLUE),
             ("E-commerce", "Outages → lost revenue\n& reputation damage", ORANGE),
-            ("Personal Data", "A parent's photos lost?\nCorrupted database?", RED),
+            ("Personal Data", "A parent's photos lost?\nCorrupted database?", TRUE_RED),
         ]
 
         cards = VGroup()
@@ -389,10 +403,13 @@ class Reliability(Scene):
                 lag_ratio=0.15,
             )
         )
-        self.wait(1)
+        self.wait(2)
 
         for c in cards:
             self.play(Indicate(c, color=YELLOW, scale_factor=1.05), run_time=0.5)
+            self.wait(0.5)
+
+        self.wait(1)
 
         # Bottom caveat
         caveat = make_label(
@@ -401,7 +418,7 @@ class Reliability(Scene):
         )
         caveat.to_edge(DOWN, buff=0.5)
         self.play(FadeIn(caveat, shift=UP * 0.2))
-        self.wait(2)
+        self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 8: Closing ─────────────────────────────────────────────
@@ -409,10 +426,11 @@ class Reliability(Scene):
         title = make_label("Reliability", font_size=40, color=GREEN)
         title.move_to(UP * 1.5)
         self.play(AddTextLetterByLetter(title, time_per_char=0.05))
+        self.wait(1)
 
         # Three fault types as mini recap
         fault_types = [
-            (ICON_SERVER, RED, "Hardware\nFaults"),
+            (ICON_SERVER, TRUE_RED, "Hardware\nFaults"),
             (ICON_BUG, PURPLE, "Software\nErrors"),
             (ICON_USER, ORANGE, "Human\nErrors"),
         ]
@@ -430,7 +448,7 @@ class Reliability(Scene):
                 lag_ratio=0.15,
             )
         )
-        self.wait(1)
+        self.wait(2)
 
         # Takeaway
         takeaway = make_label(
@@ -439,5 +457,5 @@ class Reliability(Scene):
         )
         takeaway.move_to(DOWN * 1.5)
         self.play(FadeIn(takeaway, shift=UP * 0.2))
-        self.wait(3)
+        self.wait(4)
         self.play(FadeOut(*self.mobjects))
