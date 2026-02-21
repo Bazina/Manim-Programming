@@ -20,6 +20,7 @@ class DataIntensiveIntro(Scene):
     def construct(self):
         self.scene_title()
         self.scene_comparison()
+        self.scene_data_challenges()
         self.scene_building_blocks()
         self.scene_architecture()
         self.scene_design_questions()
@@ -104,7 +105,183 @@ class DataIntensiveIntro(Scene):
 
         self.play(FadeOut(*self.mobjects))
 
-    # ─── Scene 3: The 5 Building Blocks ──────────────────────────────
+    # ─── Scene 3: Data Challenges — visual diagrams ───────────────────
+    def scene_data_challenges(self):
+        header = make_label("Why Does This Matter?", font_size=30, color=YELLOW)
+        header.to_edge(UP, buff=0.5)
+        self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
+
+        # ── Challenge 1: Too Many Requests ─────────────────────────────
+        ch1_title = make_label("Too Many Requests", font_size=22, color=ORANGE)
+        ch1_title.next_to(header, DOWN, buff=0.4)
+        self.play(FadeIn(ch1_title, shift=UP * 0.2))
+        self.wait(0.5)
+
+        # Server in the center
+        server = make_icon_card("Server", ICON_SERVER, color=BLUE, width=1.6, height=1.1, font_size=11)
+        server.move_to(ORIGIN + DOWN * 0.5)
+        self.play(FadeIn(server, shift=UP * 0.2))
+        self.wait(0.5)
+
+        # Many user arrows bombarding the server from the left
+        user_positions = [
+            LEFT * 5 + UP * 1.5 + DOWN * 0.5,
+            LEFT * 5 + UP * 0.5 + DOWN * 0.5,
+            LEFT * 5 + DOWN * 0.5,
+            LEFT * 5 + DOWN * 1.5 + DOWN * 0.5,
+            LEFT * 4.5 + UP * 1.0 + DOWN * 0.5,
+            LEFT * 4.5 + DOWN * 1.0 + DOWN * 0.5,
+        ]
+        user_dots = VGroup()
+        user_arrows = VGroup()
+        for pos in user_positions:
+            dot = Dot(pos, radius=0.08, color=ORANGE)
+            user_dots.add(dot)
+            arr = Arrow(
+                pos, server.get_left(),
+                buff=0.15, stroke_width=1.5, color=ORANGE, tip_length=0.1,
+            )
+            user_arrows.add(arr)
+
+        # Stats on the right
+        stats = VGroup(
+            make_label("100K req/s", font_size=18, color=ORANGE),
+            make_label("Peak hours = 10×", font_size=14, color=GREY_A),
+        ).arrange(DOWN, buff=0.1)
+        stats.move_to(RIGHT * 4 + DOWN * 0.5)
+
+        self.play(
+            FadeIn(user_dots),
+            AnimationGroup(*[GrowArrow(a) for a in user_arrows], lag_ratio=0.05),
+            FadeIn(stats, shift=LEFT * 0.2),
+        )
+        self.wait(1)
+
+        # Flash the server to show stress
+        self.play(
+            Indicate(server, color=RED, scale_factor=1.1),
+        )
+        self.wait(1.5)
+
+        # Transition out
+        self.play(FadeOut(ch1_title, user_dots, user_arrows, server, stats))
+        self.wait(0.5)
+
+        # ── Challenge 2: Huge Responses ────────────────────────────────
+        ch2_title = make_label("Huge Responses", font_size=22, color=GREEN)
+        ch2_title.next_to(header, DOWN, buff=0.4)
+        self.play(FadeIn(ch2_title, shift=UP * 0.2))
+        self.wait(0.5)
+
+        # Client on the left, Server on the right
+        client_card = make_card("Client", width=1.5, height=0.6, fill_color=DARK_BG, label_color=WHITE, font_size=14)
+        client_card.move_to(LEFT * 4 + DOWN * 0.5)
+        server2 = make_icon_card("API Server", ICON_SERVER, color=BLUE, width=1.8, height=1.1, font_size=10)
+        server2.move_to(RIGHT * 4 + DOWN * 0.5)
+
+        self.play(FadeIn(client_card, shift=RIGHT * 0.2), FadeIn(server2, shift=LEFT * 0.2))
+        self.wait(0.5)
+
+        # Small request arrow
+        req_arrow = Arrow(
+            client_card.get_right(), server2.get_left(),
+            buff=0.15, stroke_width=2, color=GREY_A, tip_length=0.1,
+        )
+        req_label = make_label("GET /feed", font_size=11, color=GREY_A)
+        req_label.next_to(req_arrow, UP, buff=0.08)
+        self.play(GrowArrow(req_arrow), FadeIn(req_label))
+        self.wait(0.5)
+
+        # HUGE response arrow (thick, emphasized)
+        resp_arrow = Arrow(
+            server2.get_left() + DOWN * 0.4, client_card.get_right() + DOWN * 0.4,
+            buff=0.15, stroke_width=6, color=GREEN, tip_length=0.15,
+        )
+        resp_label = make_label("50 MB JSON", font_size=14, color=GREEN)
+        resp_label.next_to(resp_arrow, DOWN, buff=0.08)
+
+        # Growing rectangles to represent payload size
+        payload_bars = VGroup()
+        for i in range(8):
+            bar = Rectangle(
+                width=0.15, height=0.3 + i * 0.08,
+                fill_color=GREEN, fill_opacity=0.6,
+                stroke_width=0,
+            )
+            payload_bars.add(bar)
+        payload_bars.arrange(RIGHT, buff=0.04).move_to(DOWN * 2.0)
+
+        self.play(
+            GrowArrow(resp_arrow), FadeIn(resp_label),
+            AnimationGroup(*[GrowFromEdge(b, DOWN) for b in payload_bars], lag_ratio=0.08),
+        )
+        self.wait(2)
+
+        self.play(FadeOut(ch2_title, client_card, server2, req_arrow, req_label,
+                          resp_arrow, resp_label, payload_bars))
+        self.wait(0.5)
+
+        # ── Challenge 3: Huge Database ─────────────────────────────────
+        ch3_title = make_label("Huge Database", font_size=22, color=PURPLE)
+        ch3_title.next_to(header, DOWN, buff=0.4)
+        self.play(FadeIn(ch3_title, shift=UP * 0.2))
+        self.wait(0.5)
+
+        # Stack of database layers growing
+        db_layers = VGroup()
+        layer_data = [
+            ("Users", "2 TB", BLUE),
+            ("Posts", "15 TB", ORANGE),
+            ("Messages", "40 TB", GREEN),
+            ("Media", "200 TB", PURPLE),
+            ("Logs", "500 TB", RED),
+        ]
+        for name, size, color in layer_data:
+            lbl = make_label(f"{name}  {size}", font_size=13, color=color)
+            box = RoundedRectangle(
+                corner_radius=0.08, width=4.0, height=0.5,
+                fill_color=DARK_BG, fill_opacity=0.9,
+                stroke_color=color, stroke_width=1.5,
+            )
+            lbl.move_to(box.get_center())
+            db_layers.add(VGroup(box, lbl))
+
+        db_layers.arrange(DOWN, buff=0.08).move_to(LEFT * 2.5 + DOWN * 0.5)
+
+        # Animate layers stacking one by one
+        for i, layer in enumerate(db_layers):
+            self.play(FadeIn(layer, shift=UP * 0.2), run_time=0.4)
+
+        self.wait(0.5)
+
+        # Total size callout
+        total = make_label("Total: 757 TB", font_size=20, color=YELLOW)
+        total.next_to(db_layers, RIGHT, buff=0.8)
+
+        # Growth arrow on the right side
+        growth_arrow = Arrow(
+            RIGHT * 2 + DOWN * 2.2, RIGHT * 2 + UP * 1.5,
+            buff=0, stroke_width=3, color=YELLOW, tip_length=0.15,
+        )
+        growth_label = make_label("Growing\nevery day", font_size=12, color=GREY_A)
+        growth_label.next_to(growth_arrow, RIGHT, buff=0.15)
+
+        self.play(FadeIn(total, shift=LEFT * 0.2), GrowArrow(growth_arrow), FadeIn(growth_label))
+        self.wait(2)
+
+        # Bottom takeaway
+        takeaway = make_label(
+            "These challenges define data-intensive applications",
+            font_size=18, color=YELLOW,
+        )
+        takeaway.to_edge(DOWN, buff=0.4)
+        self.play(FadeIn(takeaway, shift=UP * 0.2))
+        self.wait(3)
+
+        self.play(FadeOut(*self.mobjects))
+
+    # ─── Scene 4: The 5 Building Blocks ──────────────────────────────
     def scene_building_blocks(self):
         header = make_label("5 Standard Building Blocks", font_size=30, color=GREEN)
         header.to_edge(UP, buff=0.5)
@@ -172,7 +349,7 @@ class DataIntensiveIntro(Scene):
 
         self.play(FadeOut(*self.mobjects))
 
-    # ─── Scene 4: Architecture Diagram ────────────────────────────────
+    # ─── Scene 5: Architecture Diagram ────────────────────────────────
     def scene_architecture(self):
         header = make_label("How They Fit Together", font_size=30, color=PURPLE)
         header.to_edge(UP, buff=0.5)
@@ -286,7 +463,7 @@ class DataIntensiveIntro(Scene):
 
         self.play(FadeOut(*self.mobjects))
 
-    # ─── Scene 5: Tricky Design Questions ─────────────────────────────
+    # ─── Scene 6: Tricky Design Questions ─────────────────────────────
     def scene_design_questions(self):
         header = make_label("The Hard Questions", font_size=32, color=RED)
         header.to_edge(UP, buff=0.5)
@@ -338,7 +515,7 @@ class DataIntensiveIntro(Scene):
 
         self.play(FadeOut(*self.mobjects))
 
-    # ─── Scene 6: Closing ─────────────────────────────────────────────
+    # ─── Scene 7: Closing ─────────────────────────────────────────────
     def scene_closing(self):
         title = make_label("Data-Intensive Applications", font_size=36, color=BLUE)
         title.move_to(UP * 1.0)
