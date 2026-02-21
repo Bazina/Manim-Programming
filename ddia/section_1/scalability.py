@@ -284,7 +284,7 @@ class Scalability(Scene):
         left_group = VGroup(left_title, left_sub, big_server).arrange(DOWN, buff=0.15)
         up_arrow.next_to(big_server, LEFT, buff=0.15)
         up_label.next_to(up_arrow, LEFT, buff=0.1)
-        left_all = VGroup(left_group, up_arrow, up_label).move_to(LEFT * 3.5 + DOWN * 0.5)
+        VGroup(left_group, up_arrow, up_label).move_to(LEFT * 3.5 + DOWN * 0.5)
 
         # ── Right: Scale Out (Horizontal) ──
         right_title = make_label("Scale Out", font_size=20, color=GREEN, weight=BOLD)
@@ -302,7 +302,7 @@ class Scalability(Scene):
         right_group = VGroup(right_title, right_sub, small_servers).arrange(DOWN, buff=0.15)
         right_group.move_to(RIGHT * 3.2 + DOWN * 0.5)
 
-        self.play(FadeIn(left_all, shift=RIGHT * 0.3))
+        self.play(FadeIn(left_group, shift=RIGHT * 0.3))
         self.wait(1)
         self.play(GrowArrow(up_arrow), FadeIn(up_label))
         self.wait(2)
