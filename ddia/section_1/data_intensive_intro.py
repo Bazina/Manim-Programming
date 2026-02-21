@@ -276,7 +276,7 @@ class DataIntensiveIntro(Scene):
         )
         growth_label = make_label("Growing\nevery day", font_size=12, color=GREY_A)
 
-        total.next_to(growth_arrow, LEFT, buff=0.8)
+        total.next_to(growth_arrow, LEFT * 0.2, buff=0.8)
         growth_label.next_to(growth_arrow, RIGHT, buff=0.15)
 
         self.play(FadeIn(total, shift=LEFT * 0.2), GrowArrow(growth_arrow), FadeIn(growth_label))
