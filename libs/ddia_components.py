@@ -33,6 +33,9 @@ ICON_LIGHTNING = "assets/icons/devices/LightningBold.svg"
 ICON_CLOUD = "assets/icons/devices/CloudStorageBold.svg"
 ICON_MONITOR = "assets/icons/devices/MonitorBold.svg"
 ICON_SETTINGS = "assets/icons/settings/SettingsBold.svg"
+ICON_SHIELD = "assets/icons/security/ShieldCheckBold.svg"
+ICON_SHIELD_WARNING = "assets/icons/security/ShieldWarningBold.svg"
+ICON_BUG = "assets/icons/it/BugBold.svg"
 
 
 # ── SQL / code syntax-highlighting color map (VS Code style) ─────────
