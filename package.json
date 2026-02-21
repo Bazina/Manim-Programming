@@ -1,0 +1,19 @@
+{
+  "name": "manim",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "ddia/section_1/docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@solar-icons/react": "^1.1.0",
+    "solar-icon-set": "^2.0.1"
+  }
+}
