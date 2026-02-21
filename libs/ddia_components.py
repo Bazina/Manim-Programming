@@ -103,7 +103,7 @@ SQL_T2C = {
 
 def make_label(text, font_size=20, color=WHITE, weight=BOLD):
     """Create a styled text label with the project font."""
-    return Text(text, font=FONT, font_size=font_size, color=color, weight=weight, stroke_width=0)
+    return Text(text, font=FONT, font_size=font_size, weight=weight).set_color(color)
 
 
 def make_card(label_text, width=2.2, height=0.8, fill_color=CARD_BG, label_color=WHITE, font_size=18):
