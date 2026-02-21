@@ -222,7 +222,7 @@ class TwitterFanOut(Scene):
         self.play(FadeOut(arrows), FadeOut(follower_caches), FadeOut(tweet_box), FadeOut(stats_group))
 
         # Celebrity scenario — morph circle, swap text char by char
-        celeb = make_user_icon("Taylor Swift", color=YELLOW, radius=0.4, font_size=16, image_path="assets/taylor.png")
+        celeb = make_user_icon("Taylor Swift", color=YELLOW, font_size=16, image_path="assets/taylor.png")
         celeb.move_to(LEFT * 4.5 + UP * 0.5)
         celeb_tweet = make_card("Tweet", width=1.8, height=0.6, fill_color="#2D333B", label_color=YELLOW, font_size=16)
         celeb_tweet.next_to(celeb, RIGHT, buff=0.5)
