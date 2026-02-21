@@ -24,7 +24,7 @@ class TwitterFanOut(Scene):
     # ─── Scene 1: Title ───────────────────────────────────────────────
     def scene_title(self):
         title = make_label("Twitter Fan-Out Problem", font_size=42, color=BLUE)
-        subtitle = make_label("Designing Data-Intensive Applications - Ch1", font_size=22, color=GREY_B)
+        subtitle = make_label("Designing Data-Intensive Applications — Ch. 1", font_size=22, color=GREY_B)
         subtitle.next_to(title, DOWN, buff=0.4)
 
         self.play(AddTextLetterByLetter(title, time_per_char=0.05))
