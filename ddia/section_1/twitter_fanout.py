@@ -1,41 +1,16 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 from manim import *
+
+from libs.ddia_components import (
+    FONT, DARK_BG, CARD_BG, SQL_T2C,
+    make_label, make_card, make_user_icon,
+)
 
 config.background_color = "#0D1117"
 
-FONT = "JetBrains Mono"
-DARK_BG = "#161B22"
-CARD_BG = "#21262D"
-
-
-def make_label(text, font_size=20, color=WHITE, weight=BOLD):
-    return Text(text, font=FONT, font_size=font_size, color=color, weight=weight, stroke_width=0)
-
-
-def make_card(label_text, width=2.2, height=0.8, fill_color=CARD_BG, label_color=WHITE, font_size=18):
-    rect = RoundedRectangle(
-        corner_radius=0.15, width=width, height=height,
-        fill_color=fill_color, fill_opacity=0.9, stroke_color=GREY_B, stroke_width=1.5,
-    )
-    label = make_label(label_text, font_size=font_size, color=label_color)
-    label.move_to(rect.get_center())
-    return VGroup(rect, label)
-
-
-def make_user_icon(name, color=BLUE, radius=0.3, font_size=16, image_path=None):
-    if image_path is not None:
-        img = ImageMobject(image_path)
-        img.set(height=2 * radius)
-        icon_label = make_label(name, font_size=font_size, color=WHITE)
-        icon_label.next_to(img, DOWN, buff=0.15)
-        result = Group(img, icon_label)
-        # Expose img so arrows can anchor to it
-        result.circle = img
-        return result
-    else:
-        circle = Circle(radius=radius, fill_color=color, fill_opacity=0.8, stroke_color=WHITE, stroke_width=1.5)
-        icon_label = make_label(name, font_size=font_size, color=WHITE)
-        icon_label.next_to(circle, DOWN, buff=0.15)
-        return VGroup(circle, icon_label)
 
 
 class TwitterFanOut(Scene):
@@ -49,7 +24,7 @@ class TwitterFanOut(Scene):
     # ─── Scene 1: Title ───────────────────────────────────────────────
     def scene_title(self):
         title = make_label("Twitter Fan-Out Problem", font_size=42, color=BLUE)
-        subtitle = make_label("Designing Data-Intensive Applications", font_size=22, color=GREY_B)
+        subtitle = make_label("Designing Data-Intensive Applications - Ch1", font_size=22, color=GREY_B)
         subtitle.next_to(title, DOWN, buff=0.4)
 
         self.play(AddTextLetterByLetter(title, time_per_char=0.05))
@@ -170,25 +145,7 @@ class TwitterFanOut(Scene):
             color=GREY_A,
             weight=BOLD,
             stroke_width=0,
-            t2c={
-                "SELECT": "#C586C0",
-                "FROM": "#C586C0",
-                "JOIN": "#C586C0",
-                "ON": "#C586C0",
-                "WHERE": "#C586C0",
-                "tweets": "#4EC9B0",
-                "users": "#4EC9B0",
-                "follows": "#4EC9B0",
-                "current_user": "#CE9178",
-                "sender_": "#9CDCFE",
-                "followee_": "#9CDCFE",
-                "follower_": "#9CDCFE",
-                "id": "#9CDCFE",
-                "*": "#D4D4D4",
-                ".": "#D4D4D4",
-                ",": "#D4D4D4",
-                "=": "#D4D4D4",
-            },
+            t2c=SQL_T2C,
         )
         sql_box = SurroundingRectangle(
             sql_label, color=GREY_B, buff=0.2, corner_radius=0.1,
@@ -249,7 +206,7 @@ class TwitterFanOut(Scene):
             arrows.add(arrow)
 
         self.play(
-            AnimationGroup(*[GrowArrow(a) for a in arrows], lag_ratio=0.12),
+            AnimationGroup(*[GrowArrow(a) for a in arrows], lag_ratio=0),
         )
         self.wait(1)
 
@@ -316,7 +273,7 @@ class TwitterFanOut(Scene):
             celeb_arrows.add(arrow)
 
         self.play(
-            AnimationGroup(*[GrowArrow(a) for a in celeb_arrows], lag_ratio=0.03),
+            AnimationGroup(*[GrowArrow(a) for a in celeb_arrows], lag_ratio=0),
         )
         self.wait(1)
 
@@ -370,7 +327,7 @@ class TwitterFanOut(Scene):
                 buff=0.1, stroke_width=2, color=YELLOW, tip_length=0.12,
             )
             reg_arrows.add(a)
-        self.play(AnimationGroup(*[GrowArrow(a) for a in reg_arrows], lag_ratio=0.1))
+        self.play(AnimationGroup(*[GrowArrow(a) for a in reg_arrows], lag_ratio=0))
         self.wait(0.5)
 
         # ── Right side: Taylor Swift → Pull ──

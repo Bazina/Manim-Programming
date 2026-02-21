@@ -1,56 +1,19 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 from manim import *
+
+from libs.ddia_components import (
+    FONT, DARK_BG, CARD_BG, SQL_T2C,
+    ICON_DATABASE, ICON_SERVER, ICON_SEARCH, ICON_STREAM,
+    ICON_STOPWATCH, ICON_CPU_BOLT, ICON_CHECK, ICON_SCALE,
+    ICON_TUNING, ICON_DANGER, ICON_HELP,
+    make_label, make_card, make_icon, make_icon_card, make_code_text,
+)
 
 config.background_color = "#0D1117"
 
-FONT = "JetBrains Mono"
-DARK_BG = "#161B22"
-CARD_BG = "#21262D"
-
-# Icon paths (relative to assets_dir which is ./ from manim.cfg root)
-ICON_DATABASE = "assets/icons/ui/DatabaseBold.svg"
-ICON_SERVER = "assets/icons/devices/ServerBold.svg"
-ICON_SEARCH = "assets/icons/search/MagnifierBold.svg"
-ICON_STREAM = "assets/icons/notifications/NotificationUnreadLinesBold.svg"
-ICON_STOPWATCH = "assets/icons/time/StopwatchBold.svg"
-ICON_CPU_BOLT = "assets/icons/devices/CpuBoltBold.svg"
-ICON_CHECK = "assets/icons/ui/CheckCircleBold.svg"
-ICON_SCALE = "assets/icons/arrows/RoundArrowUpBold.svg"
-ICON_TUNING = "assets/icons/settings/TuningBold.svg"
-ICON_DANGER = "assets/icons/ui/DangerCircleBold.svg"
-ICON_HELP = "assets/icons/ui/HelpBold.svg"
-
-
-def make_label(text, font_size=20, color=WHITE, weight=BOLD):
-    return Text(text, font=FONT, font_size=font_size, color=color, weight=weight, stroke_width=0)
-
-
-def make_card(label_text, width=2.2, height=0.8, fill_color=CARD_BG, label_color=WHITE, font_size=18):
-    rect = RoundedRectangle(
-        corner_radius=0.15, width=width, height=height,
-        fill_color=fill_color, fill_opacity=0.9, stroke_color=GREY_B, stroke_width=1.5,
-    )
-    label = make_label(label_text, font_size=font_size, color=label_color)
-    label.move_to(rect.get_center())
-    return VGroup(rect, label)
-
-
-def make_icon(icon_path, color=WHITE, height=0.6):
-    icon = SVGMobject(icon_path, fill_color=color)
-    icon.set(height=height)
-    return icon
-
-
-def make_icon_card(label_text, icon_path, color=BLUE, width=2.0, height=1.6, font_size=14):
-    """Card with an SVG icon on top and a label below."""
-    rect = RoundedRectangle(
-        corner_radius=0.15, width=width, height=height,
-        fill_color=CARD_BG, fill_opacity=0.9, stroke_color=color, stroke_width=1.5,
-    )
-    icon = make_icon(icon_path, color=color, height=0.5)
-    label = make_label(label_text, font_size=font_size, color=color, weight=BOLD)
-    content = VGroup(icon, label).arrange(DOWN, buff=0.15)
-    content.move_to(rect.get_center())
-    return VGroup(rect, content)
 
 
 class DataIntensiveIntro(Scene):
