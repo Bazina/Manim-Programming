@@ -3,14 +3,55 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from manim import *
+from manim import (
+    BLUE,
+    DOWN,
+    GREEN,
+    LEFT,
+    ORANGE,
+    ORIGIN,
+    RIGHT,
+    UP,
+    AddTextLetterByLetter,
+    AnimationGroup,
+    Arrow,
+    Dot,
+    FadeIn,
+    FadeOut,
+    GrowArrow,
+    GrowFromEdge,
+    Indicate,
+    Rectangle,
+    RoundedRectangle,
+    Scene,
+    VGroup,
+    config,
+    BOLD,
+    GREY_A,
+    GREY_B,
+    PURPLE_B,
+    RED,
+    WHITE,
+    YELLOW,
+    BLUE_B,
+    PURPLE,
+)
 
 from libs.ddia_components import (
-    FONT, DARK_BG, CARD_BG, SQL_T2C,
-    ICON_DATABASE, ICON_SERVER, ICON_SEARCH, ICON_STREAM,
-    ICON_STOPWATCH, ICON_CPU_BOLT, ICON_CHECK, ICON_SCALE,
-    ICON_TUNING, ICON_DANGER, ICON_HELP,
-    make_label, make_card, make_icon, make_icon_card, make_code_text,
+    DARK_BG,
+    ICON_CHECK,
+    ICON_CPU_BOLT,
+    ICON_DATABASE,
+    ICON_SCALE,
+    ICON_SEARCH,
+    ICON_SERVER,
+    ICON_STOPWATCH,
+    ICON_STREAM,
+    ICON_TUNING,
+    make_card,
+    make_icon,
+    make_icon_card,
+    make_label,
 )
 
 config.background_color = "#0D1117"
@@ -453,7 +494,7 @@ class DataIntensiveIntro(Scene):
         self.wait(0.5)
         self.play(
             AnimationGroup(
-                *[FadeIn(l) for l in labels],
+                *[FadeIn(label) for label in labels],
                 lag_ratio=0.08,
             )
         )

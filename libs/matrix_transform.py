@@ -16,16 +16,15 @@ import numpy as np
 from manim import (
     GREEN_A,
     Animation,
+    AnimationGroup,
     FadeIn,
     FadeOut,
     Mobject,
-    AnimationGroup,
-    Succession,
     Rectangle,
+    Succession,
     Text,
     VGroup,
 )
-
 
 _MATRIX_CHARS = "0123456789ABCDEF#@$%&"
 
@@ -140,7 +139,8 @@ class MatrixTransform(AnimationGroup):
 
         # Invisible bounding box (no border)
         box = Rectangle(
-            width=w, height=h,
+            width=w,
+            height=h,
             stroke_width=0,
             fill_opacity=0,
         ).move_to(center)

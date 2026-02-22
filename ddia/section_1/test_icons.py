@@ -1,9 +1,47 @@
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from manim import *
-from libs.ddia_components import make_icon, make_label, ICON_DANGER, ICON_SHIELD, ICON_BUG, ICON_SIREN, ICON_USER, ICON_BOMB, ICON_LOCK, ICON_CODE, ICON_DATABASE, ICON_SERVER, ICON_CHECK, ICON_SCALE, ICON_TUNING, ICON_HELP, ICON_SEARCH, ICON_STREAM, ICON_STOPWATCH, ICON_CPU_BOLT, ICON_SHIELD_WARNING
+from manim import (
+    BLUE,
+    DOWN,
+    GREEN,
+    GREY_A,
+    ORANGE,
+    PINK,
+    PURPLE,
+    RED,
+    TEAL,
+    YELLOW,
+    Scene,
+    VGroup,
+    config,
+)
+
+from libs.ddia_components import (
+    ICON_BOMB,
+    ICON_BUG,
+    ICON_CHECK,
+    ICON_CODE,
+    ICON_CPU_BOLT,
+    ICON_DANGER,
+    ICON_DATABASE,
+    ICON_HELP,
+    ICON_LOCK,
+    ICON_SCALE,
+    ICON_SEARCH,
+    ICON_SERVER,
+    ICON_SHIELD,
+    ICON_SHIELD_WARNING,
+    ICON_SIREN,
+    ICON_STOPWATCH,
+    ICON_STREAM,
+    ICON_TUNING,
+    ICON_USER,
+    make_icon,
+    make_label,
+)
 
 config.background_color = "#0D1117"
 
@@ -42,4 +80,3 @@ class IconTest(Scene):
         groups.arrange_in_grid(rows=4, buff=0.4)
         self.add(groups)
         self.wait(3)
-
