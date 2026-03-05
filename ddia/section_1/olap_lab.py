@@ -438,13 +438,13 @@ class OlapLab(Scene):
 
         # Batch processing warning
         warning_box = RoundedRectangle(
-            corner_radius=0.1, width=8.0, height=0.7,
+            corner_radius=0.1, width=10.0, height=0.6,
             fill_color=DARK_BG, fill_opacity=0.95,
             stroke_color=YELLOW, stroke_width=1.5,
         )
         warning_text = make_label(
-            "⚠ Process in batches (~1000 rows) to avoid Out-of-Memory!",
-            font_size=15, color=YELLOW,
+            "Process in batches (~1000 rows) to avoid Out-of-Memory!",
+            font_size=13, color=YELLOW,
         )
         warning_text.move_to(warning_box.get_center())
         warning = VGroup(warning_box, warning_text).to_edge(DOWN, buff=0.5)
@@ -454,13 +454,13 @@ class OlapLab(Scene):
 
         # Note: transformation must happen IN NiFi, not in Spark
         note_box = RoundedRectangle(
-            corner_radius=0.1, width=8.0, height=0.7,
+            corner_radius=0.1, width=10.0, height=0.6,
             fill_color=DARK_BG, fill_opacity=0.95,
             stroke_color=RED, stroke_width=1.5,
         )
         note_text = make_label(
             "Transform inside NiFi — do NOT just dump and join in Spark",
-            font_size=15, color=RED,
+            font_size=13, color=RED,
         )
         note_text.move_to(note_box.get_center())
         note = VGroup(note_box, note_text).next_to(warning, UP, buff=0.15)
@@ -609,15 +609,6 @@ class OlapLab(Scene):
         # each Column Chunk contains Pages (Data, Dictionary, Index)
         # Footer at the bottom of the file
 
-        # --- Outer: Parquet File box ---
-        file_box = RoundedRectangle(
-            corner_radius=0.15, width=12.5, height=5.8,
-            fill_color="#0F1318", fill_opacity=0.95,
-            stroke_color=GREEN, stroke_width=2,
-        )
-        file_label = make_label("Parquet File", font_size=14, color=GREEN, weight=BOLD)
-        file_label.next_to(file_box, UP, buff=0.08)
-
         # --- Row Group 1 ---
         rg_color = BLUE
 
@@ -689,8 +680,20 @@ class OlapLab(Scene):
         footer_content.move_to(footer_box.get_center())
         footer = VGroup(footer_box, footer_content)
 
-        # Arrange everything inside the file box
+        # Arrange inner content first so we can measure it
         file_inner = VGroup(rg_group, more_rg, footer).arrange(DOWN, buff=0.15)
+
+        # --- Outer: Parquet File box — sized to fit contents ---
+        file_box = RoundedRectangle(
+            corner_radius=0.15,
+            width=file_inner.width + 0.5,
+            height=file_inner.height + 0.5,
+            fill_color="#0F1318", fill_opacity=0.95,
+            stroke_color=GREEN, stroke_width=2,
+        )
+        file_label = make_label("Parquet File", font_size=14, color=GREEN, weight=BOLD)
+        file_label.next_to(file_box, UP, buff=0.08)
+
         file_inner.move_to(file_box.get_center())
 
         # Position the whole thing
@@ -837,15 +840,20 @@ class OlapLab(Scene):
             card.move_to(pos)
             dim_cards.add(card)
 
-            # Anchor arrows on the rectangle edges (card[0] = rect, fact[0] = rect)
-            dim_rect = card[0]
+            # Arrow from dim card edge → fact card edge
+            # Use the border point closest to the other shape
+            dim_rect = card[0]   # the RoundedRectangle
             fact_rect_ref = fact[0]
-            direction = normalize(fact_rect_ref.get_center() - dim_rect.get_center())
+            start_pt = dim_rect.get_critical_point(
+                normalize(fact_rect_ref.get_center() - dim_rect.get_center())
+            )
+            end_pt = fact_rect_ref.get_critical_point(
+                normalize(dim_rect.get_center() - fact_rect_ref.get_center())
+            )
             arrow = Arrow(
-                dim_rect.get_center() + direction * 0.6,
-                fact_rect_ref.get_center() - direction * 0.8,
+                start_pt, end_pt,
                 stroke_width=2, color=color, tip_length=0.1,
-                buff=0,
+                buff=0.08,
             )
             dim_arrows.add(arrow)
 
