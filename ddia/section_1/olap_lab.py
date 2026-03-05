@@ -837,9 +837,15 @@ class OlapLab(Scene):
             card.move_to(pos)
             dim_cards.add(card)
 
+            # Anchor arrows on the rectangle edges (card[0] = rect, fact[0] = rect)
+            dim_rect = card[0]
+            fact_rect_ref = fact[0]
+            direction = normalize(fact_rect_ref.get_center() - dim_rect.get_center())
             arrow = Arrow(
-                card.get_center(), fact.get_center(),
-                buff=0.4, stroke_width=2, color=color, tip_length=0.1,
+                dim_rect.get_center() + direction * 0.6,
+                fact_rect_ref.get_center() - direction * 0.8,
+                stroke_width=2, color=color, tip_length=0.1,
+                buff=0,
             )
             dim_arrows.add(arrow)
 
