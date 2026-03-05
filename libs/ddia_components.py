@@ -5,7 +5,21 @@ Contains common constants, helper functions for creating labels, cards, icons,
 user icons, and syntax-highlighted code blocks used across DDIA scenes.
 """
 
-from manim import *
+from manim import (
+    BLUE,
+    BOLD,
+    DOWN,
+    GREY_B,
+    ORIGIN,
+    WHITE,
+    Circle,
+    Group,
+    ImageMobject,
+    RoundedRectangle,
+    SVGMobject,
+    Text,
+    VGroup,
+)
 
 # ── Theme ─────────────────────────────────────────────────────────────
 FONT = "JetBrains Mono"
@@ -123,16 +137,29 @@ SQL_T2C = {
 
 # ── Primitive builders ────────────────────────────────────────────────
 
+
 def make_label(text, font_size=20, color=WHITE, weight=BOLD):
     """Create a styled text label with the project font."""
     return Text(text, font=FONT, font_size=font_size, weight=weight).set_color(color)
 
 
-def make_card(label_text, width=2.2, height=0.8, fill_color=CARD_BG, label_color=WHITE, font_size=18):
+def make_card(
+    label_text,
+    width=2.2,
+    height=0.8,
+    fill_color=CARD_BG,
+    label_color=WHITE,
+    font_size=18,
+):
     """Create a rounded-rectangle card with a centered label."""
     rect = RoundedRectangle(
-        corner_radius=0.15, width=width, height=height,
-        fill_color=fill_color, fill_opacity=0.9, stroke_color=GREY_B, stroke_width=1.5,
+        corner_radius=0.15,
+        width=width,
+        height=height,
+        fill_color=fill_color,
+        fill_opacity=0.9,
+        stroke_color=GREY_B,
+        stroke_width=1.5,
     )
     label = make_label(label_text, font_size=font_size, color=label_color)
     label.move_to(rect.get_center())
@@ -146,11 +173,18 @@ def make_icon(icon_path, color=WHITE, height=0.6):
     return icon
 
 
-def make_icon_card(label_text, icon_path, color=BLUE, width=2.0, height=1.6, font_size=14):
+def make_icon_card(
+    label_text, icon_path, color=BLUE, width=2.0, height=1.6, font_size=14
+):
     """Card with an SVG icon on top and a label below."""
     rect = RoundedRectangle(
-        corner_radius=0.15, width=width, height=height,
-        fill_color=CARD_BG, fill_opacity=0.9, stroke_color=color, stroke_width=1.5,
+        corner_radius=0.15,
+        width=width,
+        height=height,
+        fill_color=CARD_BG,
+        fill_opacity=0.9,
+        stroke_color=color,
+        stroke_width=1.5,
     )
     icon = make_icon(icon_path, color=color, height=0.5)
     label = make_label(label_text, font_size=font_size, color=color, weight=BOLD)
@@ -170,8 +204,13 @@ def make_user_icon(name, color=BLUE, radius=0.3, font_size=16, image_path=None):
         result.circle = img  # expose for arrow anchoring
         return result
     else:
-        circle = Circle(radius=radius, fill_color=color, fill_opacity=0.8,
-                        stroke_color=WHITE, stroke_width=1.5)
+        circle = Circle(
+            radius=radius,
+            fill_color=color,
+            fill_opacity=0.8,
+            stroke_color=WHITE,
+            stroke_width=1.5,
+        )
         icon_label = make_label(name, font_size=font_size, color=WHITE)
         icon_label.next_to(circle, DOWN, buff=0.15)
         return VGroup(circle, icon_label)
@@ -199,4 +238,3 @@ def make_code_text(text, font_size=16, position=ORIGIN, t2c=None):
     )
     bg.move_to(code.get_center())
     return VGroup(bg, code).move_to(position)
-

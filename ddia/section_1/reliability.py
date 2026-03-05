@@ -3,16 +3,56 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from manim import *
+from manim import (
+    BLUE,
+    BOLD,
+    DOWN,
+    GREEN,
+    GREY_A,
+    GREY_B,
+    LEFT,
+    ORANGE,
+    ORIGIN,
+    PURPLE,
+    RIGHT,
+    UP,
+    WHITE,
+    YELLOW,
+    AddTextLetterByLetter,
+    AnimationGroup,
+    Arrow,
+    Create,
+    FadeIn,
+    FadeOut,
+    Flash,
+    GrowArrow,
+    Indicate,
+    RoundedRectangle,
+    Scene,
+    SurroundingRectangle,
+    Text,
+    VGroup,
+    config,
+)
 
+from libs.custom_colors import TRUE_RED
 from libs.ddia_components import (
     DARK_BG,
-    ICON_SHIELD, ICON_BUG, ICON_SIREN,
-    ICON_USER, ICON_BOMB, ICON_LOCK, ICON_CODE,
-    ICON_SERVER, ICON_DATABASE, ICON_CHECK, ICON_DANGER,
-    make_label, make_icon, make_icon_card,
+    ICON_BOMB,
+    ICON_BUG,
+    ICON_CHECK,
+    ICON_CODE,
+    ICON_DANGER,
+    ICON_DATABASE,
+    ICON_LOCK,
+    ICON_SERVER,
+    ICON_SHIELD,
+    ICON_SIREN,
+    ICON_USER,
+    make_icon,
+    make_icon_card,
+    make_label,
 )
-from libs.custom_colors import TRUE_RED
 
 config.background_color = "#0D1117"
 
@@ -36,7 +76,7 @@ class Reliability(Scene):
             "Designing Data-Intensive Applications — Ch. 1",
             font_size=20, color=GREY_B,
         )
-        group = VGroup(icon, title, subtitle).arrange(DOWN, buff=0.4)
+        VGroup(icon, title, subtitle).arrange(DOWN, buff=0.4)
 
         self.play(FadeIn(icon, shift=DOWN * 0.3))
         self.wait(0.5)
