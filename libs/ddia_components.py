@@ -36,6 +36,15 @@ ICON_SETTINGS = "assets/icons/settings/SettingsBold.svg"
 ICON_SHIELD = "assets/icons/security/ShieldCheckBold.svg"
 ICON_SHIELD_WARNING = "assets/icons/security/ShieldWarningBold.svg"
 ICON_BUG = "assets/icons/it/BugBold.svg"
+ICON_FILE = "assets/icons/files/FileBold.svg"
+ICON_CODE_FILE = "assets/icons/files/CodeFileBold.svg"
+ICON_CHART = "assets/icons/business/ChartSquareBold.svg"
+ICON_STRUCTURE = "assets/icons/it/StructureBold.svg"
+ICON_CHECKLIST = "assets/icons/list/ChecklistBold.svg"
+ICON_LAYERS = "assets/icons/tools/LayersBold.svg"
+ICON_TRANSFER = "assets/icons/arrows/RoundTransferHorizontalBold.svg"
+ICON_GRAPH = "assets/icons/business/GraphUpBold.svg"
+ICON_BOOK = "assets/icons/school/BookBold.svg"
 
 
 # ── SQL / code syntax-highlighting color map (VS Code style) ─────────
@@ -62,6 +71,15 @@ SQL_T2C = {
     "JOB": "#C586C0",
     "PROCESS": "#C586C0",
     "EXPIRE": "#C586C0",
+    "GROUP": "#C586C0",
+    "BY": "#C586C0",
+    "AS": "#C586C0",
+    "AND": "#C586C0",
+    "AVG": "#DCDCAA",
+    "SUM": "#DCDCAA",
+    "COUNT": "#DCDCAA",
+    "INTERVAL": "#C586C0",
+    "DATE": "#C586C0",
     # Tables / objects
     "tweets": "#4EC9B0",
     "users": "#4EC9B0",
