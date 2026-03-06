@@ -12,6 +12,7 @@ from manim import (
     GREY_B,
     ORIGIN,
     WHITE,
+    YELLOW,
     Circle,
     Group,
     ImageMobject,
@@ -59,7 +60,6 @@ ICON_LAYERS = "assets/icons/tools/LayersBold.svg"
 ICON_TRANSFER = "assets/icons/arrows/RoundTransferHorizontalBold.svg"
 ICON_GRAPH = "assets/icons/business/GraphUpBold.svg"
 ICON_BOOK = "assets/icons/school/BookBold.svg"
-
 
 # ── SQL / code syntax-highlighting color map (VS Code style) ─────────
 SQL_T2C = {
@@ -135,6 +135,82 @@ SQL_T2C = {
 }
 
 
+# ── Glow effects ──────────────────────────────────────────────────────
+
+
+def create_glow(vmobject, color=YELLOW, rad=1, num_layers=60):
+    """
+    Create a radial glow behind any VMobject using concentric circles.
+
+    Good for dots, small circles, or any focal-point mobject.
+    """
+    glow_group = VGroup()
+    for idx in range(num_layers):
+        new_circle = Circle(
+            radius=rad * (1.002 ** (idx ** 2)) / 400,
+            stroke_opacity=0,
+            fill_color=color,
+            fill_opacity=max(0, 0.2 - idx / 300),
+        ).move_to(vmobject)
+        glow_group.add(new_circle)
+    return glow_group
+
+
+def create_rect_glow(
+        rect,
+        color=None,
+        layers=20,
+        max_opacity=0.12,
+        spread=0.25,
+):
+    """
+    Create a soft rectangular glow behind a RoundedRectangle (or any rect-like VMobject).
+
+    Layers of progressively larger, more transparent rounded-rectangles are
+    stacked behind the source rectangle to simulate a neon / glowing edge.
+
+    Parameters
+    ----------
+    rect : RoundedRectangle
+        The rectangle to glow around.
+    color : Color | str | None
+        Glow color.  Defaults to the rectangle's stroke color.
+    layers : int
+        How many glow shells (more = smoother but heavier).
+    max_opacity : float
+        Opacity of the innermost (brightest) glow shell.
+    spread : float
+        Total extra size (in scene units) the glow extends beyond the rect.
+    """
+    if color is None:
+        color = rect.get_stroke_color()
+
+    base_w = rect.width
+    base_h = rect.height
+    corner = getattr(rect, "corner_radius", 0.15)
+    if not isinstance(corner, (int, float)):
+        corner = 0.15
+
+    glow = VGroup()
+    for i in range(layers):
+        t = (i + 1) / layers  # 0→1
+        extra = spread * t  # size growth
+        opacity = max_opacity * (1 - t) ** 1.5  # fade out
+
+        shell = RoundedRectangle(
+            corner_radius=corner + extra * 0.3,
+            width=base_w + extra,
+            height=base_h + extra,
+            stroke_opacity=0,
+            fill_color=color,
+            fill_opacity=opacity,
+        )
+        shell.move_to(rect)
+        glow.add(shell)
+
+    return glow
+
+
 # ── Primitive builders ────────────────────────────────────────────────
 
 
@@ -144,14 +220,16 @@ def make_label(text, font_size=20, color=WHITE, weight=BOLD):
 
 
 def make_card(
-    label_text,
-    width=2.2,
-    height=0.8,
-    fill_color=CARD_BG,
-    label_color=WHITE,
-    font_size=18,
+        label_text,
+        width=2.2,
+        height=0.8,
+        fill_color=CARD_BG,
+        label_color=WHITE,
+        font_size=18,
+        glow=True,
+        glow_color=None,
 ):
-    """Create a rounded-rectangle card with a centered label."""
+    """Create a rounded-rectangle card with a centered label and optional glow."""
     rect = RoundedRectangle(
         corner_radius=0.15,
         width=width,
@@ -163,7 +241,17 @@ def make_card(
     )
     label = make_label(label_text, font_size=font_size, color=label_color)
     label.move_to(rect.get_center())
-    return VGroup(rect, label)
+
+    if glow:
+        g_color = glow_color or label_color
+        glow_layer = create_rect_glow(rect, color=g_color)
+        group = VGroup(glow_layer, rect, label)
+    else:
+        group = VGroup(rect, label)
+
+    group.rect = rect
+    group.label_mob = label
+    return group
 
 
 def make_icon(icon_path, color=WHITE, height=0.6):
@@ -174,9 +262,10 @@ def make_icon(icon_path, color=WHITE, height=0.6):
 
 
 def make_icon_card(
-    label_text, icon_path, color=BLUE, width=2.0, height=1.6, font_size=14
+        label_text, icon_path, color=BLUE, width=2.0, height=1.6, font_size=14,
+        glow=True, glow_color=None,
 ):
-    """Card with an SVG icon on top and a label below."""
+    """Card with an SVG icon on top and a label below, with optional glow."""
     rect = RoundedRectangle(
         corner_radius=0.15,
         width=width,
@@ -190,7 +279,17 @@ def make_icon_card(
     label = make_label(label_text, font_size=font_size, color=color, weight=BOLD)
     content = VGroup(icon, label).arrange(DOWN, buff=0.15)
     content.move_to(rect.get_center())
-    return VGroup(rect, content)
+
+    if glow:
+        g_color = glow_color or color
+        glow_layer = create_rect_glow(rect, color=g_color)
+        group = VGroup(glow_layer, rect, content)
+    else:
+        group = VGroup(rect, content)
+
+    group.rect = rect
+    group.content = content
+    return group
 
 
 def make_user_icon(name, color=BLUE, radius=0.3, font_size=16, image_path=None):
@@ -216,8 +315,8 @@ def make_user_icon(name, color=BLUE, radius=0.3, font_size=16, image_path=None):
         return VGroup(circle, icon_label)
 
 
-def make_code_text(text, font_size=16, position=ORIGIN, t2c=None):
-    """Create an IDE-styled syntax-highlighted code snippet with a dark background."""
+def make_code_text(text, font_size=16, position=ORIGIN, t2c=None, glow=True, glow_color=None):
+    """Create an IDE-styled syntax-highlighted code snippet with a dark background and optional glow."""
     code = Text(
         text,
         font=FONT,
@@ -237,4 +336,14 @@ def make_code_text(text, font_size=16, position=ORIGIN, t2c=None):
         stroke_width=1,
     )
     bg.move_to(code.get_center())
-    return VGroup(bg, code).move_to(position)
+
+    if glow:
+        g_color = glow_color or "#3E3E3E"
+        glow_layer = create_rect_glow(bg, color=g_color, max_opacity=0.06, spread=0.2)
+        group = VGroup(glow_layer, bg, code).move_to(position)
+    else:
+        group = VGroup(bg, code).move_to(position)
+
+    group.bg = bg
+    group.code = code
+    return group

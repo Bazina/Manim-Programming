@@ -13,6 +13,7 @@ from libs.ddia_components import (
     ICON_LAYERS, ICON_TRANSFER,
     ICON_LIGHTNING, ICON_BOOK,
     make_label, make_card, make_icon, make_icon_card, make_code_text,
+    create_rect_glow,
 )
 
 config.background_color = "#0D1117"
@@ -81,7 +82,8 @@ class OlapLab(Scene):
                 stroke_color=color, stroke_width=1.2,
             )
             row_content.move_to(box.get_center())
-            rows.add(VGroup(box, row_content))
+            glow = create_rect_glow(box, color=color)
+            rows.add(VGroup(glow, box, row_content))
 
         rows.arrange(DOWN, buff=0.15).next_to(header, DOWN, buff=0.5)
 
@@ -125,7 +127,8 @@ class OlapLab(Scene):
             fill_color=DARK_BG, fill_opacity=0.9, stroke_color=GREY_B, stroke_width=1.5,
         )
         left_content.move_to(left_box.get_center())
-        left_group = VGroup(left_box, left_content).move_to(LEFT * 3 + DOWN * 0.3)
+        left_glow = create_rect_glow(left_box, color=GREY_B)
+        left_group = VGroup(left_glow, left_box, left_content).move_to(LEFT * 3 + DOWN * 0.3)
 
         # ── Right: OLAP ──
         right_icon = make_icon(ICON_CHART, color=BLUE, height=0.6)
@@ -144,7 +147,8 @@ class OlapLab(Scene):
             fill_color=DARK_BG, fill_opacity=0.9, stroke_color=BLUE, stroke_width=1.5,
         )
         right_content.move_to(right_box.get_center())
-        right_group = VGroup(right_box, right_content).move_to(RIGHT * 3 + DOWN * 0.3)
+        right_glow = create_rect_glow(right_box, color=BLUE)
+        right_group = VGroup(right_glow, right_box, right_content).move_to(RIGHT * 3 + DOWN * 0.3)
 
         self.play(FadeIn(left_group, shift=RIGHT * 0.3))
         self.wait(1.5)
@@ -202,7 +206,8 @@ class OlapLab(Scene):
                 stroke_color=color, stroke_width=1.5,
             )
             lbl.move_to(box.get_center())
-            layers.add(VGroup(box, lbl))
+            glow = create_rect_glow(box, color=color, max_opacity=0.08)
+            layers.add(VGroup(glow, box, lbl))
 
         layers.arrange(DOWN, buff=0.08).move_to(DOWN * 0.5)
 
@@ -329,7 +334,8 @@ class OlapLab(Scene):
                 stroke_color=color, stroke_width=1.5,
             )
             content.move_to(box.get_center())
-            procs.add(VGroup(box, content))
+            glow = create_rect_glow(box, color=color)
+            procs.add(VGroup(glow, box, content))
 
         procs.arrange(RIGHT, buff=1.0).move_to(DOWN * 0.2)
 
@@ -367,7 +373,8 @@ class OlapLab(Scene):
                 stroke_color=TEAL, stroke_width=1,
             )
             lbl.move_to(box.get_center())
-            proc_labels.add(VGroup(box, lbl))
+            glow = create_rect_glow(box, color=TEAL, max_opacity=0.08, spread=0.15)
+            proc_labels.add(VGroup(glow, box, lbl))
 
         proc_labels.arrange(RIGHT, buff=0.15).to_edge(DOWN, buff=0.5)
 
@@ -447,7 +454,8 @@ class OlapLab(Scene):
             font_size=13, color=YELLOW,
         )
         warning_text.move_to(warning_box.get_center())
-        warning = VGroup(warning_box, warning_text).to_edge(DOWN, buff=0.5)
+        warning_glow = create_rect_glow(warning_box, color=YELLOW)
+        warning = VGroup(warning_glow, warning_box, warning_text).to_edge(DOWN, buff=0.5)
 
         self.play(FadeIn(warning, shift=UP * 0.2))
         self.wait(3)
@@ -463,7 +471,8 @@ class OlapLab(Scene):
             font_size=13, color=RED,
         )
         note_text.move_to(note_box.get_center())
-        note = VGroup(note_box, note_text).next_to(warning, UP, buff=0.15)
+        note_glow = create_rect_glow(note_box, color=RED)
+        note = VGroup(note_glow, note_box, note_text).next_to(warning, UP, buff=0.15)
 
         self.play(FadeIn(note, shift=UP * 0.2))
         self.wait(3)
@@ -515,7 +524,8 @@ class OlapLab(Scene):
                 stroke_color=GREY_B, stroke_width=1,
             )
             row_line.move_to(entry_box.get_center())
-            row_entries.add(VGroup(entry_box, row_line))
+            entry_glow = create_rect_glow(entry_box, color=GREY_B, max_opacity=0.06, spread=0.12)
+            row_entries.add(VGroup(entry_glow, entry_box, row_line))
         row_entries.arrange(DOWN, buff=0.08)
 
         disk_row_label = make_label("On disk:", font_size=10, color=GREY_B)
@@ -531,7 +541,8 @@ class OlapLab(Scene):
             fill_color=DARK_BG, fill_opacity=0.9, stroke_color=GREY_B, stroke_width=1.5,
         )
         row_content.move_to(row_box.get_center())
-        row_group = VGroup(row_box, row_content).move_to(LEFT * 3.2 + DOWN * 0.5)
+        row_box_glow = create_rect_glow(row_box, color=GREY_B)
+        row_group = VGroup(row_box_glow, row_box, row_content).move_to(LEFT * 3.2 + DOWN * 0.5)
 
         # --- Column-Oriented side ---
         col_title = make_label("Column-Oriented", font_size=15, color=GREEN, weight=BOLD)
@@ -560,7 +571,8 @@ class OlapLab(Scene):
                 stroke_color=hdr_color, stroke_width=1,
             )
             col_entry.move_to(col_bg.get_center())
-            col_groups.add(VGroup(col_bg, col_entry))
+            col_bg_glow = create_rect_glow(col_bg, color=hdr_color, max_opacity=0.06, spread=0.12)
+            col_groups.add(VGroup(col_bg_glow, col_bg, col_entry))
         col_groups.arrange(RIGHT, buff=0.12)
 
         disk_col_label = make_label("On disk:", font_size=10, color=GREY_B)
@@ -576,7 +588,8 @@ class OlapLab(Scene):
             fill_color=DARK_BG, fill_opacity=0.9, stroke_color=GREEN, stroke_width=1.5,
         )
         col_content.move_to(col_box.get_center())
-        col_group_card = VGroup(col_box, col_content).move_to(RIGHT * 3.2 + DOWN * 0.5)
+        col_box_glow = create_rect_glow(col_box, color=GREEN)
+        col_group_card = VGroup(col_box_glow, col_box, col_content).move_to(RIGHT * 3.2 + DOWN * 0.5)
 
         self.play(FadeIn(row_group, shift=RIGHT * 0.3))
         self.wait(2)
@@ -630,7 +643,8 @@ class OlapLab(Scene):
                     stroke_color=pcolor, stroke_width=0.8,
                 )
                 plbl.move_to(pbox.get_center())
-                pages.add(VGroup(pbox, plbl))
+                pglow = create_rect_glow(pbox, color=pcolor, max_opacity=0.05, spread=0.08, layers=10)
+                pages.add(VGroup(pglow, pbox, plbl))
             pages.arrange(DOWN, buff=0.04)
             chunk_content = VGroup(hdr, pages).arrange(DOWN, buff=0.06)
             chunk_box = RoundedRectangle(
@@ -639,7 +653,8 @@ class OlapLab(Scene):
                 stroke_color=color, stroke_width=1,
             )
             chunk_content.move_to(chunk_box.get_center())
-            return VGroup(chunk_box, chunk_content)
+            chunk_glow = create_rect_glow(chunk_box, color=color, max_opacity=0.08, spread=0.15)
+            return VGroup(chunk_glow, chunk_box, chunk_content)
 
         cc_a = _make_col_chunk("Col: Name", BLUE)
         cc_b = _make_col_chunk("Col: Age", ORANGE)
@@ -655,7 +670,8 @@ class OlapLab(Scene):
             stroke_color=rg_color, stroke_width=1.5,
         )
         rg_content.move_to(rg_box.get_center())
-        rg_group = VGroup(rg_box, rg_content)
+        rg_glow = create_rect_glow(rg_box, color=rg_color)
+        rg_group = VGroup(rg_glow, rg_box, rg_content)
 
         # --- "... more Row Groups" hint ---
         more_rg = make_label("... more Row Groups ...", font_size=10, color=GREY_B)
@@ -678,7 +694,8 @@ class OlapLab(Scene):
             stroke_color=TEAL, stroke_width=1.5,
         )
         footer_content.move_to(footer_box.get_center())
-        footer = VGroup(footer_box, footer_content)
+        footer_glow = create_rect_glow(footer_box, color=TEAL, max_opacity=0.08, spread=0.15)
+        footer = VGroup(footer_glow, footer_box, footer_content)
 
         # Arrange inner content first so we can measure it
         file_inner = VGroup(rg_group, more_rg, footer).arrange(DOWN, buff=0.15)
@@ -691,19 +708,20 @@ class OlapLab(Scene):
             fill_color="#0F1318", fill_opacity=0.95,
             stroke_color=GREEN, stroke_width=2,
         )
+        file_box_glow = create_rect_glow(file_box, color=GREEN)
         file_label = make_label("Parquet File", font_size=14, color=GREEN, weight=BOLD)
         file_label.next_to(file_box, UP, buff=0.08)
 
         file_inner.move_to(file_box.get_center())
 
         # Position the whole thing
-        whole_file = VGroup(file_label, file_box, file_inner)
+        whole_file = VGroup(file_label, file_box_glow, file_box, file_inner)
         whole_file.move_to(DOWN * 0.4)
 
         # Animate layer by layer
-        self.play(FadeIn(file_box), FadeIn(file_label))
+        self.play(FadeIn(file_box_glow), FadeIn(file_box), FadeIn(file_label))
         self.wait(0.5)
-        self.play(FadeIn(rg_box), FadeIn(rg_label))
+        self.play(FadeIn(rg_glow), FadeIn(rg_box), FadeIn(rg_label))
         self.wait(0.5)
         self.play(
             AnimationGroup(
@@ -763,7 +781,8 @@ class OlapLab(Scene):
                 stroke_color=color, stroke_width=1.5,
             )
             content.move_to(box.get_center())
-            opt_cards.add(VGroup(box, content))
+            glow = create_rect_glow(box, color=color)
+            opt_cards.add(VGroup(glow, box, content))
 
         opt_cards.arrange(RIGHT, buff=0.2).move_to(DOWN * 0.5)
 
@@ -816,7 +835,8 @@ class OlapLab(Scene):
         fact_sub = make_label("lineitem + orders", font_size=11, color=GREY_A)
         fact_content = VGroup(fact_icon, fact_title, fact_sub).arrange(DOWN, buff=0.08)
         fact_content.move_to(fact_rect.get_center())
-        fact = VGroup(fact_rect, fact_content).move_to(DOWN * 0.5)
+        fact_glow = create_rect_glow(fact_rect, color=ORANGE)
+        fact = VGroup(fact_glow, fact_rect, fact_content).move_to(DOWN * 0.5)
 
         self.play(FadeIn(fact, shift=UP * 0.3))
         self.wait(1.5)
@@ -836,14 +856,14 @@ class OlapLab(Scene):
                 name, width=2.2, height=0.8,
                 fill_color=DARK_BG, label_color=color, font_size=13,
             )
-            card[0].set_stroke(color, width=1.5)
+            card.rect.set_stroke(color, width=1.5)
             card.move_to(pos)
             dim_cards.add(card)
 
             # Arrow from dim card edge → fact card edge
             # Use the border point closest to the other shape
-            dim_rect = card[0]   # the RoundedRectangle
-            fact_rect_ref = fact[0]
+            dim_rect = card.rect   # the RoundedRectangle
+            fact_rect_ref = fact_rect
             start_pt = dim_rect.get_critical_point(
                 normalize(fact_rect_ref.get_center() - dim_rect.get_center())
             )
@@ -924,7 +944,8 @@ class OlapLab(Scene):
                 stroke_color=color, stroke_width=1,
             )
             lbl.move_to(box.get_center())
-            mini_cards.add(VGroup(box, lbl))
+            glow = create_rect_glow(box, color=color, max_opacity=0.08, spread=0.12, layers=10)
+            mini_cards.add(VGroup(glow, box, lbl))
 
         mini_cards.arrange(RIGHT, buff=0.12).to_edge(DOWN, buff=0.4)
 
@@ -974,7 +995,8 @@ class OlapLab(Scene):
                 stroke_color=color, stroke_width=1,
             )
             row_content.move_to(box.get_center())
-            rows.add(VGroup(box, row_content))
+            glow = create_rect_glow(box, color=color, max_opacity=0.08, spread=0.15)
+            rows.add(VGroup(glow, box, row_content))
 
         rows.arrange(DOWN, buff=0.1).next_to(header, DOWN, buff=0.4)
 
