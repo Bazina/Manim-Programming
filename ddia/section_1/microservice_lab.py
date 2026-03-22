@@ -62,6 +62,12 @@ from libs.ddia_components import (
 
 config.background_color = "#0D1117"
 
+# ── Real tech brand icon paths ─────────────────────────────────────────
+ICON_TECH_MONGODB = "assets/icons/tech/mongodb-plain.svg"
+ICON_TECH_MYSQL = "assets/icons/tech/mysql.svg"
+ICON_TECH_SPRING = "assets/icons/tech/spring.svg"
+ICON_TECH_GRPC = "assets/icons/tech/grpc-plain.svg"
+
 # ── Protobuf syntax-highlighting color map ────────────────────────────
 PROTO_T2C = {
     "syntax": "#C586C0",
@@ -114,7 +120,7 @@ class MicroserviceLab(Scene):
 
     # ─── Scene 1: Title ───────────────────────────────────────────────
     def scene_title(self):
-        icon = make_icon(ICON_SERVER, color=BLUE, height=1.2)
+        icon = make_icon(ICON_TECH_SPRING, color=BLUE, height=1.2)
         title = make_label(
             "Lab 2: Microservices & Data Models",
             font_size=38,
@@ -144,19 +150,19 @@ class MicroserviceLab(Scene):
 
         steps = [
             (
-                ICON_DATABASE,
+                ICON_TECH_MYSQL,
                 BLUE,
                 "Step 1: Ratings → MySQL",
                 "Replace the in-memory list with a relational DB schema",
             ),
             (
-                ICON_CLOUD,
+                ICON_TECH_MONGODB,
                 TEAL,
                 "Step 2: Cache MovieDB → MongoDB",
                 "Add a document-store cache to cut external API latency",
             ),
             (
-                ICON_LIGHTNING,
+                ICON_TECH_GRPC,
                 ORANGE,
                 "Step 3: gRPC Trending Movies Service",
                 "Build a new binary-protocol microservice with Protobuf",
@@ -302,77 +308,88 @@ class MicroserviceLab(Scene):
     # ─── Scene 4: Movie Rating App Architecture ───────────────────────
     def scene_app_architecture(self):
         header = make_label("Movie Rating App Architecture", font_size=30, color=BLUE)
-        header.to_edge(UP, buff=0.5)
+        header.to_edge(UP, buff=0.3)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
-        self.wait(1)
+        self.wait(0.5)
 
-        # Row 1 – Catalog Service (center top)
+        # ── Row 0: Eureka Discovery Server (top center) ──────────────
+        discovery_card = make_icon_card(
+            "Discovery Server\nEureka :8761",
+            ICON_GRAPH,
+            color=ORANGE,
+            width=2.8,
+            height=1.2,
+            font_size=10,
+        )
+        discovery_card.move_to(UP * 2.2)
+
+        # ── Row 1: Movie Catalog (center accumulator) ─────────────────
         catalog_card = make_icon_card(
-            "Catalog\nService",
+            "Movie Catalog\n:8081",
             ICON_LAYERS,
             color=BLUE,
             width=2.4,
-            height=1.5,
-            font_size=12,
+            height=1.2,
+            font_size=11,
         )
-        catalog_card.move_to(UP * 1.3)
+        catalog_card.move_to(UP * 0.5)
 
-        # Row 2 – Movie Info (left) and Ratings (right)
+        # ── Row 2: Movie Info (left) and Ratings Data (right) ─────────
         movie_info_card = make_icon_card(
-            "Movie Info\nService",
+            "Movie Info\n:8082",
             ICON_MONITOR,
             color=TEAL,
-            width=2.4,
-            height=1.5,
-            font_size=12,
+            width=2.2,
+            height=1.2,
+            font_size=11,
         )
         ratings_card = make_icon_card(
-            "Ratings\nService",
-            ICON_DATABASE,
+            "Ratings Data\n:8083",
+            ICON_TECH_MYSQL,
             color=PURPLE,
-            width=2.4,
-            height=1.5,
-            font_size=12,
+            width=2.2,
+            height=1.2,
+            font_size=11,
         )
-        movie_info_card.move_to(LEFT * 3.2 + DOWN * 0.4)
-        ratings_card.move_to(RIGHT * 3.2 + DOWN * 0.4)
+        movie_info_card.move_to(LEFT * 3.6 + DOWN * 0.9)
+        ratings_card.move_to(RIGHT * 3.6 + DOWN * 0.9)
 
-        # Row 3 – Data stores
+        # ── Row 3: External API and MySQL DB ──────────────────────────
         moviedb_card = make_icon_card(
-            "MovieDB\nAPI",
+            "TheMovieDB\nAPI",
             ICON_CLOUD,
             color=ORANGE,
             width=2.0,
-            height=1.2,
-            font_size=11,
+            height=1.1,
+            font_size=10,
         )
         mysql_card = make_icon_card(
-            "MySQL\nDB",
-            ICON_DATABASE,
+            "MySQL DB",
+            ICON_TECH_MYSQL,
             color=BLUE,
             width=2.0,
-            height=1.2,
-            font_size=11,
+            height=1.1,
+            font_size=10,
         )
-        moviedb_card.move_to(LEFT * 3.2 + DOWN * 2.3)
-        mysql_card.move_to(RIGHT * 3.2 + DOWN * 2.3)
+        moviedb_card.move_to(LEFT * 3.6 + DOWN * 2.5)
+        mysql_card.move_to(RIGHT * 3.6 + DOWN * 2.5)
 
-        # Arrows
+        # ── Call arrows (thick) ───────────────────────────────────────
         arrow_cat_info = Arrow(
-            catalog_card.get_bottom(),
+            catalog_card.get_left() + DOWN * 0.15,
             movie_info_card.get_top(),
             buff=0.08,
-            stroke_width=2,
+            stroke_width=2.5,
             color=TEAL,
-            tip_length=0.1,
+            tip_length=0.12,
         )
         arrow_cat_ratings = Arrow(
-            catalog_card.get_bottom(),
+            catalog_card.get_right() + DOWN * 0.15,
             ratings_card.get_top(),
             buff=0.08,
-            stroke_width=2,
+            stroke_width=2.5,
             color=PURPLE,
-            tip_length=0.1,
+            tip_length=0.12,
         )
         arrow_info_db = Arrow(
             movie_info_card.get_bottom(),
@@ -391,14 +408,53 @@ class MicroserviceLab(Scene):
             tip_length=0.1,
         )
 
-        self.play(FadeIn(catalog_card, shift=DOWN * 0.3))
+        # ── Registration arrows → Eureka (thin) ───────────────────────
+        reg_catalog = Arrow(
+            catalog_card.get_top(),
+            discovery_card.get_bottom(),
+            buff=0.08,
+            stroke_width=1.5,
+            color=ORANGE,
+            tip_length=0.08,
+        )
+        reg_info = Arrow(
+            movie_info_card.get_top() + RIGHT * 0.2,
+            discovery_card.get_bottom() + LEFT * 0.7,
+            buff=0.08,
+            stroke_width=1.5,
+            color=ORANGE,
+            tip_length=0.08,
+        )
+        reg_ratings = Arrow(
+            ratings_card.get_top() + LEFT * 0.2,
+            discovery_card.get_bottom() + RIGHT * 0.7,
+            buff=0.08,
+            stroke_width=1.5,
+            color=ORANGE,
+            tip_length=0.08,
+        )
+
+        # ── Animate ───────────────────────────────────────────────────
+        # 1. Discovery server appears first
+        self.play(FadeIn(discovery_card, shift=DOWN * 0.2))
+        self.wait(0.3)
+
+        # 2. Catalog registers with Eureka
+        self.play(FadeIn(catalog_card, shift=DOWN * 0.2))
+        self.play(GrowArrow(reg_catalog))
         self.wait(0.5)
+
+        # 3. Catalog calls out to leaf services
         self.play(GrowArrow(arrow_cat_info), GrowArrow(arrow_cat_ratings))
         self.play(
             FadeIn(movie_info_card, shift=UP * 0.2),
             FadeIn(ratings_card, shift=UP * 0.2),
         )
+        # Leaf services also register
+        self.play(GrowArrow(reg_info), GrowArrow(reg_ratings))
         self.wait(0.8)
+
+        # 4. Leaf services connect to their data sources
         self.play(GrowArrow(arrow_info_db), GrowArrow(arrow_ratings_mysql))
         self.play(
             FadeIn(moviedb_card, shift=DOWN * 0.2),
@@ -448,7 +504,7 @@ class MicroserviceLab(Scene):
         old_group = VGroup(old_box, old_content).move_to(LEFT * 3.2 + UP * 0.3)
 
         # Right: MySQL (bright / new)
-        new_icon = make_icon(ICON_DATABASE, color=BLUE, height=0.5)
+        new_icon = make_icon(ICON_TECH_MYSQL, color=BLUE, height=0.5)
         new_title = make_label("MySQL Database", font_size=16, color=BLUE)
         new_sub = make_label("Relational · Persistent", font_size=11, color=BLUE_B)
         new_bullets = VGroup(
@@ -581,7 +637,7 @@ class MicroserviceLab(Scene):
         )
         mongo_card = make_icon_card(
             "MongoDB\nCache",
-            ICON_DATABASE,
+            ICON_TECH_MONGODB,
             color=GREEN,
             width=1.9,
             height=1.3,
@@ -663,7 +719,7 @@ class MicroserviceLab(Scene):
         )
         trending_card = make_icon_card(
             "Trending\nService",
-            ICON_LIGHTNING,
+            ICON_TECH_GRPC,
             color=ORANGE,
             width=2.0,
             height=1.3,
@@ -671,7 +727,7 @@ class MicroserviceLab(Scene):
         )
         db_card = make_icon_card(
             "Ratings\nDB",
-            ICON_DATABASE,
+            ICON_TECH_MYSQL,
             color=PURPLE,
             width=2.0,
             height=1.3,
@@ -1059,8 +1115,12 @@ class MicroserviceLab(Scene):
         self.wait(1)
 
         items = [
-            (ICON_DATABASE, BLUE, "MySQL schema — CREATE TABLE DDL for ratings"),
-            (ICON_DATABASE, TEAL, "MongoDB schema — collection structure & indexes"),
+            (ICON_TECH_MYSQL, BLUE, "MySQL schema — CREATE TABLE DDL for ratings"),
+            (
+                ICON_TECH_MONGODB,
+                TEAL,
+                "MongoDB schema — collection structure & indexes",
+            ),
             (ICON_CHART, ORANGE, "JMeter P90 & throughput — before vs after caching"),
             (ICON_STOPWATCH, PURPLE, "JMeter test plans (.jmx files) for both tests"),
             (
@@ -1118,9 +1178,9 @@ class MicroserviceLab(Scene):
         self.wait(1)
 
         icon_data = [
-            (ICON_DATABASE, BLUE),
-            (ICON_CLOUD, TEAL),
-            (ICON_LIGHTNING, ORANGE),
+            (ICON_TECH_MYSQL, BLUE),
+            (ICON_TECH_MONGODB, TEAL),
+            (ICON_TECH_GRPC, ORANGE),
             (ICON_STOPWATCH, PURPLE),
             (ICON_GRAPH, GREEN),
         ]
