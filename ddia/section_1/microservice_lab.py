@@ -9,9 +9,12 @@ from manim import (
     VGroup,
     RoundedRectangle,
     Rectangle,
+    DashedLine,
     Arrow,
+    Create,
     FadeIn,
     FadeOut,
+    GrowFromEdge,
     GrowArrow,
     AnimationGroup,
     AddTextLetterByLetter,
@@ -112,7 +115,6 @@ class MicroserviceLab(Scene):
         self.scene_ratings_mysql()
         self.scene_mongodb_caching()
         self.scene_grpc_trending()
-        self.scene_schema_evolution()
         self.scene_jmeter_overview()
         self.scene_jmeter_graphs()
         self.scene_deliverables()
@@ -189,7 +191,7 @@ class MicroserviceLab(Scene):
             row_content = VGroup(ic, t, d).arrange(RIGHT, buff=0.15)
             box = RoundedRectangle(
                 corner_radius=0.1,
-                width=10.5,
+                width=13.5,
                 height=0.65,
                 fill_color=DARK_BG,
                 fill_opacity=0.9,
@@ -197,8 +199,7 @@ class MicroserviceLab(Scene):
                 stroke_width=1.2,
             )
             row_content.move_to(box.get_center())
-            glow = create_rect_glow(box, color=color)
-            rows.add(VGroup(glow, box, row_content))
+            rows.add(VGroup(box, row_content))
 
         rows.arrange(DOWN, buff=0.15).next_to(header, DOWN, buff=0.5)
 
@@ -230,14 +231,14 @@ class MicroserviceLab(Scene):
         left_title = make_label("Monolith", font_size=22, color=GREY_A)
         left_sub = make_label("One Big Deployable Unit", font_size=11, color=GREY_B)
         left_bullets = VGroup(
-            make_label("• Single codebase & deploy", font_size=13, color=GREY_B),
-            make_label("• Shared relational database", font_size=13, color=GREY_B),
-            make_label("• Tightly coupled components", font_size=13, color=GREY_B),
-            make_label("• One failure can crash all", font_size=13, color=GREY_B),
+            make_label("Single codebase & deploy", font_size=13, color=GREY_B),
+            make_label("Shared relational database", font_size=13, color=GREY_B),
+            make_label("Tightly coupled components", font_size=13, color=GREY_B),
+            make_label("One failure can crash all", font_size=13, color=GREY_B),
         ).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
 
         left_content = VGroup(left_icon, left_title, left_sub, left_bullets).arrange(
-            DOWN, buff=0.15
+            1.1 * DOWN, buff=0.15
         )
         left_box = RoundedRectangle(
             corner_radius=0.15,
@@ -249,8 +250,7 @@ class MicroserviceLab(Scene):
             stroke_width=1.5,
         )
         left_content.move_to(left_box.get_center())
-        left_glow = create_rect_glow(left_box, color=GREY_B)
-        left_group = VGroup(left_glow, left_box, left_content).move_to(
+        left_group = VGroup(left_box, left_content).move_to(
             LEFT * 3 + DOWN * 0.3
         )
 
@@ -261,15 +261,15 @@ class MicroserviceLab(Scene):
             "Independent, Focused Services", font_size=11, color=GREEN_B
         )
         right_bullets = VGroup(
-            make_label("• Independent deployments", font_size=13, color=GREEN_B),
-            make_label("• Polyglot persistence", font_size=13, color=GREEN_B),
-            make_label("• Communicate via APIs", font_size=13, color=GREEN_B),
-            make_label("• Scale each service separately", font_size=13, color=GREEN_B),
+            make_label("Independent deployments", font_size=13, color=GREEN_B),
+            make_label("Polyglot persistence", font_size=13, color=GREEN_B),
+            make_label("Communicate via APIs", font_size=13, color=GREEN_B),
+            make_label("Scale each service separately", font_size=13, color=GREEN_B),
         ).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
 
         right_content = VGroup(
             right_icon, right_title, right_sub, right_bullets
-        ).arrange(DOWN, buff=0.15)
+        ).arrange(1.1 * DOWN, buff=0.15)
         right_box = RoundedRectangle(
             corner_radius=0.15,
             width=4.5,
@@ -293,15 +293,7 @@ class MicroserviceLab(Scene):
         vs_label = make_label("VS", font_size=28, color=ORANGE)
         vs_label.move_to(ORIGIN + DOWN * 0.3)
         self.play(FadeIn(vs_label, scale=1.5))
-        self.wait(1)
 
-        highlight = make_label(
-            "This lab: split ratings & trending into their own services!",
-            font_size=18,
-            color=YELLOW,
-        )
-        highlight.to_edge(DOWN, buff=0.5)
-        self.play(AddTextLetterByLetter(highlight, time_per_char=0.03))
         self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
@@ -314,29 +306,29 @@ class MicroserviceLab(Scene):
 
         # ── Row 0: Eureka Discovery Server (top center) ──────────────
         discovery_card = make_icon_card(
-            "Discovery Server\nEureka :8761",
+            "Discovery Server Eureka",
             ICON_GRAPH,
             color=ORANGE,
             width=2.8,
             height=1.2,
             font_size=10,
         )
-        discovery_card.move_to(UP * 2.2)
+        discovery_card.move_to(DOWN * 2.0)
 
         # ── Row 1: Movie Catalog (center accumulator) ─────────────────
         catalog_card = make_icon_card(
-            "Movie Catalog\n:8081",
+            "Movie Catalog",
             ICON_LAYERS,
             color=BLUE,
             width=2.4,
             height=1.2,
             font_size=11,
         )
-        catalog_card.move_to(UP * 0.5)
+        catalog_card.move_to(LEFT * 4.2 + UP * 0.4)
 
         # ── Row 2: Movie Info (left) and Ratings Data (right) ─────────
         movie_info_card = make_icon_card(
-            "Movie Info\n:8082",
+            "Movie Info",
             ICON_MONITOR,
             color=TEAL,
             width=2.2,
@@ -344,96 +336,63 @@ class MicroserviceLab(Scene):
             font_size=11,
         )
         ratings_card = make_icon_card(
-            "Ratings Data\n:8083",
+            "Ratings Data",
             ICON_TECH_MYSQL,
             color=PURPLE,
             width=2.2,
             height=1.2,
             font_size=11,
         )
-        movie_info_card.move_to(LEFT * 3.6 + DOWN * 0.9)
-        ratings_card.move_to(RIGHT * 3.6 + DOWN * 0.9)
+        movie_info_card.move_to(RIGHT * 2.8 + UP * 1.1)
+        ratings_card.move_to(RIGHT * 2.8 + DOWN * 0.6)
 
         # ── Row 3: External API and MySQL DB ──────────────────────────
         moviedb_card = make_icon_card(
-            "TheMovieDB\nAPI",
+            "The MovieDB API",
             ICON_CLOUD,
             color=ORANGE,
             width=2.0,
             height=1.1,
             font_size=10,
         )
-        mysql_card = make_icon_card(
-            "MySQL DB",
-            ICON_TECH_MYSQL,
-            color=BLUE,
-            width=2.0,
-            height=1.1,
-            font_size=10,
-        )
-        moviedb_card.move_to(LEFT * 3.6 + DOWN * 2.5)
-        mysql_card.move_to(RIGHT * 3.6 + DOWN * 2.5)
+
+        moviedb_card.move_to(RIGHT * 5.6 + UP * 1.1)
 
         # ── Call arrows (thick) ───────────────────────────────────────
         arrow_cat_info = Arrow(
-            catalog_card.get_left() + DOWN * 0.15,
-            movie_info_card.get_top(),
+            catalog_card.get_right() + UP * 0.18,
+            movie_info_card.get_left() + DOWN * 0.12,
             buff=0.08,
             stroke_width=2.5,
             color=TEAL,
             tip_length=0.12,
         )
         arrow_cat_ratings = Arrow(
-            catalog_card.get_right() + DOWN * 0.15,
-            ratings_card.get_top(),
+            catalog_card.get_right() + DOWN * 0.18,
+            ratings_card.get_left() + UP * 0.12,
             buff=0.08,
             stroke_width=2.5,
             color=PURPLE,
             tip_length=0.12,
         )
         arrow_info_db = Arrow(
-            movie_info_card.get_bottom(),
-            moviedb_card.get_top(),
+            movie_info_card.get_right(),
+            moviedb_card.get_left(),
             buff=0.08,
-            stroke_width=2,
+            stroke_width=2.5,
             color=ORANGE,
-            tip_length=0.1,
-        )
-        arrow_ratings_mysql = Arrow(
-            ratings_card.get_bottom(),
-            mysql_card.get_top(),
-            buff=0.08,
-            stroke_width=2,
-            color=BLUE,
-            tip_length=0.1,
+            tip_length=0.12,
         )
 
         # ── Registration arrows → Eureka (thin) ───────────────────────
         reg_catalog = Arrow(
-            catalog_card.get_top(),
-            discovery_card.get_bottom(),
+            catalog_card.get_bottom() + RIGHT * 0.4,
+            discovery_card.get_top() + LEFT * 0.9,
             buff=0.08,
             stroke_width=1.5,
             color=ORANGE,
             tip_length=0.08,
         )
-        reg_info = Arrow(
-            movie_info_card.get_top() + RIGHT * 0.2,
-            discovery_card.get_bottom() + LEFT * 0.7,
-            buff=0.08,
-            stroke_width=1.5,
-            color=ORANGE,
-            tip_length=0.08,
-        )
-        reg_ratings = Arrow(
-            ratings_card.get_top() + LEFT * 0.2,
-            discovery_card.get_bottom() + RIGHT * 0.7,
-            buff=0.08,
-            stroke_width=1.5,
-            color=ORANGE,
-            tip_length=0.08,
-        )
-
         # ── Animate ───────────────────────────────────────────────────
         # 1. Discovery server appears first
         self.play(FadeIn(discovery_card, shift=DOWN * 0.2))
@@ -450,16 +409,12 @@ class MicroserviceLab(Scene):
             FadeIn(movie_info_card, shift=UP * 0.2),
             FadeIn(ratings_card, shift=UP * 0.2),
         )
-        # Leaf services also register
-        self.play(GrowArrow(reg_info), GrowArrow(reg_ratings))
+        # Keep only catalog registration to discovery in this simplified view.
         self.wait(0.8)
 
         # 4. Leaf services connect to their data sources
-        self.play(GrowArrow(arrow_info_db), GrowArrow(arrow_ratings_mysql))
-        self.play(
-            FadeIn(moviedb_card, shift=DOWN * 0.2),
-            FadeIn(mysql_card, shift=DOWN * 0.2),
-        )
+        self.play(FadeIn(moviedb_card, shift=DOWN * 0.2))
+        self.play(GrowArrow(arrow_info_db))
         self.wait(2)
 
         goal = make_label(
@@ -484,9 +439,9 @@ class MicroserviceLab(Scene):
         old_title = make_label("In-Memory List", font_size=16, color=GREY_B)
         old_sub = make_label("ArrayList<Rating>", font_size=11, color=GREY_A)
         old_bullets = VGroup(
-            make_label("✗ Lost on restart", font_size=12, color=RED),
-            make_label("✗ Not queryable", font_size=12, color=RED),
-            make_label("✗ No persistence", font_size=12, color=RED),
+            make_label("No: lost on restart", font_size=12, color=RED),
+            make_label("No: not queryable", font_size=12, color=RED),
+            make_label("No: no persistence", font_size=12, color=RED),
         ).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
         old_content = VGroup(old_icon, old_title, old_sub, old_bullets).arrange(
             DOWN, buff=0.15
@@ -508,9 +463,9 @@ class MicroserviceLab(Scene):
         new_title = make_label("MySQL Database", font_size=16, color=BLUE)
         new_sub = make_label("Relational · Persistent", font_size=11, color=BLUE_B)
         new_bullets = VGroup(
-            make_label("✓ Survives restarts", font_size=12, color=GREEN),
-            make_label("✓ SQL queries & JOINs", font_size=12, color=GREEN),
-            make_label("✓ Indexed lookups", font_size=12, color=GREEN),
+            make_label("Yes: survives restarts", font_size=12, color=GREEN),
+            make_label("Yes: SQL queries and JOINs", font_size=12, color=GREEN),
+            make_label("Yes: indexed lookups", font_size=12, color=GREEN),
         ).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
         new_content = VGroup(new_icon, new_title, new_sub, new_bullets).arrange(
             DOWN, buff=0.15
@@ -583,6 +538,7 @@ class MicroserviceLab(Scene):
             width=2.0,
             height=1.3,
             font_size=11,
+            glow=False,
         )
         moviedb_a = make_icon_card(
             "MovieDB\nAPI",
@@ -591,9 +547,10 @@ class MicroserviceLab(Scene):
             width=2.0,
             height=1.3,
             font_size=11,
+            glow=False,
         )
-        movie_info_a.move_to(LEFT * 1.8 + DOWN * 0.3)
-        moviedb_a.move_to(RIGHT * 1.8 + DOWN * 0.3)
+        movie_info_a.move_to(LEFT * 2.4 + DOWN * 0.3)
+        moviedb_a.move_to(RIGHT * 2.4 + DOWN * 0.3)
 
         arrow_a = Arrow(
             movie_info_a.get_right(),
@@ -634,6 +591,7 @@ class MicroserviceLab(Scene):
             width=1.9,
             height=1.3,
             font_size=11,
+            glow=False,
         )
         mongo_card = make_icon_card(
             "MongoDB\nCache",
@@ -642,6 +600,7 @@ class MicroserviceLab(Scene):
             width=1.9,
             height=1.3,
             font_size=11,
+            glow=False,
         )
         moviedb_b = make_icon_card(
             "MovieDB\nAPI",
@@ -650,10 +609,15 @@ class MicroserviceLab(Scene):
             width=1.9,
             height=1.3,
             font_size=11,
+            glow=False,
         )
         movie_info_b.move_to(LEFT * 4.2 + DOWN * 0.3)
         mongo_card.move_to(ORIGIN + DOWN * 0.3)
         moviedb_b.move_to(RIGHT * 4.2 + DOWN * 0.3)
+        # The Mongo SVG has a slightly uneven visual center; nudge icon to balance it.
+        mongo_card.content[0].shift(LEFT * 0.1)
+        mongo_glow = create_rect_glow(mongo_card.rect, color=GREEN)
+        mongo_card_with_glow = VGroup(mongo_glow, mongo_card)
 
         arrow_b1 = Arrow(
             movie_info_b.get_right(),
@@ -679,7 +643,7 @@ class MicroserviceLab(Scene):
 
         self.play(
             FadeIn(movie_info_b, shift=UP * 0.2),
-            FadeIn(mongo_card, shift=UP * 0.2),
+            FadeIn(mongo_card_with_glow, shift=UP * 0.2),
             FadeIn(moviedb_b, shift=UP * 0.2),
         )
         self.play(GrowArrow(arrow_b1))
@@ -716,6 +680,7 @@ class MicroserviceLab(Scene):
             width=2.0,
             height=1.3,
             font_size=11,
+            glow=False,
         )
         trending_card = make_icon_card(
             "Trending\nService",
@@ -724,6 +689,7 @@ class MicroserviceLab(Scene):
             width=2.0,
             height=1.3,
             font_size=11,
+            glow=False,
         )
         db_card = make_icon_card(
             "Ratings\nDB",
@@ -732,10 +698,13 @@ class MicroserviceLab(Scene):
             width=2.0,
             height=1.3,
             font_size=11,
+            glow=False,
         )
         catalog_card.move_to(LEFT * 4.0 + UP * 0.9)
         trending_card.move_to(ORIGIN + UP * 0.9)
         db_card.move_to(RIGHT * 4.0 + UP * 0.9)
+        grpc_glow = create_rect_glow(trending_card.rect, color=ORANGE)
+        trending_card_with_glow = VGroup(grpc_glow, trending_card)
 
         arrow_grpc = Arrow(
             catalog_card.get_right(),
@@ -763,7 +732,7 @@ class MicroserviceLab(Scene):
         self.wait(0.4)
         self.play(GrowArrow(arrow_grpc))
         self.play(FadeIn(grpc_lbl))
-        self.play(FadeIn(trending_card, shift=DOWN * 0.2))
+        self.play(FadeIn(trending_card_with_glow, shift=DOWN * 0.2))
         self.wait(0.4)
         self.play(GrowArrow(arrow_db))
         self.play(FadeIn(db_lbl))
@@ -807,8 +776,7 @@ class MicroserviceLab(Scene):
                 stroke_width=1.2,
             )
             content.move_to(box.get_center())
-            glow = create_rect_glow(box, color=color)
-            concepts.add(VGroup(glow, box, content))
+            concepts.add(VGroup(box, content))
 
         concepts.arrange(RIGHT, buff=0.4).move_to(DOWN * 1.8)
         self.play(
@@ -820,99 +788,7 @@ class MicroserviceLab(Scene):
         self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
-    # ─── Scene 8: Schema Evolution (Protobuf) ─────────────────────────
-    def scene_schema_evolution(self):
-        header = make_label(
-            "Schema Evolution with Protobuf", font_size=28, color=YELLOW
-        )
-        header.to_edge(UP, buff=0.5)
-        self.play(AddTextLetterByLetter(header, time_per_char=0.04))
-        self.wait(1)
-
-        # v1 proto definition (left)
-        v1_hdr = make_label("Version 1   (initial)", font_size=16, color=BLUE)
-        v1_hdr.move_to(LEFT * 3.2 + UP * 1.1)
-
-        proto_v1 = (
-            'syntax = "proto3";\n'
-            "\n"
-            "message TrendingResponse {\n"
-            "  string movieId = 1;\n"
-            "  int32  score   = 2;\n"
-            "}"
-        )
-        code_v1 = make_code_text(proto_v1, font_size=12, t2c=PROTO_T2C)
-        code_v1.move_to(LEFT * 3.2 + DOWN * 0.2)
-
-        self.play(FadeIn(v1_hdr, shift=DOWN * 0.2))
-        self.play(FadeIn(code_v1, shift=UP * 0.3))
-        self.wait(2)
-
-        # v2 proto definition (right — evolved)
-        v2_hdr = make_label("Version 2   (evolved)", font_size=16, color=GREEN)
-        v2_hdr.move_to(RIGHT * 3.2 + UP * 1.1)
-
-        proto_v2 = (
-            'syntax = "proto3";\n'
-            "\n"
-            "message TrendingResponse {\n"
-            "  string movieId = 1;\n"
-            "  int32  score   = 2;\n"
-            "  string title   = 3;\n"
-            "  reserved 4;   // gone\n"
-            "}"
-        )
-        code_v2 = make_code_text(proto_v2, font_size=12, t2c=PROTO_T2C)
-        code_v2.move_to(RIGHT * 3.2 + DOWN * 0.2)
-
-        evolve_arrow = Arrow(
-            code_v1.get_right(),
-            code_v2.get_left(),
-            buff=0.15,
-            stroke_width=2.5,
-            color=YELLOW,
-            tip_length=0.12,
-        )
-        self.play(GrowArrow(evolve_arrow))
-        self.play(FadeIn(v2_hdr, shift=DOWN * 0.2))
-        self.play(FadeIn(code_v2, shift=LEFT * 0.3))
-        self.wait(1.5)
-
-        # Compatibility rule cards at the bottom
-        rules = [
-            ("✓ Add field", "Old readers skip it — safe!", GREEN),
-            ("✓ Remove field", "Mark tag as reserved!", YELLOW),
-            ("✗ Reuse tag", "Binary mismatch — never!", RED),
-        ]
-        rule_cards = VGroup()
-        for icon_str, desc, color in rules:
-            ic_lbl = make_label(icon_str, font_size=14, color=color, weight=BOLD)
-            d_lbl = make_label(desc, font_size=11, color=GREY_A)
-            content = VGroup(ic_lbl, d_lbl).arrange(DOWN, buff=0.1)
-            box = RoundedRectangle(
-                corner_radius=0.1,
-                width=2.8,
-                height=0.9,
-                fill_color=DARK_BG,
-                fill_opacity=0.9,
-                stroke_color=color,
-                stroke_width=1.2,
-            )
-            content.move_to(box.get_center())
-            glow = create_rect_glow(box, color=color, max_opacity=0.08, spread=0.15)
-            rule_cards.add(VGroup(glow, box, content))
-
-        rule_cards.arrange(RIGHT, buff=0.3).to_edge(DOWN, buff=0.5)
-        self.play(
-            AnimationGroup(
-                *[FadeIn(r, shift=UP * 0.2) for r in rule_cards],
-                lag_ratio=0.1,
-            )
-        )
-        self.wait(3)
-        self.play(FadeOut(*self.mobjects))
-
-    # ─── Scene 9: JMeter Overview ─────────────────────────────────────
+    # ─── Scene 8: JMeter Overview ─────────────────────────────────────
     def scene_jmeter_overview(self):
         header = make_label(
             "Step 4 — JMeter Performance Testing", font_size=27, color=PURPLE
@@ -958,8 +834,7 @@ class MicroserviceLab(Scene):
                 stroke_width=1.5,
             )
             content.move_to(box.get_center())
-            glow = create_rect_glow(box, color=color)
-            comp_cards.add(VGroup(glow, box, content))
+            comp_cards.add(VGroup(box, content))
 
         comp_cards.arrange(RIGHT, buff=0.5).move_to(UP * 0.4)
         self.play(
@@ -1012,7 +887,7 @@ class MicroserviceLab(Scene):
             content = VGroup(ic, t, d).arrange(DOWN, buff=0.1)
             box = RoundedRectangle(
                 corner_radius=0.1,
-                width=4.4,
+                width=5.4,
                 height=1.2,
                 fill_color=DARK_BG,
                 fill_opacity=0.9,
@@ -1020,8 +895,7 @@ class MicroserviceLab(Scene):
                 stroke_width=1.2,
             )
             content.move_to(box.get_center())
-            glow = create_rect_glow(box, color=color, max_opacity=0.08)
-            test_cards.add(VGroup(glow, box, content))
+            test_cards.add(VGroup(box, content))
 
         test_cards.arrange(RIGHT, buff=0.6).to_edge(DOWN, buff=0.5)
         self.play(
@@ -1033,7 +907,7 @@ class MicroserviceLab(Scene):
         self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
-    # ─── Scene 10: JMeter Results Graphs ──────────────────────────────
+    # ─── Scene 9: JMeter Results Graphs ──────────────────────────────
     def scene_jmeter_graphs(self):
         header = make_label("JMeter Results: Cache Impact", font_size=28, color=GREEN)
         header.to_edge(UP, buff=0.5)
@@ -1049,65 +923,95 @@ class MicroserviceLab(Scene):
         self.play(FadeIn(illust_note, shift=DOWN * 0.1))
         self.wait(0.5)
 
-        def make_bars(title, data, max_h=2.5, bar_w=0.9, gap=0.55):
-            """
-            data: list of (label, value, suffix, color)
-            Bars share a common bottom baseline — rendered with Rectangle.
-            """
-            max_val = max(v for _, v, _, _ in data)
-            content = VGroup()
-            for i, (label, value, suffix, color) in enumerate(data):
-                h = max(0.12, (value / max_val) * max_h)
-                x = i * (bar_w + gap)
-                bar = Rectangle(
-                    width=bar_w,
-                    height=h,
-                    fill_color=color,
-                    fill_opacity=0.85,
-                    stroke_color=color,
-                    stroke_width=1.2,
-                )
-                # Bottom of bar at y=0; center at y=h/2
-                bar.move_to(RIGHT * x + UP * (h / 2))
-                val_lbl = make_label(f"{value}{suffix}", font_size=12, color=color)
-                val_lbl.next_to(bar, UP, buff=0.1)
-                name_lbl = make_label(label, font_size=11, color=GREY_A)
-                name_lbl.next_to(bar, DOWN, buff=0.1)
-                content.add(bar, val_lbl, name_lbl)
-            content.center()
-            title_mob = make_label(title, font_size=13, color=GREY_A)
-            title_mob.next_to(content, DOWN, buff=0.2)
-            return VGroup(content, title_mob)
-
-        chart_a = make_bars(
-            "Median Latency (ms)",
-            [("No Cache", 800, " ms", RED), ("With Cache", 50, " ms", GREEN)],
-        )
-        chart_a.move_to(LEFT * 3.0 + DOWN * 0.4)
-
-        chart_b = make_bars(
-            "P90 Latency (ms)",
-            [("No Cache", 2000, " ms", RED), ("With Cache", 120, " ms", GREEN)],
-        )
-        chart_b.move_to(RIGHT * 3.0 + DOWN * 0.4)
-
-        self.play(
-            FadeIn(chart_a, shift=UP * 0.3),
-            FadeIn(chart_b, shift=UP * 0.3),
-        )
-        self.wait(2)
-
-        insight = make_label(
-            "Caching drops P90 latency by ~16× — massive throughput win!",
+        note = make_label(
+            "Average hides outliers; read p50, p90, and p99 from JMeter.",
             font_size=17,
             color=YELLOW,
         )
-        insight.to_edge(DOWN, buff=0.4)
-        self.play(FadeIn(insight, shift=UP * 0.2))
+        note.next_to(illust_note, DOWN, buff=0.25)
+        self.play(FadeIn(note, shift=UP * 0.2))
+        self.wait(1.5)
+
+        bar_heights = [0.35, 0.9, 1.9, 3.0, 3.4, 2.7, 1.5, 0.8, 0.45, 0.22, 0.12, 0.08]
+        bar_colors = [GREEN] * 7 + [ORANGE] * 2 + [RED] * 3
+        bars = VGroup()
+        for h, color in zip(bar_heights, bar_colors):
+            bar = Rectangle(
+                width=0.45,
+                height=h,
+                fill_color=color,
+                fill_opacity=0.75,
+                stroke_color=color,
+                stroke_width=1,
+            )
+            bars.add(bar)
+        bars.arrange(RIGHT, buff=0.06, aligned_edge=DOWN)
+        bars.move_to(DOWN * 0.25)
+
+        x_label = make_label("Response Time ->", font_size=12, color=GREY_A)
+        x_label.next_to(bars, DOWN, buff=0.2)
+
+        self.play(AnimationGroup(*[GrowFromEdge(b, DOWN) for b in bars], lag_ratio=0.06))
+        self.play(FadeIn(x_label))
+        self.wait(1)
+
+        p50_line = DashedLine(
+            bars[4].get_top() + UP * 0.15,
+            bars[4].get_bottom() + DOWN * 0.3,
+            color=GREEN,
+            stroke_width=2,
+        )
+        p50_label = make_label("p50", font_size=11, color=GREEN)
+        p50_label.next_to(p50_line, UP, buff=0.1)
+
+        p90_line = DashedLine(
+            bars[8].get_top() + UP * 0.15,
+            bars[8].get_bottom() + DOWN * 0.3,
+            color=ORANGE,
+            stroke_width=2,
+        )
+        p90_label = make_label("p90", font_size=11, color=ORANGE)
+        p90_label.next_to(p90_line, UP, buff=0.1)
+
+        p99_line = DashedLine(
+            bars[10].get_top() + UP * 0.15,
+            bars[10].get_bottom() + DOWN * 0.3,
+            color=RED,
+            stroke_width=2,
+        )
+        p99_label = make_label("p99", font_size=11, color=RED)
+        p99_label.next_to(p99_line, UP, buff=0.1)
+
+        self.play(Create(p50_line), FadeIn(p50_label))
+        self.wait(0.8)
+        self.play(Create(p90_line), FadeIn(p90_label))
+        self.wait(0.8)
+        self.play(Create(p99_line), FadeIn(p99_label))
+        self.wait(1.5)
+
+        tail_box = RoundedRectangle(
+            corner_radius=0.1,
+            width=7.8,
+            height=0.9,
+            fill_color=DARK_BG,
+            fill_opacity=0.95,
+            stroke_color=RED,
+            stroke_width=1.5,
+        )
+        tail_text = make_label(
+            "Cache lowers tail latency: p90 ~2000 ms -> ~120 ms (illustrative)",
+            font_size=13,
+            color=YELLOW,
+        )
+        tail_text.move_to(tail_box.get_center())
+        tail_group = VGroup(tail_box, tail_text)
+        tail_group.to_edge(DOWN, buff=0.35)
+
+        self.play(FadeIn(tail_group, shift=UP * 0.2))
         self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
-    # ─── Scene 11: Deliverables ───────────────────────────────────────
+    # ─── Scene 10: Deliverables ───────────────────────────────────────
     def scene_deliverables(self):
         header = make_label("Deliverables", font_size=30, color=ORANGE)
         header.to_edge(UP, buff=0.5)
@@ -1147,8 +1051,7 @@ class MicroserviceLab(Scene):
                 stroke_width=1,
             )
             row_content.move_to(box.get_center())
-            glow = create_rect_glow(box, color=color, max_opacity=0.08, spread=0.15)
-            rows.add(VGroup(glow, box, row_content))
+            rows.add(VGroup(box, row_content))
 
         rows.arrange(DOWN, buff=0.1).next_to(header, DOWN, buff=0.4)
 
@@ -1168,7 +1071,7 @@ class MicroserviceLab(Scene):
         self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
-    # ─── Scene 12: Closing ────────────────────────────────────────────
+    # ─── Scene 11: Closing ────────────────────────────────────────────
     def scene_closing(self):
         title = make_label(
             "Lab 2: Microservices & Data Models", font_size=34, color=BLUE
