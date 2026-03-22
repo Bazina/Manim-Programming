@@ -1,0 +1,1149 @@
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from manim import (
+    config,
+    Scene,
+    VGroup,
+    RoundedRectangle,
+    Rectangle,
+    Arrow,
+    FadeIn,
+    FadeOut,
+    GrowArrow,
+    AnimationGroup,
+    AddTextLetterByLetter,
+    ORIGIN,
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT,
+    BOLD,
+    WHITE,
+    GREY_A,
+    GREY_B,
+    BLUE,
+    BLUE_B,
+    GREEN,
+    GREEN_B,
+    RED,
+    ORANGE,
+    TEAL,
+    PURPLE,
+    YELLOW,
+)
+
+from libs.ddia_components import (
+    DARK_BG,
+    ICON_DATABASE,
+    ICON_SERVER,
+    ICON_CHECK,
+    ICON_SETTINGS,
+    ICON_STOPWATCH,
+    ICON_CODE_FILE,
+    ICON_CHART,
+    ICON_STRUCTURE,
+    ICON_LAYERS,
+    ICON_TRANSFER,
+    ICON_CLOUD,
+    ICON_MONITOR,
+    ICON_LIGHTNING,
+    ICON_BOOK,
+    ICON_GRAPH,
+    ICON_CODE,
+    make_label,
+    make_icon,
+    make_icon_card,
+    make_code_text,
+    create_rect_glow,
+)
+
+config.background_color = "#0D1117"
+
+# ── Protobuf syntax-highlighting color map ────────────────────────────
+PROTO_T2C = {
+    "syntax": "#C586C0",
+    "message": "#C586C0",
+    "service": "#C586C0",
+    "rpc": "#C586C0",
+    "returns": "#C586C0",
+    "repeated": "#C586C0",
+    "optional": "#C586C0",
+    "reserved": "#C586C0",
+    "int32": "#4EC9B0",
+    "string": "#4EC9B0",
+    "bool": "#4EC9B0",
+    "float": "#4EC9B0",
+}
+
+# ── MySQL DDL color map ───────────────────────────────────────────────
+MYSQL_T2C = {
+    "CREATE": "#C586C0",
+    "TABLE": "#C586C0",
+    "INSERT": "#C586C0",
+    "INTO": "#C586C0",
+    "VALUES": "#C586C0",
+    "NOT": "#C586C0",
+    "NULL": "#C586C0",
+    "VARCHAR": "#4EC9B0",
+    "ratings": "#4EC9B0",
+    "movieId": "#9CDCFE",
+    "(": "#FFD700",
+    ")": "#FFD700",
+    ",": "#D4D4D4",
+    ";": "#D4D4D4",
+}
+
+
+class MicroserviceLab(Scene):
+    def construct(self):
+        self.scene_title()
+        self.scene_lab_overview()
+        self.scene_monolith_vs_microservices()
+        self.scene_app_architecture()
+        self.scene_ratings_mysql()
+        self.scene_mongodb_caching()
+        self.scene_grpc_trending()
+        self.scene_schema_evolution()
+        self.scene_jmeter_overview()
+        self.scene_jmeter_graphs()
+        self.scene_deliverables()
+        self.scene_closing()
+
+    # ─── Scene 1: Title ───────────────────────────────────────────────
+    def scene_title(self):
+        icon = make_icon(ICON_SERVER, color=BLUE, height=1.2)
+        title = make_label(
+            "Lab 2: Microservices & Data Models",
+            font_size=38,
+            color=BLUE,
+        )
+        subtitle = make_label(
+            "MySQL · MongoDB · gRPC · JMeter",
+            font_size=20,
+            color=GREY_B,
+        )
+        VGroup(icon, title, subtitle).arrange(DOWN, buff=0.4)
+
+        self.play(FadeIn(icon, shift=DOWN * 0.3))
+        self.wait(0.5)
+        self.play(AddTextLetterByLetter(title, time_per_char=0.05))
+        self.wait(0.5)
+        self.play(FadeIn(subtitle, shift=UP * 0.2))
+        self.wait(3)
+        self.play(FadeOut(*self.mobjects))
+
+    # ─── Scene 2: Lab Overview ────────────────────────────────────────
+    def scene_lab_overview(self):
+        header = make_label("What Will You Do?", font_size=30, color=GREEN)
+        header.to_edge(UP, buff=0.5)
+        self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
+
+        steps = [
+            (
+                ICON_DATABASE,
+                BLUE,
+                "Step 1: Ratings → MySQL",
+                "Replace the in-memory list with a relational DB schema",
+            ),
+            (
+                ICON_CLOUD,
+                TEAL,
+                "Step 2: Cache MovieDB → MongoDB",
+                "Add a document-store cache to cut external API latency",
+            ),
+            (
+                ICON_LIGHTNING,
+                ORANGE,
+                "Step 3: gRPC Trending Movies Service",
+                "Build a new binary-protocol microservice with Protobuf",
+            ),
+            (
+                ICON_STOPWATCH,
+                PURPLE,
+                "Step 4: JMeter Performance Testing",
+                "Measure P90 latency & throughput before & after each change",
+            ),
+            (
+                ICON_BOOK,
+                GREEN,
+                "Step 5: Report & Discussion",
+                "Answer discussion questions and submit all measurements",
+            ),
+        ]
+
+        rows = VGroup()
+        for icon_path, color, title, desc in steps:
+            ic = make_icon(icon_path, color=color, height=0.3)
+            t = make_label(title, font_size=15, color=color, weight=BOLD)
+            d = make_label(desc, font_size=11, color=GREY_A)
+            row_content = VGroup(ic, t, d).arrange(RIGHT, buff=0.15)
+            box = RoundedRectangle(
+                corner_radius=0.1,
+                width=10.5,
+                height=0.65,
+                fill_color=DARK_BG,
+                fill_opacity=0.9,
+                stroke_color=color,
+                stroke_width=1.2,
+            )
+            row_content.move_to(box.get_center())
+            glow = create_rect_glow(box, color=color)
+            rows.add(VGroup(glow, box, row_content))
+
+        rows.arrange(DOWN, buff=0.15).next_to(header, DOWN, buff=0.5)
+
+        for row in rows:
+            self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.5)
+            self.wait(0.8)
+
+        self.wait(1)
+
+        note = make_label(
+            "Groups of 4 — measure before & after every change!",
+            font_size=18,
+            color=YELLOW,
+        )
+        note.to_edge(DOWN, buff=0.5)
+        self.play(FadeIn(note, shift=UP * 0.2))
+        self.wait(3)
+        self.play(FadeOut(*self.mobjects))
+
+    # ─── Scene 3: Monolith vs Microservices ──────────────────────────
+    def scene_monolith_vs_microservices(self):
+        header = make_label("Monolith vs Microservices", font_size=30, color=ORANGE)
+        header.to_edge(UP, buff=0.5)
+        self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
+
+        # ── Left: Monolith ──
+        left_icon = make_icon(ICON_SERVER, color=GREY_A, height=0.6)
+        left_title = make_label("Monolith", font_size=22, color=GREY_A)
+        left_sub = make_label("One Big Deployable Unit", font_size=11, color=GREY_B)
+        left_bullets = VGroup(
+            make_label("• Single codebase & deploy", font_size=13, color=GREY_B),
+            make_label("• Shared relational database", font_size=13, color=GREY_B),
+            make_label("• Tightly coupled components", font_size=13, color=GREY_B),
+            make_label("• One failure can crash all", font_size=13, color=GREY_B),
+        ).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
+
+        left_content = VGroup(left_icon, left_title, left_sub, left_bullets).arrange(
+            DOWN, buff=0.15
+        )
+        left_box = RoundedRectangle(
+            corner_radius=0.15,
+            width=4.5,
+            height=3.6,
+            fill_color=DARK_BG,
+            fill_opacity=0.9,
+            stroke_color=GREY_B,
+            stroke_width=1.5,
+        )
+        left_content.move_to(left_box.get_center())
+        left_glow = create_rect_glow(left_box, color=GREY_B)
+        left_group = VGroup(left_glow, left_box, left_content).move_to(
+            LEFT * 3 + DOWN * 0.3
+        )
+
+        # ── Right: Microservices ──
+        right_icon = make_icon(ICON_STRUCTURE, color=GREEN, height=0.6)
+        right_title = make_label("Microservices", font_size=22, color=GREEN)
+        right_sub = make_label(
+            "Independent, Focused Services", font_size=11, color=GREEN_B
+        )
+        right_bullets = VGroup(
+            make_label("• Independent deployments", font_size=13, color=GREEN_B),
+            make_label("• Polyglot persistence", font_size=13, color=GREEN_B),
+            make_label("• Communicate via APIs", font_size=13, color=GREEN_B),
+            make_label("• Scale each service separately", font_size=13, color=GREEN_B),
+        ).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
+
+        right_content = VGroup(
+            right_icon, right_title, right_sub, right_bullets
+        ).arrange(DOWN, buff=0.15)
+        right_box = RoundedRectangle(
+            corner_radius=0.15,
+            width=4.5,
+            height=3.6,
+            fill_color=DARK_BG,
+            fill_opacity=0.9,
+            stroke_color=GREEN,
+            stroke_width=1.5,
+        )
+        right_content.move_to(right_box.get_center())
+        right_glow = create_rect_glow(right_box, color=GREEN)
+        right_group = VGroup(right_glow, right_box, right_content).move_to(
+            RIGHT * 3 + DOWN * 0.3
+        )
+
+        self.play(FadeIn(left_group, shift=RIGHT * 0.3))
+        self.wait(1.5)
+        self.play(FadeIn(right_group, shift=LEFT * 0.3))
+        self.wait(2)
+
+        vs_label = make_label("VS", font_size=28, color=ORANGE)
+        vs_label.move_to(ORIGIN + DOWN * 0.3)
+        self.play(FadeIn(vs_label, scale=1.5))
+        self.wait(1)
+
+        highlight = make_label(
+            "This lab: split ratings & trending into their own services!",
+            font_size=18,
+            color=YELLOW,
+        )
+        highlight.to_edge(DOWN, buff=0.5)
+        self.play(AddTextLetterByLetter(highlight, time_per_char=0.03))
+        self.wait(3)
+        self.play(FadeOut(*self.mobjects))
+
+    # ─── Scene 4: Movie Rating App Architecture ───────────────────────
+    def scene_app_architecture(self):
+        header = make_label("Movie Rating App Architecture", font_size=30, color=BLUE)
+        header.to_edge(UP, buff=0.5)
+        self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
+
+        # Row 1 – Catalog Service (center top)
+        catalog_card = make_icon_card(
+            "Catalog\nService",
+            ICON_LAYERS,
+            color=BLUE,
+            width=2.4,
+            height=1.5,
+            font_size=12,
+        )
+        catalog_card.move_to(UP * 1.3)
+
+        # Row 2 – Movie Info (left) and Ratings (right)
+        movie_info_card = make_icon_card(
+            "Movie Info\nService",
+            ICON_MONITOR,
+            color=TEAL,
+            width=2.4,
+            height=1.5,
+            font_size=12,
+        )
+        ratings_card = make_icon_card(
+            "Ratings\nService",
+            ICON_DATABASE,
+            color=PURPLE,
+            width=2.4,
+            height=1.5,
+            font_size=12,
+        )
+        movie_info_card.move_to(LEFT * 3.2 + DOWN * 0.4)
+        ratings_card.move_to(RIGHT * 3.2 + DOWN * 0.4)
+
+        # Row 3 – Data stores
+        moviedb_card = make_icon_card(
+            "MovieDB\nAPI",
+            ICON_CLOUD,
+            color=ORANGE,
+            width=2.0,
+            height=1.2,
+            font_size=11,
+        )
+        mysql_card = make_icon_card(
+            "MySQL\nDB",
+            ICON_DATABASE,
+            color=BLUE,
+            width=2.0,
+            height=1.2,
+            font_size=11,
+        )
+        moviedb_card.move_to(LEFT * 3.2 + DOWN * 2.3)
+        mysql_card.move_to(RIGHT * 3.2 + DOWN * 2.3)
+
+        # Arrows
+        arrow_cat_info = Arrow(
+            catalog_card.get_bottom(),
+            movie_info_card.get_top(),
+            buff=0.08,
+            stroke_width=2,
+            color=TEAL,
+            tip_length=0.1,
+        )
+        arrow_cat_ratings = Arrow(
+            catalog_card.get_bottom(),
+            ratings_card.get_top(),
+            buff=0.08,
+            stroke_width=2,
+            color=PURPLE,
+            tip_length=0.1,
+        )
+        arrow_info_db = Arrow(
+            movie_info_card.get_bottom(),
+            moviedb_card.get_top(),
+            buff=0.08,
+            stroke_width=2,
+            color=ORANGE,
+            tip_length=0.1,
+        )
+        arrow_ratings_mysql = Arrow(
+            ratings_card.get_bottom(),
+            mysql_card.get_top(),
+            buff=0.08,
+            stroke_width=2,
+            color=BLUE,
+            tip_length=0.1,
+        )
+
+        self.play(FadeIn(catalog_card, shift=DOWN * 0.3))
+        self.wait(0.5)
+        self.play(GrowArrow(arrow_cat_info), GrowArrow(arrow_cat_ratings))
+        self.play(
+            FadeIn(movie_info_card, shift=UP * 0.2),
+            FadeIn(ratings_card, shift=UP * 0.2),
+        )
+        self.wait(0.8)
+        self.play(GrowArrow(arrow_info_db), GrowArrow(arrow_ratings_mysql))
+        self.play(
+            FadeIn(moviedb_card, shift=DOWN * 0.2),
+            FadeIn(mysql_card, shift=DOWN * 0.2),
+        )
+        self.wait(2)
+
+        goal = make_label(
+            "Your job: add MongoDB cache + new gRPC Trending service",
+            font_size=16,
+            color=YELLOW,
+        )
+        goal.to_edge(DOWN, buff=0.3)
+        self.play(FadeIn(goal, shift=UP * 0.2))
+        self.wait(3)
+        self.play(FadeOut(*self.mobjects))
+
+    # ─── Scene 5: Ratings → MySQL ────────────────────────────────────
+    def scene_ratings_mysql(self):
+        header = make_label("Step 1 — Ratings → MySQL", font_size=30, color=BLUE)
+        header.to_edge(UP, buff=0.5)
+        self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
+
+        # Left: In-memory (dim / old)
+        old_icon = make_icon(ICON_CODE, color=GREY_B, height=0.5)
+        old_title = make_label("In-Memory List", font_size=16, color=GREY_B)
+        old_sub = make_label("ArrayList<Rating>", font_size=11, color=GREY_A)
+        old_bullets = VGroup(
+            make_label("✗ Lost on restart", font_size=12, color=RED),
+            make_label("✗ Not queryable", font_size=12, color=RED),
+            make_label("✗ No persistence", font_size=12, color=RED),
+        ).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
+        old_content = VGroup(old_icon, old_title, old_sub, old_bullets).arrange(
+            DOWN, buff=0.15
+        )
+        old_box = RoundedRectangle(
+            corner_radius=0.15,
+            width=3.5,
+            height=2.9,
+            fill_color=DARK_BG,
+            fill_opacity=0.9,
+            stroke_color=GREY_B,
+            stroke_width=1.5,
+        )
+        old_content.move_to(old_box.get_center())
+        old_group = VGroup(old_box, old_content).move_to(LEFT * 3.2 + UP * 0.3)
+
+        # Right: MySQL (bright / new)
+        new_icon = make_icon(ICON_DATABASE, color=BLUE, height=0.5)
+        new_title = make_label("MySQL Database", font_size=16, color=BLUE)
+        new_sub = make_label("Relational · Persistent", font_size=11, color=BLUE_B)
+        new_bullets = VGroup(
+            make_label("✓ Survives restarts", font_size=12, color=GREEN),
+            make_label("✓ SQL queries & JOINs", font_size=12, color=GREEN),
+            make_label("✓ Indexed lookups", font_size=12, color=GREEN),
+        ).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
+        new_content = VGroup(new_icon, new_title, new_sub, new_bullets).arrange(
+            DOWN, buff=0.15
+        )
+        new_box = RoundedRectangle(
+            corner_radius=0.15,
+            width=3.5,
+            height=2.9,
+            fill_color=DARK_BG,
+            fill_opacity=0.9,
+            stroke_color=BLUE,
+            stroke_width=1.5,
+        )
+        new_content.move_to(new_box.get_center())
+        new_glow = create_rect_glow(new_box, color=BLUE)
+        new_group = VGroup(new_glow, new_box, new_content).move_to(
+            RIGHT * 3.2 + UP * 0.3
+        )
+
+        mig_arrow = Arrow(
+            old_group.get_right(),
+            new_group.get_left(),
+            buff=0.15,
+            stroke_width=3,
+            color=BLUE,
+            tip_length=0.15,
+        )
+        mig_label = make_label("migrate", font_size=13, color=BLUE)
+        mig_label.next_to(mig_arrow, UP, buff=0.08)
+
+        self.play(FadeIn(old_group, shift=RIGHT * 0.3))
+        self.wait(1)
+        self.play(GrowArrow(mig_arrow))
+        self.play(FadeIn(mig_label, shift=DOWN * 0.1))
+        self.play(FadeIn(new_group, shift=LEFT * 0.3))
+        self.wait(1.5)
+
+        # SQL schema
+        sql_text = (
+            "CREATE TABLE ratings (\n"
+            "  movieId  VARCHAR(255),\n"
+            "  rating   INT NOT NULL\n"
+            ");\n"
+            "INSERT INTO ratings\n"
+            "VALUES ('tt0111161', 5);"
+        )
+        code = make_code_text(
+            sql_text, font_size=12, position=DOWN * 2.3, t2c=MYSQL_T2C
+        )
+        self.play(FadeIn(code, shift=UP * 0.3))
+        self.wait(3)
+        self.play(FadeOut(*self.mobjects))
+
+    # ─── Scene 6: MongoDB Caching ─────────────────────────────────────
+    def scene_mongodb_caching(self):
+        header = make_label("Step 2 — MongoDB Caching", font_size=30, color=TEAL)
+        header.to_edge(UP, buff=0.5)
+        self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
+
+        # ── Part A: No cache ──
+        part_a_label = make_label("Before: No Cache", font_size=18, color=RED)
+        part_a_label.to_edge(LEFT, buff=1.0).shift(UP * 0.5)
+        self.play(FadeIn(part_a_label, shift=RIGHT * 0.2))
+
+        movie_info_a = make_icon_card(
+            "Movie Info\nService",
+            ICON_MONITOR,
+            color=TEAL,
+            width=2.0,
+            height=1.3,
+            font_size=11,
+        )
+        moviedb_a = make_icon_card(
+            "MovieDB\nAPI",
+            ICON_CLOUD,
+            color=ORANGE,
+            width=2.0,
+            height=1.3,
+            font_size=11,
+        )
+        movie_info_a.move_to(LEFT * 1.8 + DOWN * 0.3)
+        moviedb_a.move_to(RIGHT * 1.8 + DOWN * 0.3)
+
+        arrow_a = Arrow(
+            movie_info_a.get_right(),
+            moviedb_a.get_left(),
+            buff=0.08,
+            stroke_width=2.5,
+            color=RED,
+            tip_length=0.1,
+        )
+        slow_lbl = make_label("~2000 ms every call!", font_size=13, color=RED)
+        slow_lbl.next_to(arrow_a, UP, buff=0.08)
+
+        self.play(
+            FadeIn(movie_info_a, shift=UP * 0.2),
+            FadeIn(moviedb_a, shift=UP * 0.2),
+        )
+        self.play(GrowArrow(arrow_a))
+        self.play(FadeIn(slow_lbl))
+        self.wait(2)
+
+        self.play(
+            FadeOut(part_a_label),
+            FadeOut(movie_info_a),
+            FadeOut(moviedb_a),
+            FadeOut(arrow_a),
+            FadeOut(slow_lbl),
+        )
+
+        # ── Part B: With MongoDB cache ──
+        part_b_label = make_label("After: MongoDB Cache", font_size=18, color=TEAL)
+        part_b_label.to_edge(LEFT, buff=1.0).shift(UP * 0.5)
+        self.play(FadeIn(part_b_label, shift=RIGHT * 0.2))
+
+        movie_info_b = make_icon_card(
+            "Movie Info\nService",
+            ICON_MONITOR,
+            color=TEAL,
+            width=1.9,
+            height=1.3,
+            font_size=11,
+        )
+        mongo_card = make_icon_card(
+            "MongoDB\nCache",
+            ICON_DATABASE,
+            color=GREEN,
+            width=1.9,
+            height=1.3,
+            font_size=11,
+        )
+        moviedb_b = make_icon_card(
+            "MovieDB\nAPI",
+            ICON_CLOUD,
+            color=ORANGE,
+            width=1.9,
+            height=1.3,
+            font_size=11,
+        )
+        movie_info_b.move_to(LEFT * 4.2 + DOWN * 0.3)
+        mongo_card.move_to(ORIGIN + DOWN * 0.3)
+        moviedb_b.move_to(RIGHT * 4.2 + DOWN * 0.3)
+
+        arrow_b1 = Arrow(
+            movie_info_b.get_right(),
+            mongo_card.get_left(),
+            buff=0.08,
+            stroke_width=2.5,
+            color=GREEN,
+            tip_length=0.1,
+        )
+        fast_lbl = make_label("~5 ms (cache hit!)", font_size=12, color=GREEN)
+        fast_lbl.next_to(arrow_b1, UP, buff=0.08)
+
+        arrow_b2 = Arrow(
+            mongo_card.get_right(),
+            moviedb_b.get_left(),
+            buff=0.08,
+            stroke_width=2,
+            color=GREY_B,
+            tip_length=0.1,
+        )
+        miss_lbl = make_label("fallback on miss", font_size=11, color=GREY_A)
+        miss_lbl.next_to(arrow_b2, UP, buff=0.08)
+
+        self.play(
+            FadeIn(movie_info_b, shift=UP * 0.2),
+            FadeIn(mongo_card, shift=UP * 0.2),
+            FadeIn(moviedb_b, shift=UP * 0.2),
+        )
+        self.play(GrowArrow(arrow_b1))
+        self.play(FadeIn(fast_lbl))
+        self.wait(0.5)
+        self.play(GrowArrow(arrow_b2))
+        self.play(FadeIn(miss_lbl))
+        self.wait(1.5)
+
+        insight = make_label(
+            "Test P90 latency with 10M movies: before vs after caching",
+            font_size=16,
+            color=YELLOW,
+        )
+        insight.to_edge(DOWN, buff=0.4)
+        self.play(FadeIn(insight, shift=UP * 0.2))
+        self.wait(3)
+        self.play(FadeOut(*self.mobjects))
+
+    # ─── Scene 7: gRPC Trending Movies Service ────────────────────────
+    def scene_grpc_trending(self):
+        header = make_label(
+            "Step 3 — gRPC Trending Movies Service", font_size=27, color=ORANGE
+        )
+        header.to_edge(UP, buff=0.5)
+        self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
+
+        # Service flow: Catalog → gRPC → Trending → Ratings DB
+        catalog_card = make_icon_card(
+            "Catalog\nService",
+            ICON_LAYERS,
+            color=BLUE,
+            width=2.0,
+            height=1.3,
+            font_size=11,
+        )
+        trending_card = make_icon_card(
+            "Trending\nService",
+            ICON_LIGHTNING,
+            color=ORANGE,
+            width=2.0,
+            height=1.3,
+            font_size=11,
+        )
+        db_card = make_icon_card(
+            "Ratings\nDB",
+            ICON_DATABASE,
+            color=PURPLE,
+            width=2.0,
+            height=1.3,
+            font_size=11,
+        )
+        catalog_card.move_to(LEFT * 4.0 + UP * 0.9)
+        trending_card.move_to(ORIGIN + UP * 0.9)
+        db_card.move_to(RIGHT * 4.0 + UP * 0.9)
+
+        arrow_grpc = Arrow(
+            catalog_card.get_right(),
+            trending_card.get_left(),
+            buff=0.08,
+            stroke_width=2.5,
+            color=ORANGE,
+            tip_length=0.12,
+        )
+        grpc_lbl = make_label("gRPC call", font_size=12, color=ORANGE)
+        grpc_lbl.next_to(arrow_grpc, UP, buff=0.08)
+
+        arrow_db = Arrow(
+            trending_card.get_right(),
+            db_card.get_left(),
+            buff=0.08,
+            stroke_width=2.5,
+            color=PURPLE,
+            tip_length=0.12,
+        )
+        db_lbl = make_label("query top-N", font_size=12, color=PURPLE)
+        db_lbl.next_to(arrow_db, UP, buff=0.08)
+
+        self.play(FadeIn(catalog_card, shift=DOWN * 0.2))
+        self.wait(0.4)
+        self.play(GrowArrow(arrow_grpc))
+        self.play(FadeIn(grpc_lbl))
+        self.play(FadeIn(trending_card, shift=DOWN * 0.2))
+        self.wait(0.4)
+        self.play(GrowArrow(arrow_db))
+        self.play(FadeIn(db_lbl))
+        self.play(FadeIn(db_card, shift=DOWN * 0.2))
+        self.wait(1.5)
+
+        # Concept cards: Protobuf, HTTP/2, .proto schema
+        concept_data = [
+            (
+                ICON_CODE,
+                BLUE,
+                "Protobuf",
+                "Binary serialization\nSmaller & faster than JSON",
+            ),
+            (
+                ICON_LIGHTNING,
+                ORANGE,
+                "HTTP/2",
+                "Multiplexed streams\nLow-latency transport",
+            ),
+            (
+                ICON_STRUCTURE,
+                GREEN,
+                ".proto Schema",
+                "Service & message\ndefinitions in one file",
+            ),
+        ]
+        concepts = VGroup()
+        for icon_path, color, title, desc in concept_data:
+            ic = make_icon(icon_path, color=color, height=0.3)
+            t = make_label(title, font_size=13, color=color, weight=BOLD)
+            d = make_label(desc, font_size=10, color=GREY_A)
+            content = VGroup(ic, t, d).arrange(DOWN, buff=0.1)
+            box = RoundedRectangle(
+                corner_radius=0.12,
+                width=2.9,
+                height=1.6,
+                fill_color=DARK_BG,
+                fill_opacity=0.9,
+                stroke_color=color,
+                stroke_width=1.2,
+            )
+            content.move_to(box.get_center())
+            glow = create_rect_glow(box, color=color)
+            concepts.add(VGroup(glow, box, content))
+
+        concepts.arrange(RIGHT, buff=0.4).move_to(DOWN * 1.8)
+        self.play(
+            AnimationGroup(
+                *[FadeIn(c, shift=UP * 0.3) for c in concepts],
+                lag_ratio=0.15,
+            )
+        )
+        self.wait(3)
+        self.play(FadeOut(*self.mobjects))
+
+    # ─── Scene 8: Schema Evolution (Protobuf) ─────────────────────────
+    def scene_schema_evolution(self):
+        header = make_label(
+            "Schema Evolution with Protobuf", font_size=28, color=YELLOW
+        )
+        header.to_edge(UP, buff=0.5)
+        self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
+
+        # v1 proto definition (left)
+        v1_hdr = make_label("Version 1   (initial)", font_size=16, color=BLUE)
+        v1_hdr.move_to(LEFT * 3.2 + UP * 1.1)
+
+        proto_v1 = (
+            'syntax = "proto3";\n'
+            "\n"
+            "message TrendingResponse {\n"
+            "  string movieId = 1;\n"
+            "  int32  score   = 2;\n"
+            "}"
+        )
+        code_v1 = make_code_text(proto_v1, font_size=12, t2c=PROTO_T2C)
+        code_v1.move_to(LEFT * 3.2 + DOWN * 0.2)
+
+        self.play(FadeIn(v1_hdr, shift=DOWN * 0.2))
+        self.play(FadeIn(code_v1, shift=UP * 0.3))
+        self.wait(2)
+
+        # v2 proto definition (right — evolved)
+        v2_hdr = make_label("Version 2   (evolved)", font_size=16, color=GREEN)
+        v2_hdr.move_to(RIGHT * 3.2 + UP * 1.1)
+
+        proto_v2 = (
+            'syntax = "proto3";\n'
+            "\n"
+            "message TrendingResponse {\n"
+            "  string movieId = 1;\n"
+            "  int32  score   = 2;\n"
+            "  string title   = 3;\n"
+            "  reserved 4;   // gone\n"
+            "}"
+        )
+        code_v2 = make_code_text(proto_v2, font_size=12, t2c=PROTO_T2C)
+        code_v2.move_to(RIGHT * 3.2 + DOWN * 0.2)
+
+        evolve_arrow = Arrow(
+            code_v1.get_right(),
+            code_v2.get_left(),
+            buff=0.15,
+            stroke_width=2.5,
+            color=YELLOW,
+            tip_length=0.12,
+        )
+        self.play(GrowArrow(evolve_arrow))
+        self.play(FadeIn(v2_hdr, shift=DOWN * 0.2))
+        self.play(FadeIn(code_v2, shift=LEFT * 0.3))
+        self.wait(1.5)
+
+        # Compatibility rule cards at the bottom
+        rules = [
+            ("✓ Add field", "Old readers skip it — safe!", GREEN),
+            ("✓ Remove field", "Mark tag as reserved!", YELLOW),
+            ("✗ Reuse tag", "Binary mismatch — never!", RED),
+        ]
+        rule_cards = VGroup()
+        for icon_str, desc, color in rules:
+            ic_lbl = make_label(icon_str, font_size=14, color=color, weight=BOLD)
+            d_lbl = make_label(desc, font_size=11, color=GREY_A)
+            content = VGroup(ic_lbl, d_lbl).arrange(DOWN, buff=0.1)
+            box = RoundedRectangle(
+                corner_radius=0.1,
+                width=2.8,
+                height=0.9,
+                fill_color=DARK_BG,
+                fill_opacity=0.9,
+                stroke_color=color,
+                stroke_width=1.2,
+            )
+            content.move_to(box.get_center())
+            glow = create_rect_glow(box, color=color, max_opacity=0.08, spread=0.15)
+            rule_cards.add(VGroup(glow, box, content))
+
+        rule_cards.arrange(RIGHT, buff=0.3).to_edge(DOWN, buff=0.5)
+        self.play(
+            AnimationGroup(
+                *[FadeIn(r, shift=UP * 0.2) for r in rule_cards],
+                lag_ratio=0.1,
+            )
+        )
+        self.wait(3)
+        self.play(FadeOut(*self.mobjects))
+
+    # ─── Scene 9: JMeter Overview ─────────────────────────────────────
+    def scene_jmeter_overview(self):
+        header = make_label(
+            "Step 4 — JMeter Performance Testing", font_size=27, color=PURPLE
+        )
+        header.to_edge(UP, buff=0.5)
+        self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
+
+        # Three JMeter component cards
+        comp_data = [
+            (
+                ICON_SETTINGS,
+                BLUE,
+                "Thread Group",
+                "Threads: 100\nRamp-up: 30 s\nLoop: 10",
+            ),
+            (
+                ICON_TRANSFER,
+                ORANGE,
+                "HTTP Sampler",
+                "GET /catalog/{userId}\nCaptures status & latency",
+            ),
+            (
+                ICON_CHART,
+                GREEN,
+                "Listeners",
+                "Summary Report\nAggregate Report\nResponse Time Graph",
+            ),
+        ]
+        comp_cards = VGroup()
+        for icon_path, color, title, desc in comp_data:
+            ic = make_icon(icon_path, color=color, height=0.35)
+            t = make_label(title, font_size=13, color=color, weight=BOLD)
+            d = make_label(desc, font_size=10, color=GREY_A)
+            content = VGroup(ic, t, d).arrange(DOWN, buff=0.1)
+            box = RoundedRectangle(
+                corner_radius=0.12,
+                width=3.0,
+                height=2.1,
+                fill_color=DARK_BG,
+                fill_opacity=0.9,
+                stroke_color=color,
+                stroke_width=1.5,
+            )
+            content.move_to(box.get_center())
+            glow = create_rect_glow(box, color=color)
+            comp_cards.add(VGroup(glow, box, content))
+
+        comp_cards.arrange(RIGHT, buff=0.5).move_to(UP * 0.4)
+        self.play(
+            AnimationGroup(
+                *[FadeIn(c, shift=DOWN * 0.2) for c in comp_cards],
+                lag_ratio=0.15,
+            )
+        )
+        self.wait(1.5)
+
+        arrow1 = Arrow(
+            comp_cards[0].get_right(),
+            comp_cards[1].get_left(),
+            buff=0.1,
+            stroke_width=2,
+            color=WHITE,
+            tip_length=0.1,
+        )
+        arrow2 = Arrow(
+            comp_cards[1].get_right(),
+            comp_cards[2].get_left(),
+            buff=0.1,
+            stroke_width=2,
+            color=WHITE,
+            tip_length=0.1,
+        )
+        self.play(GrowArrow(arrow1), GrowArrow(arrow2))
+        self.wait(1)
+
+        # Performance vs Stress test comparison (bottom)
+        perf_data = [
+            (
+                ICON_STOPWATCH,
+                PURPLE,
+                "Performance Test",
+                "100 threads · 5 minutes · normal load",
+            ),
+            (
+                ICON_LIGHTNING,
+                RED,
+                "Stress Test",
+                "500 threads · ramp to limit · find breaking point",
+            ),
+        ]
+        test_cards = VGroup()
+        for icon_path, color, title, desc in perf_data:
+            ic = make_icon(icon_path, color=color, height=0.3)
+            t = make_label(title, font_size=13, color=color, weight=BOLD)
+            d = make_label(desc, font_size=11, color=GREY_A)
+            content = VGroup(ic, t, d).arrange(DOWN, buff=0.1)
+            box = RoundedRectangle(
+                corner_radius=0.1,
+                width=4.4,
+                height=1.2,
+                fill_color=DARK_BG,
+                fill_opacity=0.9,
+                stroke_color=color,
+                stroke_width=1.2,
+            )
+            content.move_to(box.get_center())
+            glow = create_rect_glow(box, color=color, max_opacity=0.08)
+            test_cards.add(VGroup(glow, box, content))
+
+        test_cards.arrange(RIGHT, buff=0.6).to_edge(DOWN, buff=0.5)
+        self.play(
+            AnimationGroup(
+                *[FadeIn(c, shift=UP * 0.2) for c in test_cards],
+                lag_ratio=0.2,
+            )
+        )
+        self.wait(3)
+        self.play(FadeOut(*self.mobjects))
+
+    # ─── Scene 10: JMeter Results Graphs ──────────────────────────────
+    def scene_jmeter_graphs(self):
+        header = make_label("JMeter Results: Cache Impact", font_size=28, color=GREEN)
+        header.to_edge(UP, buff=0.5)
+        self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
+
+        illust_note = make_label(
+            "* Illustrative values — replace with your own JMeter measurements",
+            font_size=11,
+            color=GREY_B,
+        )
+        illust_note.next_to(header, DOWN, buff=0.15)
+        self.play(FadeIn(illust_note, shift=DOWN * 0.1))
+        self.wait(0.5)
+
+        def make_bars(title, data, max_h=2.5, bar_w=0.9, gap=0.55):
+            """
+            data: list of (label, value, suffix, color)
+            Bars share a common bottom baseline — rendered with Rectangle.
+            """
+            max_val = max(v for _, v, _, _ in data)
+            content = VGroup()
+            for i, (label, value, suffix, color) in enumerate(data):
+                h = max(0.12, (value / max_val) * max_h)
+                x = i * (bar_w + gap)
+                bar = Rectangle(
+                    width=bar_w,
+                    height=h,
+                    fill_color=color,
+                    fill_opacity=0.85,
+                    stroke_color=color,
+                    stroke_width=1.2,
+                )
+                # Bottom of bar at y=0; center at y=h/2
+                bar.move_to(RIGHT * x + UP * (h / 2))
+                val_lbl = make_label(f"{value}{suffix}", font_size=12, color=color)
+                val_lbl.next_to(bar, UP, buff=0.1)
+                name_lbl = make_label(label, font_size=11, color=GREY_A)
+                name_lbl.next_to(bar, DOWN, buff=0.1)
+                content.add(bar, val_lbl, name_lbl)
+            content.center()
+            title_mob = make_label(title, font_size=13, color=GREY_A)
+            title_mob.next_to(content, DOWN, buff=0.2)
+            return VGroup(content, title_mob)
+
+        chart_a = make_bars(
+            "Median Latency (ms)",
+            [("No Cache", 800, " ms", RED), ("With Cache", 50, " ms", GREEN)],
+        )
+        chart_a.move_to(LEFT * 3.0 + DOWN * 0.4)
+
+        chart_b = make_bars(
+            "P90 Latency (ms)",
+            [("No Cache", 2000, " ms", RED), ("With Cache", 120, " ms", GREEN)],
+        )
+        chart_b.move_to(RIGHT * 3.0 + DOWN * 0.4)
+
+        self.play(
+            FadeIn(chart_a, shift=UP * 0.3),
+            FadeIn(chart_b, shift=UP * 0.3),
+        )
+        self.wait(2)
+
+        insight = make_label(
+            "Caching drops P90 latency by ~16× — massive throughput win!",
+            font_size=17,
+            color=YELLOW,
+        )
+        insight.to_edge(DOWN, buff=0.4)
+        self.play(FadeIn(insight, shift=UP * 0.2))
+        self.wait(3)
+        self.play(FadeOut(*self.mobjects))
+
+    # ─── Scene 11: Deliverables ───────────────────────────────────────
+    def scene_deliverables(self):
+        header = make_label("Deliverables", font_size=30, color=ORANGE)
+        header.to_edge(UP, buff=0.5)
+        self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(1)
+
+        items = [
+            (ICON_DATABASE, BLUE, "MySQL schema — CREATE TABLE DDL for ratings"),
+            (ICON_DATABASE, TEAL, "MongoDB schema — collection structure & indexes"),
+            (ICON_CHART, ORANGE, "JMeter P90 & throughput — before vs after caching"),
+            (ICON_STOPWATCH, PURPLE, "JMeter test plans (.jmx files) for both tests"),
+            (
+                ICON_CODE_FILE,
+                GREEN,
+                "Running app: Catalog + Ratings + Trending services",
+            ),
+            (ICON_BOOK, RED, "Final report with answers to discussion questions"),
+        ]
+
+        rows = VGroup()
+        for icon_path, color, desc in items:
+            ic = make_icon(icon_path, color=color, height=0.25)
+            check = make_icon(ICON_CHECK, color=GREEN, height=0.2)
+            d = make_label(desc, font_size=13, color=GREY_A)
+            row_content = VGroup(check, ic, d).arrange(RIGHT, buff=0.12)
+            box = RoundedRectangle(
+                corner_radius=0.08,
+                width=10.5,
+                height=0.5,
+                fill_color=DARK_BG,
+                fill_opacity=0.9,
+                stroke_color=color,
+                stroke_width=1,
+            )
+            row_content.move_to(box.get_center())
+            glow = create_rect_glow(box, color=color, max_opacity=0.08, spread=0.15)
+            rows.add(VGroup(glow, box, row_content))
+
+        rows.arrange(DOWN, buff=0.1).next_to(header, DOWN, buff=0.4)
+
+        for row in rows:
+            self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.4)
+            self.wait(0.5)
+
+        self.wait(2)
+
+        warning = make_label(
+            "All team members must be ready to answer questions!",
+            font_size=17,
+            color=YELLOW,
+        )
+        warning.to_edge(DOWN, buff=0.4)
+        self.play(FadeIn(warning, shift=UP * 0.2))
+        self.wait(3)
+        self.play(FadeOut(*self.mobjects))
+
+    # ─── Scene 12: Closing ────────────────────────────────────────────
+    def scene_closing(self):
+        title = make_label(
+            "Lab 2: Microservices & Data Models", font_size=34, color=BLUE
+        )
+        title.move_to(UP * 1.5)
+        self.play(AddTextLetterByLetter(title, time_per_char=0.05))
+        self.wait(1)
+
+        icon_data = [
+            (ICON_DATABASE, BLUE),
+            (ICON_CLOUD, TEAL),
+            (ICON_LIGHTNING, ORANGE),
+            (ICON_STOPWATCH, PURPLE),
+            (ICON_GRAPH, GREEN),
+        ]
+        icons_row = VGroup()
+        for path, color in icon_data:
+            ic = make_icon(path, color=color, height=0.5)
+            icons_row.add(ic)
+        icons_row.arrange(RIGHT, buff=0.5).move_to(ORIGIN)
+
+        self.play(
+            AnimationGroup(
+                *[FadeIn(ic, shift=UP * 0.2) for ic in icons_row],
+                lag_ratio=0.1,
+            )
+        )
+        self.wait(2)
+
+        themes = make_label(
+            "MySQL · MongoDB · gRPC · Protobuf · JMeter",
+            font_size=20,
+            color=GREY_A,
+        )
+        themes.move_to(DOWN * 1.2)
+        self.play(FadeIn(themes, shift=UP * 0.2))
+        self.wait(4)
+        self.play(FadeOut(*self.mobjects))
