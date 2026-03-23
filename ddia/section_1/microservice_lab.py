@@ -116,7 +116,6 @@ class MicroserviceLab(Scene):
         self.scene_mongodb_caching()
         self.scene_grpc_trending()
         self.scene_jmeter_overview()
-        self.scene_jmeter_graphs()
         self.scene_deliverables()
         self.scene_closing()
 
@@ -907,111 +906,7 @@ class MicroserviceLab(Scene):
         self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
-    # ─── Scene 9: JMeter Results Graphs ──────────────────────────────
-    def scene_jmeter_graphs(self):
-        header = make_label("JMeter Results: Cache Impact", font_size=28, color=GREEN)
-        header.to_edge(UP, buff=0.5)
-        self.play(AddTextLetterByLetter(header, time_per_char=0.04))
-        self.wait(1)
-
-        illust_note = make_label(
-            "* Illustrative values — replace with your own JMeter measurements",
-            font_size=11,
-            color=GREY_B,
-        )
-        illust_note.next_to(header, DOWN, buff=0.15)
-        self.play(FadeIn(illust_note, shift=DOWN * 0.1))
-        self.wait(0.5)
-
-        note = make_label(
-            "Average hides outliers; read p50, p90, and p99 from JMeter.",
-            font_size=17,
-            color=YELLOW,
-        )
-        note.next_to(illust_note, DOWN, buff=0.25)
-        self.play(FadeIn(note, shift=UP * 0.2))
-        self.wait(1.5)
-
-        bar_heights = [0.35, 0.9, 1.9, 3.0, 3.4, 2.7, 1.5, 0.8, 0.45, 0.22, 0.12, 0.08]
-        bar_colors = [GREEN] * 7 + [ORANGE] * 2 + [RED] * 3
-        bars = VGroup()
-        for h, color in zip(bar_heights, bar_colors):
-            bar = Rectangle(
-                width=0.45,
-                height=h,
-                fill_color=color,
-                fill_opacity=0.75,
-                stroke_color=color,
-                stroke_width=1,
-            )
-            bars.add(bar)
-        bars.arrange(RIGHT, buff=0.06, aligned_edge=DOWN)
-        bars.move_to(DOWN * 0.25)
-
-        x_label = make_label("Response Time ->", font_size=12, color=GREY_A)
-        x_label.next_to(bars, DOWN, buff=0.2)
-
-        self.play(AnimationGroup(*[GrowFromEdge(b, DOWN) for b in bars], lag_ratio=0.06))
-        self.play(FadeIn(x_label))
-        self.wait(1)
-
-        p50_line = DashedLine(
-            bars[4].get_top() + UP * 0.15,
-            bars[4].get_bottom() + DOWN * 0.3,
-            color=GREEN,
-            stroke_width=2,
-        )
-        p50_label = make_label("p50", font_size=11, color=GREEN)
-        p50_label.next_to(p50_line, UP, buff=0.1)
-
-        p90_line = DashedLine(
-            bars[8].get_top() + UP * 0.15,
-            bars[8].get_bottom() + DOWN * 0.3,
-            color=ORANGE,
-            stroke_width=2,
-        )
-        p90_label = make_label("p90", font_size=11, color=ORANGE)
-        p90_label.next_to(p90_line, UP, buff=0.1)
-
-        p99_line = DashedLine(
-            bars[10].get_top() + UP * 0.15,
-            bars[10].get_bottom() + DOWN * 0.3,
-            color=RED,
-            stroke_width=2,
-        )
-        p99_label = make_label("p99", font_size=11, color=RED)
-        p99_label.next_to(p99_line, UP, buff=0.1)
-
-        self.play(Create(p50_line), FadeIn(p50_label))
-        self.wait(0.8)
-        self.play(Create(p90_line), FadeIn(p90_label))
-        self.wait(0.8)
-        self.play(Create(p99_line), FadeIn(p99_label))
-        self.wait(1.5)
-
-        tail_box = RoundedRectangle(
-            corner_radius=0.1,
-            width=7.8,
-            height=0.9,
-            fill_color=DARK_BG,
-            fill_opacity=0.95,
-            stroke_color=RED,
-            stroke_width=1.5,
-        )
-        tail_text = make_label(
-            "Cache lowers tail latency: p90 ~2000 ms -> ~120 ms (illustrative)",
-            font_size=13,
-            color=YELLOW,
-        )
-        tail_text.move_to(tail_box.get_center())
-        tail_group = VGroup(tail_box, tail_text)
-        tail_group.to_edge(DOWN, buff=0.35)
-
-        self.play(FadeIn(tail_group, shift=UP * 0.2))
-        self.wait(3)
-        self.play(FadeOut(*self.mobjects))
-
-    # ─── Scene 10: Deliverables ───────────────────────────────────────
+    # ─── Scene 9: Deliverables ───────────────────────────────────────
     def scene_deliverables(self):
         header = make_label("Deliverables", font_size=30, color=ORANGE)
         header.to_edge(UP, buff=0.5)
@@ -1071,7 +966,7 @@ class MicroserviceLab(Scene):
         self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
-    # ─── Scene 11: Closing ────────────────────────────────────────────
+    # ─── Scene 10: Closing ────────────────────────────────────────────
     def scene_closing(self):
         title = make_label(
             "Lab 2: Microservices & Data Models", font_size=34, color=BLUE
