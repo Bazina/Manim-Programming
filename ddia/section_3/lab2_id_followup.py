@@ -11,15 +11,11 @@ from manim import (
     Arrow,
     FadeIn,
     FadeOut,
-    GrowArrow,
-    AnimationGroup,
     AddTextLetterByLetter,
-    ORIGIN,
     UP,
     DOWN,
     LEFT,
     RIGHT,
-    BOLD,
     WHITE,
     GREY_A,
     GREY_B,
@@ -37,14 +33,10 @@ from manim import (
 from libs.ddia_components import (
     DARK_BG,
     ICON_DATABASE,
-    ICON_CHECK,
     ICON_CODE,
     ICON_STRUCTURE,
-    ICON_DANGER,
-    ICON_BOOK,
     make_label,
     make_icon,
-    make_icon_card,
     make_code_text,
     create_rect_glow,
 )
@@ -237,7 +229,7 @@ class Lab2IDFollowUp(Scene):
 
         # Explicit warning so students do not miss the composite unique index requirement.
         uniq_warn = make_label(
-            "⚠ Required with AUTO_INCREMENT: UNIQUE KEY (user_id, movie_id)",
+            "Required with AUTO_INCREMENT: UNIQUE KEY (user_id, movie_id)",
             font_size=11,
             color=YELLOW,
         )
@@ -305,7 +297,7 @@ class Lab2IDFollowUp(Scene):
         self.wait(0.5)
         self.play(FadeIn(cons_group, shift=LEFT * 0.2))
 
-        badge = make_label("★  Recommended for this lab", font_size=14, color=GREEN)
+        badge = make_label("Recommended for this lab", font_size=14, color=GREEN)
         badge.to_edge(DOWN, buff=0.5)
         self.play(FadeIn(badge, shift=UP * 0.2))
         self.wait(3)
@@ -424,7 +416,7 @@ class Lab2IDFollowUp(Scene):
             tip_length=0.1,
         )
 
-        ai_known = make_label("ID known ▲", font_size=9, color=RED)
+        ai_known = make_label("ID known", font_size=9, color=RED)
         ai_known.next_to(s4, DOWN, buff=0.05)
         ai_gap = make_label("⚠ rollback → gap in sequence", font_size=9, color=RED)
         ai_gap.next_to(s2, DOWN, buff=0.05)
@@ -439,7 +431,7 @@ class Lab2IDFollowUp(Scene):
         u1 = self._step_box("UUID =\ngen( )", PURPLE)
         u2 = self._step_box("INSERT\n(with id)", PURPLE)
         u3 = self._step_box("Row\nwritten", GREY_B)
-        u4 = self._step_box("Done ✓", GREEN)
+        u4 = self._step_box("Done", GREEN)
 
         uuid_steps = VGroup(u1, u2, u3, u4).arrange(RIGHT, buff=0.22)
         uuid_a1 = Arrow(
@@ -549,13 +541,13 @@ class Lab2IDFollowUp(Scene):
             (
                 "Enforces 1 rating / user-movie",
                 "Extra UNIQUE needed",
-                "By PRIMARY KEY ★",
+                "By PRIMARY KEY",
                 "Extra UNIQUE needed",
             ),
             (
                 "Read: getUserRating(u, m)",
                 "2-index lookup",
-                "Direct PK lookup ★",
+                "Direct PK lookup",
                 "2-index lookup",
             ),
             (
@@ -567,12 +559,12 @@ class Lab2IDFollowUp(Scene):
             (
                 "ID known before write?",
                 "No — server-side",
-                "Yes — it's the data ★",
-                "Yes — client gen ★",
+                "Yes — it's the data",
+                "Yes — client gen",
             ),
-            ("PK storage size", "8 bytes ★", "~96 bytes", "36 bytes"),
-            ("Rollback leaves gap?", "Yes ⚠", "No", "No"),
-            ("Distributed / multi-master", "Conflicts possible", "Good", "Best ★"),
+            ("PK storage size", "8 bytes", "~96 bytes", "36 bytes"),
+            ("Rollback leaves gap?", "Yes", "No", "No"),
+            ("Distributed / multi-master", "Conflicts possible", "Good", "Best"),
         ]
 
         # Header row
