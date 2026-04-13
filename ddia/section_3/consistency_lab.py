@@ -278,13 +278,18 @@ class ConsistencyLab(Scene):
             self.play(FadeIn(card, shift=(ring_center - pos) * 0.15), run_time=0.5)
             self.wait(0.2)
 
-        # Gossip arrows between adjacent nodes
+        # Gossip arrows between adjacent nodes — use edge points so arrows
+        # don't overlap the card boxes.
         for i in range(3):
             j = (i + 1) % 3
+            direction = node_cards[j].get_center() - node_cards[i].get_center()
+            direction /= np.linalg.norm(direction)
+            start = node_cards[i].get_edge_center(direction)
+            end = node_cards[j].get_edge_center(-direction)
             a = Arrow(
-                node_cards[i].get_center(),
-                node_cards[j].get_center(),
-                buff=0.62,
+                start,
+                end,
+                buff=0.06,
                 stroke_width=1.4,
                 color=GREY_A,
                 tip_length=0.09,
