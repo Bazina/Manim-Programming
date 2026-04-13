@@ -206,7 +206,7 @@ class Lab2IDFollowUp(Scene):
         ]
         cons = [
             (RED, "ID unknown before write"),
-            (RED, "Must add UNIQUE(user_id, movie_id)"),
+            (YELLOW, "MUST add UNIQUE(user_id, movie_id)"),
             (RED, "Counter NOT rolled back → gaps"),
             (RED, "Conflicts in multi-master setups"),
         ]
@@ -234,6 +234,15 @@ class Lab2IDFollowUp(Scene):
         self.play(FadeIn(pros_group, shift=LEFT * 0.2))
         self.wait(0.5)
         self.play(FadeIn(cons_group, shift=LEFT * 0.2))
+
+        # Explicit warning so students do not miss the composite unique index requirement.
+        uniq_warn = make_label(
+            "⚠ Required with AUTO_INCREMENT: UNIQUE KEY (user_id, movie_id)",
+            font_size=11,
+            color=YELLOW,
+        )
+        uniq_warn.next_to(cons_group, DOWN, buff=0.22, aligned_edge=LEFT)
+        self.play(FadeIn(uniq_warn, shift=UP * 0.1))
         self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
