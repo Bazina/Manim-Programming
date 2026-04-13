@@ -111,7 +111,6 @@ class ConsistencyLab(Scene):
         self.scene_rf1_experiment()
         self.scene_rf2_experiment()
         self.scene_rf3_experiment()
-        self.scene_results_matrix()
         self.scene_tips()
         self.scene_closing()
 
@@ -221,8 +220,8 @@ class ConsistencyLab(Scene):
             content = VGroup(ic, t, d).arrange(RIGHT, buff=0.18)
             box = RoundedRectangle(
                 corner_radius=0.1,
-                width=13.0,
-                height=0.58,
+                width=content.width + 0.5,
+                height=content.height + 0.25,
                 fill_color=DARK_BG,
                 fill_opacity=0.9,
                 stroke_color=color,
@@ -238,7 +237,7 @@ class ConsistencyLab(Scene):
 
         note = make_label(
             "Groups of 3 — each student changes a column value between inserts!",
-            font_size=15,
+            font_size=18,
             color=YELLOW,
         )
         note.to_edge(DOWN, buff=0.4)
@@ -293,12 +292,12 @@ class ConsistencyLab(Scene):
             self.play(GrowArrow(a), run_time=0.35)
 
         gossip = make_label(
-            "gossip protocol keeps every node in sync", font_size=12, color=GREY_A
+            "gossip protocol keeps every node in sync", font_size=15, color=GREY_A
         )
         gossip.to_edge(DOWN, buff=1.05)
         token = make_label(
             "Consistent hashing: partition key  →  token  →  replica node(s)",
-            font_size=14,
+            font_size=17,
             color=YELLOW,
         )
         token.to_edge(DOWN, buff=0.45)
@@ -435,7 +434,7 @@ class ConsistencyLab(Scene):
             self.wait(0.45)
 
         speed = make_label(
-            "Speed  ←————————————————————→  Safety", font_size=14, color=YELLOW
+            "Speed  ←————————————————————→  Safety", font_size=18, color=YELLOW
         )
         speed.to_edge(DOWN, buff=0.4)
         self.play(FadeIn(speed, shift=UP * 0.2))
@@ -515,7 +514,7 @@ class ConsistencyLab(Scene):
 
         take = make_label(
             "RF=3 + QUORUM  →  2 + 2 = 4 > 3  ✓  Best production default",
-            font_size=14,
+            font_size=18,
             color=YELLOW,
         )
         take.to_edge(DOWN, buff=0.4)
@@ -572,7 +571,7 @@ class ConsistencyLab(Scene):
 
         tip = make_label(
             "RF=1 means zero fault tolerance — avoid in production.",
-            font_size=13,
+            font_size=17,
             color=ORANGE,
         )
         tip.to_edge(DOWN, buff=0.4)
@@ -681,7 +680,7 @@ class ConsistencyLab(Scene):
 
         cl_tip = make_label(
             "CL ONE with 2 nodes down may still work if Node 3 holds the partition.",
-            font_size=12,
+            font_size=16,
             color=ORANGE,
         )
         cl_tip.to_edge(DOWN, buff=0.4)
@@ -689,102 +688,7 @@ class ConsistencyLab(Scene):
         self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
-    # ─── Scene 10: Results Matrix ─────────────────────────────────────
-    def scene_results_matrix(self):
-        header = make_label(
-            "Read Matrix — QUORUM Consistency", font_size=25, color=TEAL
-        )
-        header.to_edge(UP, buff=0.4)
-        self.play(AddTextLetterByLetter(header, time_per_char=0.04))
-        self.wait(0.5)
-
-        col_labels = ["Nodes Down", "RF = 1", "RF = 2", "RF = 3"]
-        col_colors = [WHITE, GREY_B, ORANGE, GREEN]
-        col_widths = [3.4, 2.2, 2.2, 2.2]
-
-        # Theoretical outcomes assuming RF=1 replica on Node 1,
-        # RF=2 replicas on Nodes 1 & 2 (token-ordered placement).
-        # RF=3 outcomes are fully deterministic.
-        row_data = [
-            #  row label           RF=1               RF=2                RF=3
-            ("Node 1 down", "Fail*", RED, "Fail", RED, "Success", GREEN),
-            ("Node 2 down", "Pass*", GREEN, "Fail", RED, "Success", GREEN),
-            ("Node 3 down", "Pass*", GREEN, "Success", GREEN, "Success", GREEN),
-            ("Nodes 1 & 2 down", "Fail*", RED, "Fail", RED, "Fail", RED),
-            ("Nodes 1 & 3 down", "Fail*", RED, "Fail", RED, "Fail", RED),
-            ("Nodes 2 & 3 down", "Pass*", GREEN, "Fail", RED, "Fail", RED),
-        ]
-
-        # Header row
-        h_row = VGroup()
-        for text, color, width in zip(col_labels, col_colors, col_widths):
-            cell = RoundedRectangle(
-                corner_radius=0.06,
-                width=width,
-                height=0.42,
-                fill_color="#21262D",
-                fill_opacity=1,
-                stroke_color=color,
-                stroke_width=1.1,
-            )
-            lbl = make_label(text, font_size=11, color=color)
-            lbl.move_to(cell)
-            h_row.add(VGroup(cell, lbl))
-        h_row.arrange(RIGHT, buff=0.07).next_to(header, DOWN, buff=0.3)
-        self.play(FadeIn(h_row))
-        self.wait(0.2)
-
-        all_rows = VGroup()
-        for row_label, r1, rc1, r2, rc2, r3, rc3 in row_data:
-            row = VGroup()
-            # label cell
-            c0 = RoundedRectangle(
-                corner_radius=0.06,
-                width=col_widths[0],
-                height=0.38,
-                fill_color=DARK_BG,
-                fill_opacity=0.9,
-                stroke_color=GREY_B,
-                stroke_width=0.6,
-            )
-            l0 = make_label(row_label, font_size=10, color=GREY_A)
-            l0.move_to(c0)
-            row.add(VGroup(c0, l0))
-            # value cells
-            for text, color, width in zip(
-                [r1, r2, r3], [rc1, rc2, rc3], col_widths[1:]
-            ):
-                cell = RoundedRectangle(
-                    corner_radius=0.06,
-                    width=width,
-                    height=0.38,
-                    fill_color=DARK_BG,
-                    fill_opacity=0.9,
-                    stroke_color=color,
-                    stroke_width=0.6,
-                )
-                lbl = make_label(text, font_size=10, color=color)
-                lbl.move_to(cell)
-                row.add(VGroup(cell, lbl))
-            row.arrange(RIGHT, buff=0.07)
-            all_rows.add(row)
-
-        all_rows.arrange(DOWN, buff=0.06).next_to(h_row, DOWN, buff=0.07)
-        for row in all_rows:
-            self.play(FadeIn(row, shift=DOWN * 0.08), run_time=0.35)
-            self.wait(0.12)
-
-        note = make_label(
-            "* RF=1 & RF=2 results are token-dependent — verify with  nodetool getendpoints bookstore books <name>",
-            font_size=10,
-            color=YELLOW,
-        )
-        note.to_edge(DOWN, buff=0.35)
-        self.play(FadeIn(note))
-        self.wait(3)
-        self.play(FadeOut(*self.mobjects))
-
-    # ─── Scene 11: Tips & Tricks ──────────────────────────────────────
+    # ─── Scene 10: Tips & Tricks ──────────────────────────────────────
     def scene_tips(self):
         header = make_label("Cassandra Tips & Tricks", font_size=28, color=ORANGE)
         header.to_edge(UP, buff=0.4)
@@ -838,8 +742,8 @@ class ConsistencyLab(Scene):
             content = VGroup(ic, t, d).arrange(RIGHT, buff=0.15)
             box = RoundedRectangle(
                 corner_radius=0.08,
-                width=13.0,
-                height=0.55,
+                width=content.width + 0.5,
+                height=content.height + 0.25,
                 fill_color=DARK_BG,
                 fill_opacity=0.9,
                 stroke_color=color,
