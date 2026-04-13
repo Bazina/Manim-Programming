@@ -30,6 +30,7 @@ Replace the in-memory `ArrayList<Rating>` inside the Ratings Service with a
 - Verify that ratings persist across application restarts.
 
 **Discussion questions:**
+
 - What is the correct data model for ratings?
 - What indexes would you add and why?
 
@@ -59,6 +60,7 @@ a gRPC API.
 - The Catalog Service calls this service via gRPC instead of REST.
 
 **Why gRPC?**
+
 - Binary serialization (Protobuf) — smaller payloads
 - HTTP/2 transport — multiplexed, lower latency
 - Strongly typed schema — `.proto` file as contract
@@ -70,21 +72,25 @@ a gRPC API.
 Use **Apache JMeter** to measure performance before and after each change.
 
 ### Thread Group Settings (Performance Test)
+
 - Threads: 100
 - Ramp-up: 30 seconds
 - Loop count: 10
 
 ### Thread Group Settings (Stress Test)
+
 - Threads: 500 (or until breaking point)
 - Ramp-up: gradual
 - Loop count: until failure
 
 ### Metrics to collect
+
 - **Median latency** (ms)
 - **P90 latency** (ms) — 90th percentile response time
 - **Throughput** (requests/second)
 
 ### What to test
+
 1. Baseline: Ratings in memory, no MongoDB cache
 2. After MySQL migration
 3. After adding MongoDB cache (most significant change)
@@ -128,3 +134,12 @@ When evolving a `.proto` file, follow these rules to maintain compatibility:
 | **Protobuf** | Schema definition and serialization format |
 | **JMeter** | Performance and stress testing tool |
 | **Spring Boot** | Java microservices framework |
+
+---
+
+## Ratings ID Strategy Follow-Up
+
+A follow-up note comparing auto-increment IDs vs composite keys vs UUID for the
+Ratings Service schema is available here:
+
+- [Lab 2 ID follow-up](../../section_3/docs/lab-2-id-follow-up.md)

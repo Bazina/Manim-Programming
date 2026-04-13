@@ -8,13 +8,9 @@ from manim import (
     Scene,
     VGroup,
     RoundedRectangle,
-    Rectangle,
-    DashedLine,
     Arrow,
-    Create,
     FadeIn,
     FadeOut,
-    GrowFromEdge,
     GrowArrow,
     AnimationGroup,
     AddTextLetterByLetter,
@@ -40,7 +36,6 @@ from manim import (
 
 from libs.ddia_components import (
     DARK_BG,
-    ICON_DATABASE,
     ICON_SERVER,
     ICON_CHECK,
     ICON_SETTINGS,
