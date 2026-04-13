@@ -203,20 +203,20 @@ class Lab2IDFollowUp(Scene):
             (RED, "Conflicts in multi-master setups"),
         ]
 
-        pros_title = make_label("Pros", font_size=13, color=GREEN)
+        pros_title = make_label("Pros", font_size=18, color=GREEN)
         pros_items = VGroup(
-            *[make_label("+ " + t, font_size=11, color=c) for c, t in pros]
-        ).arrange(DOWN, buff=0.08, aligned_edge=LEFT)
+            *[make_label("+ " + t, font_size=15, color=c) for c, t in pros]
+        ).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
         pros_group = VGroup(pros_title, pros_items).arrange(
-            DOWN, buff=0.1, aligned_edge=LEFT
+            DOWN, buff=0.12, aligned_edge=LEFT
         )
 
-        cons_title = make_label("Cons", font_size=13, color=RED)
+        cons_title = make_label("Cons", font_size=18, color=RED)
         cons_items = VGroup(
-            *[make_label("- " + t, font_size=11, color=c) for c, t in cons]
-        ).arrange(DOWN, buff=0.08, aligned_edge=LEFT)
+            *[make_label("- " + t, font_size=15, color=c) for c, t in cons]
+        ).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
         cons_group = VGroup(cons_title, cons_items).arrange(
-            DOWN, buff=0.1, aligned_edge=LEFT
+            DOWN, buff=0.12, aligned_edge=LEFT
         )
 
         VGroup(pros_group, cons_group).arrange(
@@ -230,7 +230,7 @@ class Lab2IDFollowUp(Scene):
         # Explicit warning so students do not miss the composite unique index requirement.
         uniq_warn = make_label(
             "Required with AUTO_INCREMENT: UNIQUE KEY (user_id, movie_id)",
-            font_size=11,
+            font_size=14,
             color=YELLOW,
         )
         uniq_warn.next_to(cons_group, DOWN, buff=0.22, aligned_edge=LEFT)
@@ -273,20 +273,20 @@ class Lab2IDFollowUp(Scene):
             (ORANGE, "Needs secondary idx on movie_id"),
         ]
 
-        pros_title = make_label("Pros", font_size=13, color=GREEN)
+        pros_title = make_label("Pros", font_size=18, color=GREEN)
         pros_items = VGroup(
-            *[make_label("+ " + t, font_size=11, color=c) for c, t in pros]
-        ).arrange(DOWN, buff=0.08, aligned_edge=LEFT)
+            *[make_label("+ " + t, font_size=15, color=c) for c, t in pros]
+        ).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
         pros_group = VGroup(pros_title, pros_items).arrange(
-            DOWN, buff=0.1, aligned_edge=LEFT
+            DOWN, buff=0.12, aligned_edge=LEFT
         )
 
-        cons_title = make_label("Cons", font_size=13, color=ORANGE)
+        cons_title = make_label("Cons", font_size=18, color=ORANGE)
         cons_items = VGroup(
-            *[make_label("- " + t, font_size=11, color=c) for c, t in cons]
-        ).arrange(DOWN, buff=0.08, aligned_edge=LEFT)
+            *[make_label("- " + t, font_size=15, color=c) for c, t in cons]
+        ).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
         cons_group = VGroup(cons_title, cons_items).arrange(
-            DOWN, buff=0.1, aligned_edge=LEFT
+            DOWN, buff=0.12, aligned_edge=LEFT
         )
 
         VGroup(pros_group, cons_group).arrange(
@@ -337,20 +337,20 @@ class Lab2IDFollowUp(Scene):
             (RED, "Still needs UNIQUE(user_id, movie_id)"),
         ]
 
-        pros_title = make_label("Pros", font_size=13, color=GREEN)
+        pros_title = make_label("Pros", font_size=18, color=GREEN)
         pros_items = VGroup(
-            *[make_label("+ " + t, font_size=11, color=c) for c, t in pros]
-        ).arrange(DOWN, buff=0.08, aligned_edge=LEFT)
+            *[make_label("+ " + t, font_size=15, color=c) for c, t in pros]
+        ).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
         pros_group = VGroup(pros_title, pros_items).arrange(
-            DOWN, buff=0.1, aligned_edge=LEFT
+            DOWN, buff=0.12, aligned_edge=LEFT
         )
 
-        cons_title = make_label("Cons", font_size=13, color=RED)
+        cons_title = make_label("Cons", font_size=18, color=RED)
         cons_items = VGroup(
-            *[make_label("- " + t, font_size=11, color=c) for c, t in cons]
-        ).arrange(DOWN, buff=0.08, aligned_edge=LEFT)
+            *[make_label("- " + t, font_size=15, color=c) for c, t in cons]
+        ).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
         cons_group = VGroup(cons_title, cons_items).arrange(
-            DOWN, buff=0.1, aligned_edge=LEFT
+            DOWN, buff=0.12, aligned_edge=LEFT
         )
 
         VGroup(pros_group, cons_group).arrange(
@@ -535,7 +535,7 @@ class Lab2IDFollowUp(Scene):
 
         col_labels = ["Criterion", "Auto-Increment", "Composite PK", "UUID"]
         col_colors = [WHITE, BLUE, GREEN, PURPLE]
-        col_widths = [3.5, 2.7, 2.7, 2.7]
+        col_widths = [3.8, 2.9, 2.9, 2.9]
 
         rows_data = [
             (
@@ -573,16 +573,16 @@ class Lab2IDFollowUp(Scene):
             cell = RoundedRectangle(
                 corner_radius=0.06,
                 width=width,
-                height=0.42,
+                height=0.48,
                 fill_color="#21262D",
                 fill_opacity=1,
                 stroke_color=color,
                 stroke_width=1.2,
             )
-            lbl = make_label(text, font_size=11, color=color)
+            lbl = make_label(text, font_size=14, color=color)
             lbl.move_to(cell)
             header_cells.add(VGroup(cell, lbl))
-        header_cells.arrange(RIGHT, buff=0.07).next_to(header, DOWN, buff=0.3)
+        header_cells.arrange(RIGHT, buff=0.07).next_to(header, DOWN, buff=0.25)
         self.play(FadeIn(header_cells, shift=DOWN * 0.1))
         self.wait(0.2)
 
@@ -597,19 +597,19 @@ class Lab2IDFollowUp(Scene):
                 cell = RoundedRectangle(
                     corner_radius=0.06,
                     width=width,
-                    height=0.38,
+                    height=0.45,
                     fill_color=DARK_BG,
                     fill_opacity=0.9,
                     stroke_color=GREY_B,
                     stroke_width=0.6,
                 )
-                lbl = make_label(text, font_size=9, color=color)
+                lbl = make_label(text, font_size=12, color=color)
                 lbl.move_to(cell)
                 row.add(VGroup(cell, lbl))
             row.arrange(RIGHT, buff=0.07)
             all_rows.add(row)
 
-        all_rows.arrange(DOWN, buff=0.06).next_to(header_cells, DOWN, buff=0.07)
+        all_rows.arrange(DOWN, buff=0.06).next_to(header_cells, DOWN, buff=0.06)
         for row in all_rows:
             self.play(FadeIn(row, shift=LEFT * 0.2), run_time=0.3)
             self.wait(0.15)
