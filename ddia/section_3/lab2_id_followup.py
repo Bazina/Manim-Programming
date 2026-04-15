@@ -262,7 +262,7 @@ class Lab2IDFollowUp(Scene):
         code = make_code_text(sql, font_size=11, t2c=MYSQL_T2C)
         code.move_to(LEFT * 2.8 + DOWN * 0.3)
         self.play(FadeIn(code, shift=UP * 0.2))
-        self.play(Circumscribe(code.bg, color=GREEN, buff=0.05, run_time=0.8))
+        self.play(Circumscribe(code.bg, color=GREEN, buff=0.05, run_time=1.5))
         self.wait(0.5)
 
         pros = [
@@ -513,13 +513,13 @@ class Lab2IDFollowUp(Scene):
 
         # Animate row by row
         self.play(FadeIn(ai_full, shift=RIGHT * 0.2))
-        self.play(Wiggle(ai_gap, scale_value=1.15, run_time=0.6))
+        self.play(Wiggle(ai_gap, scale_value=1.15, run_time=1.2))
         self.wait(1.2)
         self.play(FadeIn(uuid_full, shift=RIGHT * 0.2))
-        self.play(Indicate(uuid_known, color=GREEN, run_time=0.6))
+        self.play(Indicate(uuid_known, color=GREEN, run_time=1.2))
         self.wait(1.2)
         self.play(FadeIn(comp_full, shift=RIGHT * 0.2))
-        self.play(Indicate(comp_known, color=GREEN, run_time=0.6))
+        self.play(Indicate(comp_known, color=GREEN, run_time=1.2))
         self.wait(1.0)
 
         insight = make_label(
@@ -642,10 +642,10 @@ class Lab2IDFollowUp(Scene):
                         row[col_idx],
                         color=winner_color[col_idx],
                         buff=0.03,
-                        run_time=0.4,
+                        run_time=1.0,
                         shape=Rectangle,
                     ),
-                    run_time=0.4,
+                    run_time=1.0,
                 )
         self.wait(3)
         self.play(FadeOut(*self.mobjects))
@@ -675,7 +675,7 @@ class Lab2IDFollowUp(Scene):
         rec_card = VGroup(rec_box, rec_content)
         rec_card.move_to(UP * 0.5)
         self.play(FadeIn(rec_card, shift=DOWN * 0.2))
-        self.play(Circumscribe(rec_box, color=GREEN, buff=0.05, run_time=0.8))
+        self.play(Circumscribe(rec_box, color=GREEN, buff=0.05, run_time=1.5))
         self.wait(0.5)
 
         reason = make_label(

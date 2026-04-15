@@ -335,7 +335,7 @@ class ConsistencyLab(Scene):
         key_strip.move_to(UP * 0.6)
 
         self.play(FadeIn(pk_group, shift=DOWN * 0.2))
-        self.play(Circumscribe(pk_box, color=BLUE, buff=0.05, run_time=0.7))
+        self.play(Circumscribe(pk_box, color=BLUE, buff=0.05, run_time=1.5))
         for brick in cl_bricks:
             self.play(FadeIn(brick, shift=DOWN * 0.2), run_time=0.4)
 
@@ -402,14 +402,14 @@ class ConsistencyLab(Scene):
 
         rows = VGroup()
         for color, level, req, tradeoff in levels:
-            level_l = make_label(level, font_size=13, color=color)
-            req_l = make_label(req, font_size=11, color=WHITE)
-            tradeoff_l = make_label(tradeoff, font_size=11, color=GREY_A)
+            level_l = make_label(level, font_size=17, color=color)
+            req_l = make_label(req, font_size=14, color=WHITE)
+            tradeoff_l = make_label(tradeoff, font_size=14, color=GREY_A)
             content = VGroup(level_l, req_l, tradeoff_l)
             box = RoundedRectangle(
                 corner_radius=0.1,
                 width=ROW_W,
-                height=content.height + 0.25,
+                height=content.height + 0.4,
                 fill_color=DARK_BG,
                 fill_opacity=0.9,
                 stroke_color=color,
@@ -435,7 +435,7 @@ class ConsistencyLab(Scene):
         # Highlight QUORUM row as the lab default
         self.play(
             Circumscribe(
-                rows[2], color=ORANGE, buff=0.04, run_time=0.7, shape=Rectangle
+                rows[2], color=ORANGE, buff=0.04, run_time=1.5, shape=Rectangle
             )
         )
 
@@ -513,7 +513,7 @@ class ConsistencyLab(Scene):
             )
         )
         # Highlight the RF=3 card (last one) as the recommended choice
-        self.play(Circumscribe(ex_cards[2], color=GREEN, buff=0.05, run_time=0.8))
+        self.play(Circumscribe(ex_cards[2], color=GREEN, buff=0.05, run_time=1.5))
         self.wait(1.0)
 
         take = make_label(
@@ -558,7 +558,7 @@ class ConsistencyLab(Scene):
         )
         r1.next_to(note, DOWN, buff=0.3)
         self.play(FadeIn(r1, shift=UP * 0.1))
-        self.play(Indicate(r1, color=RED, run_time=0.5))
+        self.play(Indicate(r1, color=RED, run_time=1.2))
         self.wait(1.0)
 
         # Restore, pause Node 2 (non-owner) — SUCCESS
@@ -572,7 +572,7 @@ class ConsistencyLab(Scene):
         )
         r2.next_to(note, DOWN, buff=0.3)
         self.play(FadeIn(r2, shift=UP * 0.1))
-        self.play(Indicate(r2, color=GREEN, run_time=0.5))
+        self.play(Indicate(r2, color=GREEN, run_time=1.2))
         self.wait(1.5)
 
         tip = make_label(
@@ -616,7 +616,7 @@ class ConsistencyLab(Scene):
         )
         r1.next_to(qnote, DOWN, buff=0.3)
         self.play(FadeIn(r1))
-        self.play(Indicate(r1, color=RED, run_time=0.5))
+        self.play(Indicate(r1, color=RED, run_time=1.2))
         self.wait(0.5)
         cl_tip = make_label(
             "Lower to CL ONE → succeeds (1 replica still available)",
@@ -638,7 +638,7 @@ class ConsistencyLab(Scene):
         )
         r3.next_to(qnote, DOWN, buff=0.3)
         self.play(FadeIn(r3))
-        self.play(Indicate(r3, color=GREEN, run_time=0.5))
+        self.play(Indicate(r3, color=GREEN, run_time=1.2))
         self.wait(2.5)
         self.play(FadeOut(*self.mobjects))
 
@@ -673,7 +673,7 @@ class ConsistencyLab(Scene):
         )
         r1.next_to(qnote, DOWN, buff=0.3)
         self.play(FadeIn(r1))
-        self.play(Indicate(r1, color=GREEN, run_time=0.5))
+        self.play(Indicate(r1, color=GREEN, run_time=1.2))
         self.wait(1.0)
 
         # Down 2nd node → FAIL
@@ -685,7 +685,7 @@ class ConsistencyLab(Scene):
         )
         r2.next_to(r1, DOWN, buff=0.12)
         self.play(FadeIn(r2))
-        self.play(Indicate(r2, color=RED, run_time=0.5))
+        self.play(Indicate(r2, color=RED, run_time=1.2))
         self.wait(0.5)
 
         cl_tip = make_label(
@@ -768,7 +768,7 @@ class ConsistencyLab(Scene):
             self.wait(0.45)
 
         # Highlight the "Avoid ALLOW FILTERING" warning
-        self.play(Indicate(rows[4], color=RED, run_time=0.8))
+        self.play(Indicate(rows[4], color=RED, run_time=1.5))
 
         self.wait(2)
         self.play(FadeOut(*self.mobjects))
