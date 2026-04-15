@@ -438,22 +438,32 @@ class ConsistencyLab(Scene):
             ),
         ]
 
+        # Fixed column x-positions for alignment
+        COL_NAME_X = -4.8
+        COL_REQ_X = -2.5
+        COL_TRADE_X = 1.0
+        ROW_W = 12.5
+
         rows = VGroup()
         for color, level, req, tradeoff in levels:
             level_l = make_label(level, font_size=13, color=color)
             req_l = make_label(req, font_size=11, color=WHITE)
             tradeoff_l = make_label(tradeoff, font_size=11, color=GREY_A)
-            content = VGroup(level_l, req_l, tradeoff_l).arrange(RIGHT, buff=0.55)
+            # Align each label to its column's left edge
+            level_l.move_to([COL_NAME_X + level_l.width / 2, 0, 0])
+            req_l.move_to([COL_REQ_X + req_l.width / 2, 0, 0])
+            tradeoff_l.move_to([COL_TRADE_X + tradeoff_l.width / 2, 0, 0])
+            content = VGroup(level_l, req_l, tradeoff_l)
             box = RoundedRectangle(
                 corner_radius=0.1,
-                width=content.width + 0.6,
+                width=ROW_W,
                 height=content.height + 0.25,
                 fill_color=DARK_BG,
                 fill_opacity=0.9,
                 stroke_color=color,
                 stroke_width=1.1,
             )
-            content.move_to(box.get_center())
+            content.move_to([0, box.get_center()[1], 0])
             rows.add(VGroup(box, content))
 
         rows.arrange(DOWN, buff=0.1).next_to(header, DOWN, buff=0.35)
