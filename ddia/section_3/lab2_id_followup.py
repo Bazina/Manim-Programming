@@ -634,19 +634,17 @@ class Lab2IDFollowUp(Scene):
             self.play(FadeIn(row, shift=LEFT * 0.2), run_time=0.3)
             self.wait(0.15)
 
-        # Circumscribe the best strategy cell(s) per row
+        # Indicate the best strategy cell(s) per row
         for row_idx, row in enumerate(all_rows):
             for col_idx in best_cols_by_row.get(row_idx, []):
                 self.play(
-                    Circumscribe(
+                    Indicate(
                         row[col_idx],
                         color=winner_color[col_idx],
-                        buff=0.03,
-                        run_time=1.0,
-                        shape=Rectangle,
+                        run_time=1.2,
                     ),
-                    run_time=1.0,
                 )
+                self.wait(0.4)
         self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
