@@ -620,7 +620,10 @@ class Lab2IDFollowUp(Scene):
                 lbl.move_to(cell)
                 row.add(VGroup(cell, lbl))
 
+            row.arrange(RIGHT, buff=0.07)
+
             # Add glow on the strongest strategy choice(s) for this criterion.
+            # Must be created AFTER arrange so glows match final cell positions.
             row_glows = VGroup()
             for col_idx in best_cols_by_row.get(row_idx, []):
                 row_glows.add(
@@ -632,7 +635,6 @@ class Lab2IDFollowUp(Scene):
                     )
                 )
 
-            row.arrange(RIGHT, buff=0.07)
             all_rows.add(VGroup(row_glows, row))
 
         all_rows.arrange(DOWN, buff=0.06).next_to(header_cells, DOWN, buff=0.06)
