@@ -8,10 +8,14 @@ from manim import (
     Scene,
     VGroup,
     RoundedRectangle,
+    Rectangle,
     Arrow,
     FadeIn,
     FadeOut,
     AddTextLetterByLetter,
+    Circumscribe,
+    Indicate,
+    Wiggle,
     UP,
     DOWN,
     LEFT,
@@ -38,7 +42,6 @@ from libs.ddia_components import (
     make_label,
     make_icon,
     make_code_text,
-    create_rect_glow,
 )
 
 config.background_color = "#0D1117"
@@ -258,9 +261,9 @@ class Lab2IDFollowUp(Scene):
         )
         code = make_code_text(sql, font_size=11, t2c=MYSQL_T2C)
         code.move_to(LEFT * 2.8 + DOWN * 0.3)
-        glow = create_rect_glow(code.bg, color=GREEN)
-        self.play(FadeIn(VGroup(glow, code), shift=UP * 0.2))
-        self.wait(0.8)
+        self.play(FadeIn(code, shift=UP * 0.2))
+        self.play(Circumscribe(code.bg, color=GREEN, buff=0.05, run_time=0.8))
+        self.wait(0.5)
 
         pros = [
             (GREEN, "Uniqueness enforced by PK itself"),
@@ -510,11 +513,14 @@ class Lab2IDFollowUp(Scene):
 
         # Animate row by row
         self.play(FadeIn(ai_full, shift=RIGHT * 0.2))
-        self.wait(1.8)
+        self.play(Wiggle(ai_gap, scale_value=1.15, run_time=0.6))
+        self.wait(1.2)
         self.play(FadeIn(uuid_full, shift=RIGHT * 0.2))
-        self.wait(1.8)
+        self.play(Indicate(uuid_known, color=GREEN, run_time=0.6))
+        self.wait(1.2)
         self.play(FadeIn(comp_full, shift=RIGHT * 0.2))
-        self.wait(1.5)
+        self.play(Indicate(comp_known, color=GREEN, run_time=0.6))
+        self.wait(1.0)
 
         insight = make_label(
             "Auto-increment: ID only known after write   |   UUID & Composite: ID pre-known → single atomic batch",
@@ -621,26 +627,26 @@ class Lab2IDFollowUp(Scene):
                 row.add(VGroup(cell, lbl))
 
             row.arrange(RIGHT, buff=0.07)
-
-            # Add glow on the strongest strategy choice(s) for this criterion.
-            # Must be created AFTER arrange so glows match final cell positions.
-            row_glows = VGroup()
-            for col_idx in best_cols_by_row.get(row_idx, []):
-                row_glows.add(
-                    create_rect_glow(
-                        row[col_idx][0],
-                        color=winner_color[col_idx],
-                        layers=2,
-                        max_opacity=0.45,
-                    )
-                )
-
-            all_rows.add(VGroup(row_glows, row))
+            all_rows.add(row)
 
         all_rows.arrange(DOWN, buff=0.06).next_to(header_cells, DOWN, buff=0.06)
         for row in all_rows:
             self.play(FadeIn(row, shift=LEFT * 0.2), run_time=0.3)
             self.wait(0.15)
+
+        # Circumscribe the best strategy cell(s) per row
+        for row_idx, row in enumerate(all_rows):
+            for col_idx in best_cols_by_row.get(row_idx, []):
+                self.play(
+                    Circumscribe(
+                        row[col_idx],
+                        color=winner_color[col_idx],
+                        buff=0.03,
+                        run_time=0.4,
+                        shape=Rectangle,
+                    ),
+                    run_time=0.4,
+                )
         self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
@@ -666,11 +672,11 @@ class Lab2IDFollowUp(Scene):
             stroke_width=1.8,
         )
         rec_content.move_to(rec_box.get_center())
-        rec_glow = create_rect_glow(rec_box, color=GREEN)
-        rec_card = VGroup(rec_glow, rec_box, rec_content)
+        rec_card = VGroup(rec_box, rec_content)
         rec_card.move_to(UP * 0.5)
         self.play(FadeIn(rec_card, shift=DOWN * 0.2))
-        self.wait(0.8)
+        self.play(Circumscribe(rec_box, color=GREEN, buff=0.05, run_time=0.8))
+        self.wait(0.5)
 
         reason = make_label(
             "The business rule 'one user, one movie, one rating'\nis best expressed as the PRIMARY KEY itself.",

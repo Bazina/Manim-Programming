@@ -11,6 +11,7 @@ from manim import (
     Scene,
     VGroup,
     RoundedRectangle,
+    Rectangle,
     Arrow,
     Circle,
     FadeIn,
@@ -18,6 +19,8 @@ from manim import (
     GrowArrow,
     AnimationGroup,
     AddTextLetterByLetter,
+    Circumscribe,
+    Indicate,
     ORIGIN,
     UP,
     DOWN,
@@ -307,9 +310,8 @@ class ConsistencyLab(Scene):
             stroke_color=BLUE,
             stroke_width=2.0,
         )
-        pk_glow = create_rect_glow(pk_box, color=BLUE)
         VGroup(pk_lbl, pk_val).arrange(DOWN, buff=0.06).move_to(pk_box.get_center())
-        pk_group = VGroup(pk_glow, pk_box, pk_lbl, pk_val)
+        pk_group = VGroup(pk_box, pk_lbl, pk_val)
 
         # Clustering column bricks
         cl_cols = [("category", TEAL), ("year", PURPLE), ("title", ORANGE)]
@@ -333,6 +335,7 @@ class ConsistencyLab(Scene):
         key_strip.move_to(UP * 0.6)
 
         self.play(FadeIn(pk_group, shift=DOWN * 0.2))
+        self.play(Circumscribe(pk_box, color=BLUE, buff=0.05, run_time=0.7))
         for brick in cl_bricks:
             self.play(FadeIn(brick, shift=DOWN * 0.2), run_time=0.4)
 
@@ -429,6 +432,13 @@ class ConsistencyLab(Scene):
             self.play(FadeIn(row, shift=LEFT * 0.2), run_time=0.4)
             self.wait(0.45)
 
+        # Highlight QUORUM row as the lab default
+        self.play(
+            Circumscribe(
+                rows[2], color=ORANGE, buff=0.04, run_time=0.7, shape=Rectangle
+            )
+        )
+
         speed = make_label(
             "Speed  ←————————————————————→  Safety", font_size=18, color=YELLOW
         )
@@ -494,11 +504,7 @@ class ConsistencyLab(Scene):
                 stroke_width=1.5,
             )
             content.move_to(box.get_center())
-            if color == GREEN:
-                g = create_rect_glow(box, color=GREEN)
-                ex_cards.add(VGroup(g, box, content))
-            else:
-                ex_cards.add(VGroup(box, content))
+            ex_cards.add(VGroup(box, content))
 
         ex_cards.arrange(RIGHT, buff=0.4).next_to(notes, DOWN, buff=0.4)
         self.play(
@@ -506,7 +512,9 @@ class ConsistencyLab(Scene):
                 *[FadeIn(c, shift=UP * 0.2) for c in ex_cards], lag_ratio=0.2
             )
         )
-        self.wait(1.5)
+        # Highlight the RF=3 card (last one) as the recommended choice
+        self.play(Circumscribe(ex_cards[2], color=GREEN, buff=0.05, run_time=0.8))
+        self.wait(1.0)
 
         take = make_label(
             "RF=3 + QUORUM  →  2 + 2 = 4 > 3  ✓  Best production default",
@@ -550,7 +558,8 @@ class ConsistencyLab(Scene):
         )
         r1.next_to(note, DOWN, buff=0.3)
         self.play(FadeIn(r1, shift=UP * 0.1))
-        self.wait(1.5)
+        self.play(Indicate(r1, color=RED, run_time=0.5))
+        self.wait(1.0)
 
         # Restore, pause Node 2 (non-owner) — SUCCESS
         self.play(FadeOut(fail1, r1))
@@ -563,7 +572,8 @@ class ConsistencyLab(Scene):
         )
         r2.next_to(note, DOWN, buff=0.3)
         self.play(FadeIn(r2, shift=UP * 0.1))
-        self.wait(2)
+        self.play(Indicate(r2, color=GREEN, run_time=0.5))
+        self.wait(1.5)
 
         tip = make_label(
             "RF=1 means zero fault tolerance — avoid in production.",
@@ -606,7 +616,8 @@ class ConsistencyLab(Scene):
         )
         r1.next_to(qnote, DOWN, buff=0.3)
         self.play(FadeIn(r1))
-        self.wait(0.8)
+        self.play(Indicate(r1, color=RED, run_time=0.5))
+        self.wait(0.5)
         cl_tip = make_label(
             "Lower to CL ONE → succeeds (1 replica still available)",
             font_size=12,
@@ -627,7 +638,8 @@ class ConsistencyLab(Scene):
         )
         r3.next_to(qnote, DOWN, buff=0.3)
         self.play(FadeIn(r3))
-        self.wait(3)
+        self.play(Indicate(r3, color=GREEN, run_time=0.5))
+        self.wait(2.5)
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 9: RF = 3 Experiments ─────────────────────────────────
@@ -661,7 +673,8 @@ class ConsistencyLab(Scene):
         )
         r1.next_to(qnote, DOWN, buff=0.3)
         self.play(FadeIn(r1))
-        self.wait(1.5)
+        self.play(Indicate(r1, color=GREEN, run_time=0.5))
+        self.wait(1.0)
 
         # Down 2nd node → FAIL
         fail2 = self._fail_overlay(n2)
@@ -672,7 +685,8 @@ class ConsistencyLab(Scene):
         )
         r2.next_to(r1, DOWN, buff=0.12)
         self.play(FadeIn(r2))
-        self.wait(1)
+        self.play(Indicate(r2, color=RED, run_time=0.5))
+        self.wait(0.5)
 
         cl_tip = make_label(
             "CL ONE with 2 nodes down may still work if Node 3 holds the partition.",
@@ -752,6 +766,9 @@ class ConsistencyLab(Scene):
         for row in rows:
             self.play(FadeIn(row, shift=LEFT * 0.2), run_time=0.4)
             self.wait(0.45)
+
+        # Highlight the "Avoid ALLOW FILTERING" warning
+        self.play(Indicate(rows[4], color=RED, run_time=0.8))
 
         self.wait(2)
         self.play(FadeOut(*self.mobjects))
