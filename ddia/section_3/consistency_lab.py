@@ -13,9 +13,12 @@ from manim import (
     RoundedRectangle,
     Arrow,
     Circle,
+    Dot,
+    ArcBetweenPoints,
     FadeIn,
     FadeOut,
     GrowArrow,
+    GrowFromCenter,
     AnimationGroup,
     AddTextLetterByLetter,
     ORIGIN,
@@ -278,35 +281,55 @@ class ConsistencyLab(Scene):
             self.play(FadeIn(card, shift=(ring_center - pos) * 0.15), run_time=0.5)
             self.wait(0.2)
 
-        # Gossip arrows between adjacent nodes — use edge points so arrows
-        # don't overlap the card boxes.
-        for i in range(3):
-            j = (i + 1) % 3
-            direction = node_cards[j].get_center() - node_cards[i].get_center()
-            direction /= np.linalg.norm(direction)
-            start = node_cards[i].get_edge_center(direction)
-            end = node_cards[j].get_edge_center(-direction)
-            a = Arrow(
-                start,
-                end,
-                buff=0.06,
-                stroke_width=1.4,
-                color=GREY_A,
-                tip_length=0.09,
+        # Token range labels on ring arcs
+        token_ranges = [
+            (90, 210, BLUE, "0 – 2^63"),
+            (210, 330, GREEN, "−2^63 – −1"),
+            (330, 450, ORANGE, "−1 – 0"),
+        ]
+        for start_a, end_a, color, label in token_ranges:
+            mid_a = math.radians((start_a + end_a) / 2)
+            label_pos = ring_center + np.array(
+                [1.45 * math.cos(mid_a), 1.45 * math.sin(mid_a), 0]
             )
-            self.play(GrowArrow(a), run_time=0.35)
+            t_lbl = make_label(label, font_size=8, color=color)
+            t_lbl.move_to(label_pos)
+            self.play(FadeIn(t_lbl), run_time=0.3)
 
-        gossip = make_label(
-            "gossip protocol keeps every node in sync", font_size=15, color=GREY_A
+        # Virtual nodes (vnodes) — small dots on the ring
+        vnode_angles = [
+            (70, BLUE),
+            (110, BLUE),
+            (190, GREEN),
+            (230, GREEN),
+            (310, ORANGE),
+            (350, ORANGE),
+        ]
+        vnodes = VGroup()
+        for va, color in vnode_angles:
+            pos = ring_center + np.array(
+                [2.1 * math.cos(math.radians(va)), 2.1 * math.sin(math.radians(va)), 0]
+            )
+            d = Dot(pos, radius=0.055, color=color, fill_opacity=0.9)
+            vnodes.add(d)
+        self.play(
+            AnimationGroup(*[GrowFromCenter(v) for v in vnodes], lag_ratio=0.08),
+            run_time=0.6,
         )
-        gossip.to_edge(DOWN, buff=1.05)
+
+        vnode_note = make_label(
+            "vnodes: each physical node owns multiple token ranges",
+            font_size=15,
+            color=GREY_A,
+        )
+        vnode_note.to_edge(DOWN, buff=1.05)
         token = make_label(
             "Consistent hashing: partition key  →  token  →  replica node(s)",
             font_size=17,
             color=YELLOW,
         )
         token.to_edge(DOWN, buff=0.45)
-        self.play(FadeIn(gossip, shift=UP * 0.1))
+        self.play(FadeIn(vnode_note, shift=UP * 0.1))
         self.wait(0.5)
         self.play(FadeIn(token, shift=UP * 0.1))
         self.wait(3)
