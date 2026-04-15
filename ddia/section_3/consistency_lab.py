@@ -13,12 +13,9 @@ from manim import (
     RoundedRectangle,
     Arrow,
     Circle,
-    Dot,
-    ArcBetweenPoints,
     FadeIn,
     FadeOut,
     GrowArrow,
-    GrowFromCenter,
     AnimationGroup,
     AddTextLetterByLetter,
     ORIGIN,
@@ -281,56 +278,12 @@ class ConsistencyLab(Scene):
             self.play(FadeIn(card, shift=(ring_center - pos) * 0.15), run_time=0.5)
             self.wait(0.2)
 
-        # Token range labels on ring arcs
-        token_ranges = [
-            (90, 210, BLUE, "0 – 2^63"),
-            (210, 330, GREEN, "−2^63 – −1"),
-            (330, 450, ORANGE, "−1 – 0"),
-        ]
-        for start_a, end_a, color, label in token_ranges:
-            mid_a = math.radians((start_a + end_a) / 2)
-            label_pos = ring_center + np.array(
-                [1.45 * math.cos(mid_a), 1.45 * math.sin(mid_a), 0]
-            )
-            t_lbl = make_label(label, font_size=8, color=color)
-            t_lbl.move_to(label_pos)
-            self.play(FadeIn(t_lbl), run_time=0.3)
-
-        # Virtual nodes (vnodes) — small dots on the ring
-        vnode_angles = [
-            (70, BLUE),
-            (110, BLUE),
-            (190, GREEN),
-            (230, GREEN),
-            (310, ORANGE),
-            (350, ORANGE),
-        ]
-        vnodes = VGroup()
-        for va, color in vnode_angles:
-            pos = ring_center + np.array(
-                [2.1 * math.cos(math.radians(va)), 2.1 * math.sin(math.radians(va)), 0]
-            )
-            d = Dot(pos, radius=0.055, color=color, fill_opacity=0.9)
-            vnodes.add(d)
-        self.play(
-            AnimationGroup(*[GrowFromCenter(v) for v in vnodes], lag_ratio=0.08),
-            run_time=0.6,
-        )
-
-        vnode_note = make_label(
-            "vnodes: each physical node owns multiple token ranges",
-            font_size=15,
-            color=GREY_A,
-        )
-        vnode_note.to_edge(DOWN, buff=1.05)
         token = make_label(
             "Consistent hashing: partition key  →  token  →  replica node(s)",
             font_size=17,
             color=YELLOW,
         )
         token.to_edge(DOWN, buff=0.45)
-        self.play(FadeIn(vnode_note, shift=UP * 0.1))
-        self.wait(0.5)
         self.play(FadeIn(token, shift=UP * 0.1))
         self.wait(3)
         self.play(FadeOut(*self.mobjects))
@@ -449,10 +402,6 @@ class ConsistencyLab(Scene):
             level_l = make_label(level, font_size=13, color=color)
             req_l = make_label(req, font_size=11, color=WHITE)
             tradeoff_l = make_label(tradeoff, font_size=11, color=GREY_A)
-            # Align each label to its column's left edge
-            level_l.move_to([COL_NAME_X + level_l.width / 2, 0, 0])
-            req_l.move_to([COL_REQ_X + req_l.width / 2, 0, 0])
-            tradeoff_l.move_to([COL_TRADE_X + tradeoff_l.width / 2, 0, 0])
             content = VGroup(level_l, req_l, tradeoff_l)
             box = RoundedRectangle(
                 corner_radius=0.1,
@@ -463,10 +412,19 @@ class ConsistencyLab(Scene):
                 stroke_color=color,
                 stroke_width=1.1,
             )
-            content.move_to([0, box.get_center()[1], 0])
             rows.add(VGroup(box, content))
 
         rows.arrange(DOWN, buff=0.1).next_to(header, DOWN, buff=0.35)
+
+        # Left-align labels at fixed column x-positions after final layout
+        for row in rows:
+            box, content = row[0], row[1]
+            level_l, req_l, tradeoff_l = content[0], content[1], content[2]
+            row_y = box.get_center()[1]
+            level_l.move_to([COL_NAME_X + level_l.width / 2, row_y, 0])
+            req_l.move_to([COL_REQ_X + req_l.width / 2, row_y, 0])
+            tradeoff_l.move_to([COL_TRADE_X + tradeoff_l.width / 2, row_y, 0])
+
         for row in rows:
             self.play(FadeIn(row, shift=LEFT * 0.2), run_time=0.4)
             self.wait(0.45)
