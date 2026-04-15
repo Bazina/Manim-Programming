@@ -423,8 +423,8 @@ class ConsistencyLab(Scene):
             content = VGroup(level_l, req_l, tradeoff_l).arrange(RIGHT, buff=0.55)
             box = RoundedRectangle(
                 corner_radius=0.1,
-                width=12.5,
-                height=0.58,
+                width=content.width + 0.6,
+                height=content.height + 0.25,
                 fill_color=DARK_BG,
                 fill_opacity=0.9,
                 stroke_color=color,
