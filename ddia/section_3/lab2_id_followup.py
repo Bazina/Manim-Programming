@@ -472,7 +472,7 @@ class Lab2IDFollowUp(Scene):
         c1 = self._step_box("Key =\n(user, movie)", GREEN)
         c2 = self._step_box("INSERT\n(with key)", GREEN)
         c3 = self._step_box("Row\nwritten", GREY_B)
-        c4 = self._step_box("Done ✓", GREEN)
+        c4 = self._step_box("Done", GREEN)
 
         comp_steps = VGroup(c1, c2, c3, c4).arrange(RIGHT, buff=0.22)
         comp_a1 = Arrow(
@@ -567,6 +567,19 @@ class Lab2IDFollowUp(Scene):
             ("Distributed / multi-master", "Conflicts possible", "Good", "Best"),
         ]
 
+        # Best option(s) per row; values are strategy column indices in the table.
+        # 1 = Auto-Increment, 2 = Composite PK, 3 = UUID.
+        best_cols_by_row = {
+            0: [2],
+            1: [2],
+            2: [1, 2, 3],
+            3: [2, 3],
+            4: [1],
+            5: [2, 3],
+            6: [3],
+        }
+        winner_color = {1: BLUE, 2: GREEN, 3: PURPLE}
+
         # Header row
         header_cells = VGroup()
         for text, color, width in zip(col_labels, col_colors, col_widths):
@@ -587,7 +600,7 @@ class Lab2IDFollowUp(Scene):
         self.wait(0.2)
 
         all_rows = VGroup()
-        for criterion, auto, comp, uuid in rows_data:
+        for row_idx, (criterion, auto, comp, uuid) in enumerate(rows_data):
             row = VGroup()
             for text, color, width in zip(
                 [criterion, auto, comp, uuid],
@@ -606,8 +619,21 @@ class Lab2IDFollowUp(Scene):
                 lbl = make_label(text, font_size=12, color=color)
                 lbl.move_to(cell)
                 row.add(VGroup(cell, lbl))
+
+            # Add glow on the strongest strategy choice(s) for this criterion.
+            row_glows = VGroup()
+            for col_idx in best_cols_by_row.get(row_idx, []):
+                row_glows.add(
+                    create_rect_glow(
+                        row[col_idx][0],
+                        color=winner_color[col_idx],
+                        n=2,
+                        opacity_multiplier=0.45,
+                    )
+                )
+
             row.arrange(RIGHT, buff=0.07)
-            all_rows.add(row)
+            all_rows.add(VGroup(row_glows, row))
 
         all_rows.arrange(DOWN, buff=0.06).next_to(header_cells, DOWN, buff=0.06)
         for row in all_rows:
@@ -630,7 +656,7 @@ class Lab2IDFollowUp(Scene):
         rec_content = VGroup(rec_icon, rec_title).arrange(DOWN, buff=0.15)
         rec_box = RoundedRectangle(
             corner_radius=0.15,
-            width=5.0,
+            width=5.5,
             height=2.0,
             fill_color=DARK_BG,
             fill_opacity=0.9,
