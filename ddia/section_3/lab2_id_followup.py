@@ -627,8 +627,8 @@ class Lab2IDFollowUp(Scene):
                     create_rect_glow(
                         row[col_idx][0],
                         color=winner_color[col_idx],
-                        n=2,
-                        opacity_multiplier=0.45,
+                        layers=2,
+                        max_opacity=0.45,
                     )
                 )
 
