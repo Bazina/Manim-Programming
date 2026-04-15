@@ -485,7 +485,7 @@ class ConsistencyLab(Scene):
         ex_data = [
             (GREY_B, "RF = 1", "Q = 1", "0 failures tolerated"),
             (ORANGE, "RF = 2", "Q = 2 (ALL!)", "0 failures tolerated"),
-            (GREEN, "RF = 3 ★", "Q = 2", "1 failure tolerated"),
+            (GREEN, "RF = 3", "Q = 2", "1 failure tolerated"),
         ]
         ex_cards = VGroup()
         for color, rf, q, note in ex_data:
