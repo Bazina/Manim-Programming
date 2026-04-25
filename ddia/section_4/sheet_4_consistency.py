@@ -123,8 +123,9 @@ class Sheet4Consistency(Scene):
         return VGroup(lbl, ic, tl)
 
     def _op_box(self, t_call, t_ret, op_text, ret_text, y, color,
-                box_h=0.44, ret_color=None):
-        """DDIA-style operation box spanning [t_call, t_ret] at row y."""
+                box_h=0.44, ret_color=None, tick_t=None):
+        """DDIA-style operation box spanning [t_call, t_ret] at row y.
+        tick_t: if given, draws a vertical line inside the box showing the linearization point."""
         x1 = _tx(t_call)
         x2 = _tx(t_ret)
         cx = (x1 + x2) / 2
@@ -138,7 +139,9 @@ class Sheet4Consistency(Scene):
         )
         box.move_to([cx, y, 0])
         op_lbl = make_label(op_text, font_size=9, color=color)
-        op_lbl.move_to(box.get_center())
+        # Shift label left when tick present to avoid overlap
+        lbl_x = cx - w * 0.15 if tick_t is not None else cx
+        op_lbl.move_to([lbl_x, y, 0])
 
         rc = ret_color or GREY_A
         ret_lbl = make_label(f"=> {ret_text}", font_size=9, color=rc)
@@ -152,7 +155,17 @@ class Sheet4Consistency(Scene):
             [x2, y + 0.55, 0], [x2, y - 0.55, 0],
             dash_length=0.07, color=GREY_B, stroke_width=0.7,
         )
-        return VGroup(d1, d2, box, op_lbl), ret_lbl
+
+        parts = [d1, d2, box, op_lbl]
+        if tick_t is not None:
+            xt = _tx(tick_t)
+            tick = Line(
+                [xt, y + box_h / 2 - 0.03, 0], [xt, y - box_h / 2 + 0.03, 0],
+                stroke_color=color, stroke_width=2.5,
+            )
+            parts.append(tick)
+
+        return VGroup(*parts), ret_lbl
 
     def _db_marker(self, t, state_text, y_db, color=WHITE):
         """State-change tick on the database timeline."""
@@ -343,49 +356,42 @@ class Sheet4Consistency(Scene):
         )
         self.wait(0.4)
 
-        # Operations — timings chosen so operations overlap meaningfully
-        # A: R.write(1)  t=0.4→3.2  (long write overlapping B's first read & C's write start)
-        op_a1, ret_a1 = self._op_box(0.4, 3.2, "R.write(1)", "void", ROW_A, TEAL)
-        # B: R.read() #1  t=0.8→1.9  (overlaps A's write → can legally read 1)
-        op_b1, ret_b1 = self._op_box(0.8, 1.9, "R.read()", "1", ROW_B, BLUE, ret_color=GREEN)
-        # C: R.write(2)  t=1.6→3.8  (overlaps end of A's write)
-        op_c1, ret_c1 = self._op_box(1.6, 3.8, "R.write(2)", "void", ROW_C, ORANGE)
-        # B: R.read() #2  t=2.6→4.3  (overlaps C's write → can still see 1 legally)
-        op_b2, ret_b2 = self._op_box(2.6, 4.3, "R.read()", "1", ROW_B, BLUE, ret_color=GREEN)
-        # A: Q.write(3)  t=4.9→6.9
-        op_a2, ret_a2 = self._op_box(4.9, 6.9, "Q.write(3)", "void", ROW_A, TEAL)
-        # C: R.read()  t=5.2→7.2  (sees 2 — C's own write has completed)
-        op_c2, ret_c2 = self._op_box(5.2, 7.2, "R.read()", "2", ROW_C, ORANGE, ret_color=GREEN)
+        # C: R.write(2) linearizes first (tick at t=1.5)
+        op_c1, ret_c1 = self._op_box(0.4, 3.5, "R.write(2)", "void", ROW_C, ORANGE, tick_t=1.5)
+        # A: R.write(1) linearizes second (tick at t=2.8)
+        op_a1, ret_a1 = self._op_box(0.9, 4.1, "R.write(1)", "void", ROW_A, TEAL, tick_t=2.8)
+        # B read #1 between ticks (t=1.5→2.8) → sees R=2
+        op_b1, ret_b1 = self._op_box(1.8, 2.5, "R.read()", "2", ROW_B, BLUE, ret_color=GREEN)
+        # B read #2 after write(1) tick → sees R=1
+        op_b2, ret_b2 = self._op_box(3.4, 4.6, "R.read()", "1", ROW_B, BLUE, ret_color=GREEN)
+        # C final read → sees R=1 (latest state after both writes)
+        op_c2, ret_c2 = self._op_box(5.3, 7.2, "R.read()", "1", ROW_C, ORANGE, ret_color=GREEN)
 
         all_ops = [
-            (op_a1, ret_a1), (op_b1, ret_b1), (op_c1, ret_c1),
-            (op_b2, ret_b2), (op_a2, ret_a2), (op_c2, ret_c2),
+            (op_c1, ret_c1), (op_a1, ret_a1), (op_b1, ret_b1),
+            (op_b2, ret_b2), (op_c2, ret_c2),
         ]
         for op, ret in all_ops:
             self.play(FadeIn(op), run_time=0.35)
             self.play(FadeIn(ret), run_time=0.25)
             self.wait(0.15)
 
-        # Database state markers
+        # DB markers aligned with linearization point ticks
         db0 = self._db_marker(0.0, "R=0", DB_Y, GREY_B)
-        db1 = self._db_marker(3.2, "R=1", DB_Y, TEAL)
-        db2 = self._db_marker(3.8, "R=2", DB_Y, ORANGE)
-        for m in [db0, db1, db2]:
+        db2 = self._db_marker(1.5, "R=2", DB_Y, ORANGE)
+        db1 = self._db_marker(2.8, "R=1", DB_Y, TEAL)
+        for m in [db0, db2, db1]:
             self.play(FadeIn(m), run_time=0.3)
         self.wait(0.6)
 
-        # Reasoning annotation
+        badge = self._verdict_badge("YES — History H is Linearizable  ✓", GREEN, width=6.5)
+        badge.to_edge(DOWN, buff=0.2)
         reason = make_label(
-            "B reads 1 during A's write → valid  |  "
-            "B's 2nd read sees 1 → write(2) not yet linearized  |  "
-            "C reads 2 after its own write ✓",
+            "write(2) tick→t=1.5 → B reads 2 ✓  |  write(1) tick→t=2.8 → B reads 1 ✓  |  C reads 1 ✓",
             font_size=9, color=GREY_A,
         )
-        reason.to_edge(DOWN, buff=0.65)
+        reason.next_to(badge, UP, buff=0.12)
         self.play(FadeIn(reason))
-
-        badge = self._verdict_badge("YES — History H is Linearizable  ✓", GREEN, width=6.5)
-        badge.to_edge(DOWN, buff=0.25)
         self.play(FadeIn(badge, shift=UP * 0.15))
         self.play(Circumscribe(badge, color=GREEN, buff=0.05, run_time=1.5))
         self.wait(4)
@@ -419,52 +425,47 @@ class Sheet4Consistency(Scene):
         )
         self.wait(0.3)
 
-        # Same timings — modified return values to break linearizability
-        op_a1, ret_a1 = self._op_box(0.4, 3.2, "R.write(1)", "void", ROW_A, TEAL)
-        # B's first read now claims to see 2 — before write(2) is complete
-        op_b1, ret_b1 = self._op_box(0.8, 1.9, "R.read()", "2", ROW_B, BLUE, ret_color=ORANGE)
-        op_c1, ret_c1 = self._op_box(1.6, 3.8, "R.write(2)", "void", ROW_C, ORANGE)
-        op_b2, ret_b2 = self._op_box(2.6, 4.3, "R.read()", "2", ROW_B, BLUE, ret_color=ORANGE)
-        op_a2, ret_a2 = self._op_box(4.9, 6.9, "Q.write(3)", "void", ROW_A, TEAL)
-        # C's read now returns 1 after B already observed 2 — the violation
-        op_c2, ret_c2 = self._op_box(5.2, 7.2, "R.read()", "1  ✗", ROW_C, ORANGE, ret_color=RED)
+        # Same boxes & ticks as linearizable version
+        op_c1, ret_c1 = self._op_box(0.4, 3.5, "R.write(2)", "void", ROW_C, ORANGE, tick_t=1.5)
+        op_a1, ret_a1 = self._op_box(0.9, 4.1, "R.write(1)", "void", ROW_A, TEAL, tick_t=2.8)
+        op_b1, ret_b1 = self._op_box(1.8, 2.5, "R.read()", "2", ROW_B, BLUE, ret_color=GREEN)
+        op_b2, ret_b2 = self._op_box(3.4, 4.6, "R.read()", "1", ROW_B, BLUE, ret_color=GREEN)
+        # Violation: C reads 2 after B already observed 1 (regression)
+        op_c2, ret_c2 = self._op_box(5.3, 7.2, "R.read()", "2  ✗", ROW_C, ORANGE, ret_color=RED)
 
-        for op, ret in [(op_a1, ret_a1), (op_c1, ret_c1), (op_b2, ret_b2),
-                        (op_a2, ret_a2)]:
+        for op, ret in [(op_c1, ret_c1), (op_a1, ret_a1), (op_b1, ret_b1)]:
             self.play(FadeIn(op), run_time=0.3)
             self.play(FadeIn(ret), run_time=0.2)
 
         db0 = self._db_marker(0.0, "R=0", DB_Y, GREY_B)
-        db1 = self._db_marker(3.2, "R=1", DB_Y, TEAL)
-        db2 = self._db_marker(3.8, "R=2", DB_Y, ORANGE)
-        for m in [db0, db1, db2]:
+        db2 = self._db_marker(1.5, "R=2", DB_Y, ORANGE)
+        db1 = self._db_marker(2.8, "R=1", DB_Y, TEAL)
+        for m in [db0, db2, db1]:
             self.play(FadeIn(m), run_time=0.25)
 
-        # Show B's first read claiming 2 — this is the setup for the violation
-        self.play(FadeIn(op_b1), run_time=0.35)
-        self.play(FadeIn(ret_b1, shift=RIGHT * 0.1), run_time=0.3)
-        self.play(Indicate(ret_b1, color=ORANGE, run_time=1.2))
+        # Show B reading 1 — the state everyone agrees on
+        self.play(FadeIn(op_b2), run_time=0.35)
+        self.play(FadeIn(ret_b2, shift=RIGHT * 0.1), run_time=0.3)
+        self.play(Indicate(ret_b2, color=GREEN, run_time=1.2))
         self.wait(0.4)
 
-        # Reveal C's regression read with drama
+        # Reveal C's regression read
         self.play(FadeIn(op_c2), run_time=0.4)
         self.play(FadeIn(ret_c2, shift=RIGHT * 0.1), run_time=0.4)
         self.play(Indicate(ret_c2, color=RED, run_time=1.5))
         self.wait(0.4)
 
-        # Annotation connecting the two
-        arrow_explain = make_label(
-            "B already saw R=2  →  C cannot read R=1  (time cannot go backwards)",
-            font_size=10, color=RED,
-        )
-        arrow_explain.to_edge(DOWN, buff=0.65)
-        self.play(FadeIn(arrow_explain))
-
         badge = self._verdict_badge(
-            "NOT Linearizable — once R=2 is observed, R=1 can never be returned  ✗",
+            "NOT Linearizable — B observed R=1; C reading R=2 is a regression  ✗",
             RED, width=8.5,
         )
-        badge.to_edge(DOWN, buff=0.25)
+        badge.to_edge(DOWN, buff=0.2)
+        reason = make_label(
+            "B already observed R=1 (write(1) applied at t=2.8)  →  C reads R=2  →  time cannot go backwards",
+            font_size=9, color=RED,
+        )
+        reason.next_to(badge, UP, buff=0.12)
+        self.play(FadeIn(reason))
         self.play(FadeIn(badge, shift=UP * 0.15))
         self.play(Circumscribe(badge, color=RED, buff=0.04, run_time=1.5))
         self.wait(4)
