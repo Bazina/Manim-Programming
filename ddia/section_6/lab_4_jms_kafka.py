@@ -9,7 +9,6 @@ from manim import (
     VGroup,
     RoundedRectangle,
     Arrow,
-    Line,
     FadeIn,
     FadeOut,
     GrowArrow,
@@ -51,6 +50,7 @@ from libs.ddia_components import (
     make_label,
     make_icon,
     make_code_text,
+    make_comparison_table,
     create_rect_glow,
 )
 
@@ -359,22 +359,22 @@ class Lab4JMSKafka(Scene):
 
         metrics = [
             (ICON_STOPWATCH, BLUE,   "1. Response Time",
-             "Median of 1000 produce/consume calls — 1 KB each"),
+             "Median of 1000 produce/consume\ncalls — 1 KB each"),
             (ICON_GRAPH,     GREEN,  "2. Max Throughput",
-             "Highest msg/sec sustained without dropped messages"),
+             "Highest msg/sec sustained\nwithout dropped messages"),
             (ICON_LIGHTNING, YELLOW, "3. Median Latency",
-             "50th percentile of produce→consume delay (10K msgs)"),
+             "50th percentile of\nproduce→consume delay (10K msgs)"),
         ]
         cards = VGroup()
         for icon, color, title, desc in metrics:
-            ic = make_icon(icon, color=color, height=0.55)
-            lbl = make_label(title, font_size=17, color=color, weight=BOLD)
-            d = make_label(desc, font_size=12, color=GREY_B)
-            content = VGroup(ic, lbl, d).arrange(DOWN, buff=0.12)
+            ic = make_icon(icon, color=color, height=0.42)
+            lbl = make_label(title, font_size=14, color=color, weight=BOLD)
+            d = make_label(desc, font_size=10, color=GREY_B)
+            content = VGroup(ic, lbl, d).arrange(DOWN, buff=0.1)
             box = RoundedRectangle(
                 corner_radius=0.12,
-                width=3.6,
-                height=2.2,
+                width=3.8,
+                height=2.4,
                 fill_color=DARK_BG,
                 fill_opacity=0.9,
                 stroke_color=color,
@@ -383,8 +383,8 @@ class Lab4JMSKafka(Scene):
             content.move_to(box.get_center())
             cards.add(VGroup(box, content))
 
-        cards.arrange(RIGHT, buff=0.6)
-        cards.next_to(header, DOWN, buff=0.6)
+        cards.arrange(RIGHT, buff=0.35)
+        cards.next_to(header, DOWN, buff=0.5)
 
         for card in cards:
             self.play(FadeIn(card, shift=UP * 0.3), run_time=0.45)
@@ -578,67 +578,29 @@ class Lab4JMSKafka(Scene):
         self.play(FadeIn(metrics_intro))
         self.wait(0.4)
 
-        # Table header
-        col_lbl = make_label("Metric", font_size=13, color=WHITE, weight=BOLD)
-        col_jms = make_label("JMS (ActiveMQ)", font_size=13, color=ORANGE, weight=BOLD)
-        col_kafka = make_label("Kafka", font_size=13, color=TEAL, weight=BOLD)
-        col_lbl.move_to([-3.5, 1.5, 0])
-        col_jms.move_to([0.8, 1.5, 0])
-        col_kafka.move_to([3.8, 1.5, 0])
-        self.play(FadeIn(VGroup(col_lbl, col_jms, col_kafka)))
-
-        div = Line([-5.5, 1.2, 0], [5.5, 1.2, 0], color=GREY_B, stroke_width=0.8)
-        self.play(FadeIn(div))
-
-        rows_data = [
-            ("Setup steps",             "~5 steps",  "~4 steps"),
-            ("Time to Hello World",      "~20 min",   "~15 min"),
-            ("Lines to produce",         "~8 lines",  "~5 lines"),
-            ("Lines to consume",         "~10 lines", "~6 lines"),
-            ("API calls (produce op)",   "~5 calls",  "~3 calls"),
+        # each row: (metric, metric_color, jms_val, jms_color, kafka_val, kafka_color)
+        usability_rows = [
+            ("Setup steps",           GREY_A, "~? steps", ORANGE, "~? steps", TEAL),
+            ("Time to Hello World",   GREY_A, "~? ms", ORANGE, "~? ms", TEAL),
+            ("Lines to produce",      GREY_A, "~? lines", ORANGE, "~? lines", TEAL),
+            ("Lines to consume",      GREY_A, "~? lines", ORANGE, "~? lines", TEAL),
+            ("API calls (produce op)",GREY_A, "~? calls", ORANGE, "~? calls", TEAL),
         ]
-        y_positions = [0.8, 0.3, -0.2, -0.7, -1.2]
-        rows = VGroup()
-        for (label, jms_v, kafka_v), y in zip(rows_data, y_positions):
-            row = self._metric_row(label, jms_v, kafka_v, y=y)
-            rows.add(row)
+        table = make_comparison_table(
+            col_headers     = ["Metric",        "JMS (ActiveMQ)", "Kafka"],
+            col_colors      = [WHITE,            ORANGE,           TEAL],
+            col_x_positions = [-3.5,             0.8,              3.8],
+            rows_data       = usability_rows,
+        )
+        table.next_to(metrics_intro, DOWN, buff=0.35)
+        hdrs_grp, div, rows = table[0], table[1], table[2]
+
+        self.play(FadeIn(hdrs_grp))
+        self.play(FadeIn(div))
+        for row in rows:
             self.play(FadeIn(row, shift=RIGHT * 0.2), run_time=0.35)
             self.wait(0.2)
 
-        self.wait(1.5)
-
-        # JMS skeleton code
-        jms_code_lines = [
-            "ConnectionFactory cf =",
-            "  new ActiveMQConnectionFactory(url);",
-            "Connection conn = cf.createConnection();",
-            "Session s = conn.createSession(false,",
-            "  Session.AUTO_ACKNOWLEDGE);",
-            "Topic t = s.createTopic(\"customerTopic\");",
-            "MessageProducer p = s.createProducer(t);",
-            "conn.start();",
-            "p.send(s.createTextMessage(payload));",
-        ]
-        jms_code_box = self._code_box(jms_code_lines, "JMS Produce Skeleton", ORANGE, width=5.5, font_size=9)
-        jms_code_box.to_edge(DOWN, buff=0.2)
-        jms_code_box.shift(LEFT * 3.0)
-
-        kafka_code_lines = [
-            "Properties props = new Properties();",
-            "props.put(\"bootstrap.servers\", \"localhost:9092\");",
-            "props.put(\"key.serializer\", \"...StringSerializer\");",
-            "props.put(\"value.serializer\", \"...StringSerializer\");",
-            "KafkaProducer<String,String> producer =",
-            "  new KafkaProducer<>(props);",
-            "producer.send(new ProducerRecord<>(\"myTopic\", payload));",
-        ]
-        kafka_code_box = self._code_box(kafka_code_lines, "Kafka Produce Skeleton", TEAL, width=5.8, font_size=9)
-        kafka_code_box.to_edge(DOWN, buff=0.2)
-        kafka_code_box.shift(RIGHT * 3.0)
-
-        self.play(FadeIn(jms_code_box, shift=LEFT * 0.3))
-        self.wait(0.3)
-        self.play(FadeIn(kafka_code_box, shift=RIGHT * 0.3))
         self.wait(3)
         self.play(FadeOut(*self.mobjects))
 

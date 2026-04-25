@@ -20,6 +20,7 @@ from manim import (
     DOWN,
     LEFT,
     RIGHT,
+    BOLD,
     WHITE,
     GREY_A,
     GREY_B,
@@ -44,6 +45,7 @@ from libs.ddia_components import (
     ICON_SHIELD,
     make_label,
     make_icon,
+    make_comparison_table,
 )
 
 config.background_color = "#0D1117"
@@ -262,7 +264,7 @@ class Sheet5Streaming(Scene):
             "⚠  Buffer overflow risk — must define eviction: drop oldest, drop newest, or block",
             font_size=12, color=YELLOW,
         )
-        overflow.to_edge(DOWN, buff=0.6)
+        overflow.to_edge(DOWN * -2, buff=0)
         tradeoff = VGroup(
             make_label("✓  Absorbs bursts — producer is unaffected while buffer has space", font_size=12, color=GREEN),
             make_label("✗  If consumer is permanently slower, buffer eventually overflows", font_size=12, color=RED),
@@ -523,84 +525,59 @@ class Sheet5Streaming(Scene):
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.4)
 
-        # Transmission model definitions
+        # Transmission model legend
         models = [
-            (GREY_B,  "Direct",          "Producer → Consumer (point-to-point, no intermediary)"),
-            (ORANGE,  "Broker",          "Messages pass through central broker that routes them"),
-            (TEAL,    "Partitioned Log", "Append-only log, consumers track own offset (replay-able)"),
+            (GREY_B,  "Direct",          "Producer → Consumer directly (point-to-point, no intermediary)"),
+            (ORANGE,  "Broker",          "Messages pass through a central broker that routes them"),
+            (TEAL,    "Partitioned Log", "Append-only ordered log; consumers track own offset (replay-able)"),
         ]
         model_rows = VGroup()
         for color, name, desc in models:
-            name_lbl = make_label(name, font_size=12, color=color)
+            name_lbl = make_label(name, font_size=12, color=color, weight=BOLD)
             desc_lbl = make_label(desc, font_size=11, color=GREY_A)
-            content = VGroup(name_lbl, desc_lbl).arrange(RIGHT, buff=0.3)
+            content = VGroup(name_lbl, desc_lbl).arrange(RIGHT, buff=0.35)
             box = RoundedRectangle(
-                corner_radius=0.08, width=11.0, height=0.48,
+                corner_radius=0.08, width=12.0, height=0.46,
                 fill_color=DARK_BG, fill_opacity=0.9,
                 stroke_color=color, stroke_width=1.1,
             )
-            content.move_to(box.get_center())
+            content.move_to(box.get_center()).shift(LEFT * 0.3)
             model_rows.add(VGroup(box, content))
-        model_rows.arrange(DOWN, buff=0.07).next_to(header, DOWN, buff=0.3)
+        model_rows.arrange(DOWN, buff=0.07).next_to(header, DOWN, buff=0.28)
 
         for row in model_rows:
             self.play(FadeIn(row, shift=LEFT * 0.2), run_time=0.35)
-            self.wait(0.2)
+            self.wait(0.15)
 
-        self.wait(0.4)
+        self.wait(0.3)
 
-        # Tool table
-        col_labels = ["Tool", "Model", "Notes"]
-        col_colors = [WHITE, TEAL, GREY_A]
-        col_widths  = [3.2, 3.2, 5.0]
-
-        tools_data = [
-            ("ActiveMQ",         "Broker",           "JMS-based, traditional enterprise messaging"),
-            ("RabbitMQ",         "Broker",           "AMQP, flexible exchange routing"),
-            ("Amazon Kinesis",   "Partitioned Log",  "AWS-managed, shards = partitions"),
-            ("Apache Kafka",     "Partitioned Log",  "High-throughput, replay, de facto standard"),
-            ("Apache Flink",     "— (processing)",   "Consumes from Kafka/Kinesis; not a transport"),
+        # ── Tool comparison table ──
+        # each row: (col0_text, col0_color, col1_text, col1_color, col2_text, col2_color)
+        tools_rows = [
+            ("ActiveMQ",       ORANGE, "Broker",          ORANGE, "JMS-based, traditional enterprise messaging",   GREY_A),
+            ("RabbitMQ",       ORANGE, "Broker",          ORANGE, "AMQP protocol, flexible exchange routing",      GREY_A),
+            ("Amazon Kinesis", TEAL,   "Partitioned Log", TEAL,   "AWS-managed; shards = partitions",             GREY_A),
+            ("Apache Kafka",   TEAL,   "Partitioned Log", TEAL,   "High-throughput, replay, de facto standard",   GREY_A),
+            ("Apache Flink",   BLUE,   "— (processing)",  BLUE,   "Consumes from Kafka/Kinesis; not a transport", GREY_A),
         ]
-        tool_colors = [ORANGE, ORANGE, TEAL, TEAL, BLUE]
+        table = make_comparison_table(
+            col_headers     = ["Tool",  "Model",  "Notes"],
+            col_colors      = [WHITE,   PURPLE,   GREY_A],
+            col_x_positions = [-4.2,    0.2,      3.8],
+            rows_data       = tools_rows,
+        )
+        table.next_to(model_rows, DOWN, buff=0.32)
+        hdrs_grp, div, all_rows = table[0], table[1], table[2]
 
-        # Header row
-        hdr_cells = VGroup()
-        for text, color, width in zip(col_labels, col_colors, col_widths):
-            cell = RoundedRectangle(
-                corner_radius=0.06, width=width, height=0.44,
-                fill_color="#21262D", fill_opacity=1,
-                stroke_color=color, stroke_width=1.1,
-            )
-            lbl = make_label(text, font_size=12, color=color)
-            lbl.move_to(cell)
-            hdr_cells.add(VGroup(cell, lbl))
-        hdr_cells.arrange(RIGHT, buff=0.06).next_to(model_rows, DOWN, buff=0.25)
-        self.play(FadeIn(hdr_cells, shift=DOWN * 0.1))
-
-        all_rows = VGroup()
-        for (tool, model, note), color in zip(tools_data, tool_colors):
-            row = VGroup()
-            for text, col_color, width in zip([tool, model, note], [color, TEAL if "Log" in model else ORANGE if "Broker" in model else GREY_B, GREY_A], col_widths):
-                cell = RoundedRectangle(
-                    corner_radius=0.06, width=width, height=0.42,
-                    fill_color=DARK_BG, fill_opacity=0.9,
-                    stroke_color=GREY_B, stroke_width=0.6,
-                )
-                lbl = make_label(text, font_size=11, color=col_color)
-                lbl.move_to(cell)
-                row.add(VGroup(cell, lbl))
-            row.arrange(RIGHT, buff=0.06)
-            all_rows.add(row)
-
-        all_rows.arrange(DOWN, buff=0.05).next_to(hdr_cells, DOWN, buff=0.05)
+        self.play(FadeIn(hdrs_grp))
+        self.play(FadeIn(div))
         for row in all_rows:
-            self.play(FadeIn(row, shift=LEFT * 0.2), run_time=0.3)
+            self.play(FadeIn(row, shift=RIGHT * 0.2), run_time=0.3)
             self.wait(0.12)
 
-        # Highlight the two brokers
+        self.wait(0.8)
         self.play(Indicate(all_rows[0][1], color=ORANGE, run_time=1.0))
         self.play(Indicate(all_rows[1][1], color=ORANGE, run_time=1.0))
-        # Highlight the two partitioned logs
         self.play(Indicate(all_rows[2][1], color=TEAL, run_time=1.0))
         self.play(Indicate(all_rows[3][1], color=TEAL, run_time=1.0))
 

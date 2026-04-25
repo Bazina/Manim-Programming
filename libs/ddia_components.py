@@ -315,6 +315,71 @@ def make_user_icon(name, color=BLUE, radius=0.3, font_size=16, image_path=None):
         return VGroup(circle, icon_label)
 
 
+def make_comparison_table(
+    col_headers,
+    col_colors,
+    col_x_positions,
+    rows_data,
+    header_font_size=13,
+    row_font_size=12,
+    note_font_size=11,
+    row_spacing=0.42,
+):
+    """
+    Build a styled comparison table (usability-style).
+
+    Parameters
+    ----------
+    col_headers     : list[str]          — column header labels
+    col_colors      : list[color]        — header label colors (same length as col_headers)
+    col_x_positions : list[float]        — x-coordinate for each column centre
+    rows_data       : list of tuples     — each tuple: (col0_text, col0_color,
+                                            col1_text, col1_color,
+                                            col2_text, col2_color, ...)
+                                          Colors and texts alternate: text, color, text, color …
+                                          Last column text uses note_font_size.
+    row_spacing     : float              — vertical distance between data rows
+
+    Returns
+    -------
+    VGroup containing: header labels, divider Line, data row VGroups (in order).
+    Caller positions the returned group; rows live at y=0 relative to header.
+    """
+    from manim import Line, GREY_B, BOLD
+
+    n_cols = len(col_headers)
+
+    # Column headers
+    hdrs = VGroup()
+    for text, color, x in zip(col_headers, col_colors, col_x_positions):
+        lbl = make_label(text, font_size=header_font_size, color=color, weight=BOLD)
+        lbl.move_to([x, 0, 0])
+        hdrs.add(lbl)
+
+    # Divider line
+    x_min = col_x_positions[0] - 2.0
+    x_max = col_x_positions[-1] + 2.0
+    div = Line([x_min, 0, 0], [x_max, 0, 0], color=GREY_B, stroke_width=0.8)
+    div.next_to(hdrs, DOWN, buff=0.1)
+
+    # Data rows — each tuple: (text0, color0, text1, color1, ..., textN, colorN)
+    all_rows = VGroup()
+    row_y = div.get_bottom()[1] - 0.05
+    for entry in rows_data:
+        row_y -= row_spacing
+        row = VGroup()
+        for i in range(n_cols):
+            text  = entry[i * 2]
+            color = entry[i * 2 + 1]
+            fs = note_font_size if i == n_cols - 1 else row_font_size
+            lbl = make_label(text, font_size=fs, color=color)
+            lbl.move_to([col_x_positions[i], row_y, 0])
+            row.add(lbl)
+        all_rows.add(row)
+
+    return VGroup(hdrs, div, all_rows)
+
+
 def make_code_text(text, font_size=16, position=ORIGIN, t2c=None, glow=True, glow_color=None):
     """Create an IDE-styled syntax-highlighted code snippet with a dark background and optional glow."""
     code = Text(
