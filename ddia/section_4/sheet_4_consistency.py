@@ -44,6 +44,7 @@ from libs.ddia_components import (
     ICON_CODE,
     ICON_LOCK,
     ICON_SHIELD,
+    ICON_USER,
     make_label,
     make_icon,
 )
@@ -659,68 +660,225 @@ class Sheet4Consistency(Scene):
 
     # ─── Scene 7: Q5 — Monotonic Reads ───────────────────────────────
     def scene_q5_monotonic(self):
-        header = make_label("Q5: Monotonic Reads — Timestamp Solution", font_size=24, color=GREEN)
-        header.to_edge(UP, buff=0.35)
+        header = make_label("Q5: Monotonic Reads — Timestamp Solution", font_size=22, color=GREEN)
+        header.to_edge(UP, buff=0.3)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(0.3)
+
+        # Five-row sequence diagram (DDIA Figure 5-4 style)
+        ROW_U1 = 2.0    # User 1234
+        ROW_L  = 0.85   # Leader
+        ROW_F1 = -0.3   # Follower 1  (fresh)
+        ROW_F2 = -1.45  # Follower 2  (stale)
+        ROW_U2 = -2.6   # User 2345
+        ICN_X  = -5.5
+
+        def _row(icon_path, label_text, y, color):
+            ic = make_icon(icon_path, color=color, height=0.36)
+            ic.move_to([ICN_X, y, 0])
+            lbl = make_label(label_text, font_size=9, color=color)
+            lbl.next_to(ic, LEFT, buff=0.1)
+            dash = DashedLine(
+                [ICN_X + 0.25, y, 0], [_TL_X1 - 0.1, y, 0],
+                dash_length=0.15, color=color, stroke_width=0.8, stroke_opacity=0.4,
+            )
+            return VGroup(lbl, ic, dash)
+
+        def _arr(t0, y0, t1, y1, color):
+            return Arrow(
+                [_tx(t0), y0, 0], [_tx(t1), y1, 0],
+                buff=0, stroke_width=1.7, color=color, tip_length=0.13,
+            )
+
+        def _msg(arr, text, offset, color, fs=8):
+            lbl = make_label(text, font_size=fs, color=color)
+            lbl.move_to(arr.get_center() + offset)
+            return lbl
+
+        # ── Phase 1: The Anomaly (Figure 5-4 style) ──────────────────
+        sub = make_label(
+            "User 2345 reads from a fresh replica, then a stale one — time appears to go backward  ✗",
+            font_size=9, color=RED,
+        )
+        sub.next_to(header, DOWN, buff=0.18)
+
+        rows = VGroup(
+            _row(ICON_USER,     "User 1234",  ROW_U1, TEAL),
+            _row(ICON_DATABASE, "Leader",     ROW_L,  BLUE),
+            _row(ICON_DATABASE, "Follower 1", ROW_F1, GREEN),
+            _row(ICON_DATABASE, "Follower 2", ROW_F2, ORANGE),
+            _row(ICON_USER,     "User 2345",  ROW_U2, PURPLE),
+        )
+        time_lbl = make_label("time →", font_size=9, color=GREY_B)
+        time_lbl.move_to([_TL_X1 + 0.2, ROW_U1 + 0.32, 0])
+
+        self.play(FadeIn(sub), FadeIn(rows), FadeIn(time_lbl))
+        self.wait(0.3)
+
+        # User 1234 → Leader: INSERT
+        ins_lbl = make_label(
+            "insert into comments\n(author, reply_to, message)\nvalues(1234, 55555, 'Sounds good!')",
+            font_size=7, color=TEAL,
+        )
+        ins_lbl.move_to([_tx(1.2), ROW_U1 + 0.5, 0])
+        a_u1_l = _arr(1.5, ROW_U1, 2.3, ROW_L, TEAL)
+        self.play(FadeIn(ins_lbl))
+        self.play(GrowArrow(a_u1_l), run_time=0.5)
+
+        # Leader → User 1234: "insert ok"
+        a_l_u1 = _arr(2.3, ROW_L, 3.0, ROW_U1, BLUE)
+        m_ok = _msg(a_l_u1, "insert ok", DOWN * 0.22, BLUE)
+        self.play(GrowArrow(a_l_u1), run_time=0.4)
+        self.play(FadeIn(m_ok))
+
+        # Leader → Follower 1: fast replication
+        a_l_f1 = _arr(2.3, ROW_L, 3.5, ROW_F1, GREEN)
+        m_rep1 = _msg(a_l_f1, "insert into\ncomments...", UP * 0.27, GREEN, fs=7)
+        self.play(GrowArrow(a_l_f1), run_time=0.5)
+        self.play(FadeIn(m_rep1))
+
+        # Leader → Follower 2: VERY SLOW — long diagonal, key visual element
+        a_l_f2 = _arr(2.3, ROW_L, 7.6, ROW_F2, ORANGE)
+        m_rep2 = make_label("insert into\ncomments...", font_size=7, color=ORANGE)
+        m_rep2.move_to([_tx(7.3), ROW_F2 + 0.32, 0])
+        self.play(GrowArrow(a_l_f2), run_time=1.2)
+        self.play(FadeIn(m_rep2))
+        self.wait(0.3)
+
+        # User 2345 → Follower 1: Read ① (fresh → 1 result)
+        q1 = make_label(
+            "select * from comments\nwhere reply_to = 55555", font_size=7, color=PURPLE,
+        )
+        q1.move_to([_tx(3.9), ROW_U2 - 0.38, 0])
+        a_u2_f1 = _arr(3.6, ROW_U2, 4.3, ROW_F1, PURPLE)
+        self.play(FadeIn(q1), GrowArrow(a_u2_f1), run_time=0.5)
+
+        a_f1_u2 = _arr(4.3, ROW_F1, 5.0, ROW_U2, GREEN)
+        m_r1 = _msg(a_f1_u2, "1 result", RIGHT * 0.45 + UP * 0.2, GREEN, fs=9)
+        self.play(GrowArrow(a_f1_u2), run_time=0.4)
+        self.play(FadeIn(m_r1))
+        self.wait(0.5)
+
+        # User 2345 → Follower 2: Read ② (stale → no results!)
+        q2 = make_label(
+            "select * from comments\nwhere reply_to = 55555", font_size=7, color=PURPLE,
+        )
+        q2.move_to([_tx(6.0), ROW_U2 - 0.38, 0])
+        a_u2_f2 = _arr(5.7, ROW_U2, 6.2, ROW_F2, PURPLE)
+        self.play(FadeIn(q2), GrowArrow(a_u2_f2), run_time=0.4)
+
+        a_f2_u2 = _arr(6.2, ROW_F2, 6.8, ROW_U2, RED)
+        m_r2 = _msg(a_f2_u2, "no results!", RIGHT * 0.45 + UP * 0.2, RED, fs=9)
+        self.play(GrowArrow(a_f2_u2), run_time=0.4)
+        self.play(FadeIn(m_r2))
+        self.play(Indicate(m_r2, color=RED, run_time=1.2))
+        self.wait(0.3)
+
+        badge1 = self._verdict_badge(
+            "Time appears to go backward — Monotonic Reads violated  ✗", RED, width=8.2,
+        )
+        badge1.to_edge(DOWN, buff=0.3)
+        note1 = make_label(
+            "Follower 2 is stale — same query returns fewer results than Read ① saw",
+            font_size=9, color=RED,
+        )
+        note1.next_to(badge1, UP, buff=0.12)
+        self.play(FadeIn(note1), FadeIn(badge1, shift=UP * 0.1))
+        self.wait(3.5)
+        self.play(FadeOut(*self.mobjects))
+
+        # ── Phase 2: Fix with min_timestamp ──────────────────────────
+        header2 = make_label("Q5: Monotonic Reads — Timestamp Solution", font_size=22, color=GREEN)
+        header2.to_edge(UP, buff=0.3)
+        sub2 = make_label(
+            "With min_timestamp: stale replica blocks — reads can never go backward  ✓",
+            font_size=9, color=GREEN,
+        )
+        sub2.next_to(header2, DOWN, buff=0.18)
+
+        rows2 = VGroup(
+            _row(ICON_USER,     "User 1234",  ROW_U1, TEAL),
+            _row(ICON_DATABASE, "Leader",     ROW_L,  BLUE),
+            _row(ICON_DATABASE, "Follower 1", ROW_F1, GREEN),
+            _row(ICON_DATABASE, "Follower 2", ROW_F2, ORANGE),
+            _row(ICON_USER,     "User 2345",  ROW_U2, PURPLE),
+        )
+        time_lbl2 = make_label("time →", font_size=9, color=GREY_B)
+        time_lbl2.move_to([_TL_X1 + 0.2, ROW_U1 + 0.32, 0])
+
+        self.play(FadeIn(header2), FadeIn(sub2), FadeIn(rows2), FadeIn(time_lbl2))
+        self.wait(0.3)
+
+        # Same first half: User 1234 inserts, replication fans out
+        ins_lbl2 = make_label(
+            "insert into comments...\nvalues(1234, 55555, 'Sounds good!')",
+            font_size=7, color=TEAL,
+        )
+        ins_lbl2.move_to([_tx(1.2), ROW_U1 + 0.4, 0])
+        a2_u1_l = _arr(1.5, ROW_U1, 2.3, ROW_L,  TEAL)
+        a2_l_u1 = _arr(2.3, ROW_L,  3.0, ROW_U1, BLUE)
+        m2_ok   = _msg(a2_l_u1, "insert ok", DOWN * 0.22, BLUE)
+        a2_l_f1 = _arr(2.3, ROW_L,  3.5, ROW_F1, GREEN)
+        m2_rep1 = _msg(a2_l_f1, "insert into\ncomments...", UP * 0.27, GREEN, fs=7)
+        a2_l_f2 = _arr(2.3, ROW_L,  7.6, ROW_F2, ORANGE)
+
+        self.play(FadeIn(ins_lbl2), GrowArrow(a2_u1_l), run_time=0.5)
+        self.play(GrowArrow(a2_l_u1), FadeIn(m2_ok),   run_time=0.4)
+        self.play(GrowArrow(a2_l_f1), FadeIn(m2_rep1), run_time=0.4)
+        self.play(GrowArrow(a2_l_f2), run_time=0.6)
+
+        # User 2345 Read ①: same as anomaly, stores T=100
+        q2_1 = make_label(
+            "select * from comments\nwhere reply_to = 55555", font_size=7, color=PURPLE,
+        )
+        q2_1.move_to([_tx(3.9), ROW_U2 - 0.38, 0])
+        a2_u2_f1 = _arr(3.6, ROW_U2, 4.3, ROW_F1, PURPLE)
+        a2_f1_u2 = _arr(4.3, ROW_F1, 5.0, ROW_U2, GREEN)
+        m2_r1    = _msg(a2_f1_u2, "1 result  (stores T=100)", RIGHT * 0.65 + UP * 0.2, GREEN, fs=8)
+        self.play(FadeIn(q2_1), GrowArrow(a2_u2_f1), run_time=0.5)
+        self.play(GrowArrow(a2_f1_u2), FadeIn(m2_r1), run_time=0.4)
         self.wait(0.4)
 
-        problem = make_label(
-            "Problem: sticky sessions pin client to one replica — fails on replica crash",
-            font_size=12, color=RED,
+        # User 2345 Read ②: carries min_timestamp=100 → Follower 2 blocks
+        q2_2 = make_label(
+            "select * from comments\nwhere reply_to = 55555\n{ min_timestamp: 100 }",
+            font_size=7, color=PURPLE,
         )
-        problem.next_to(header, DOWN, buff=0.28)
-        solution_lbl = make_label(
-            "Solution: client tracks last-read version (timestamp), passes it as min_timestamp",
-            font_size=12, color=GREEN,
+        q2_2.move_to([_tx(5.9), ROW_U2 - 0.48, 0])
+        a2_u2_f2 = _arr(5.7, ROW_U2, 6.2, ROW_F2, PURPLE)
+        self.play(FadeIn(q2_2), GrowArrow(a2_u2_f2), run_time=0.4)
+
+        blk_x = make_label("✗", font_size=18, color=RED)
+        blk_x.move_to([_tx(6.5), ROW_F2, 0])
+        blk_note = make_label("T=80 < 100 → blocked", font_size=8, color=RED)
+        blk_note.next_to(blk_x, DOWN, buff=0.08)
+        self.play(FadeIn(blk_x), FadeIn(blk_note))
+        self.wait(0.3)
+
+        # Rerouted to Follower 1 → fresh "1 result"
+        a2_rt = _arr(6.8, ROW_U2, 7.3, ROW_F1, TEAL)
+        m2_rt = _msg(a2_rt, "retry → Follower 1", UP * 0.26, TEAL, fs=8)
+        self.play(GrowArrow(a2_rt), run_time=0.4)
+        self.play(FadeIn(m2_rt))
+
+        a2_ok = _arr(7.3, ROW_F1, 7.8, ROW_U2, GREEN)
+        m2_ok2 = _msg(a2_ok, "1 result  ✓", RIGHT * 0.4 + UP * 0.2, GREEN, fs=9)
+        self.play(GrowArrow(a2_ok), run_time=0.4)
+        self.play(FadeIn(m2_ok2))
+        self.play(Indicate(m2_ok2, color=GREEN, run_time=1.2))
+        self.wait(0.3)
+
+        badge2 = self._verdict_badge(
+            "Monotonic Reads guaranteed — T never goes backward  ✓", GREEN, width=7.8,
         )
-        solution_lbl.next_to(problem, DOWN, buff=0.1)
-        self.play(FadeIn(problem, shift=UP * 0.1))
-        self.play(FadeIn(solution_lbl, shift=UP * 0.1))
-        self.wait(0.6)
-
-        # 3-step flow
-        steps = [
-            (TEAL,   "Step 1",   "Client reads Replica A\ngets value at T=42\nstores T=42 locally"),
-            (GREEN,  "Step 2",   "Next query sent\nwith { min_timestamp: 42 }\nto any replica"),
-            (ORANGE, "Step 3",   "Replica checks own T:\n≥ 42 → serve read\n< 42 → block & wait"),
-        ]
-        step_cards = VGroup()
-        for color, title, desc in steps:
-            title_lbl = make_label(title, font_size=12, color=color)
-            desc_lbl = make_label(desc, font_size=10, color=GREY_A)
-            content = VGroup(title_lbl, desc_lbl).arrange(DOWN, buff=0.1)
-            box = RoundedRectangle(
-                corner_radius=0.1, width=3.1, height=1.7,
-                fill_color=DARK_BG, fill_opacity=0.9,
-                stroke_color=color, stroke_width=1.4,
-            )
-            content.move_to(box.get_center())
-            step_cards.add(VGroup(box, content))
-
-        step_cards.arrange(RIGHT, buff=0.65).move_to(DOWN * 0.4)
-
-        arrows = VGroup()
-        for i in range(len(step_cards) - 1):
-            a = Arrow(
-                step_cards[i].get_right(), step_cards[i + 1].get_left(),
-                buff=0.1, stroke_width=2.0, color=GREY_A, tip_length=0.15,
-            )
-            arrows.add(a)
-
-        for i, card in enumerate(step_cards):
-            self.play(FadeIn(card, shift=UP * 0.15), run_time=0.5)
-            if i < len(arrows):
-                self.play(GrowArrow(arrows[i]), run_time=0.35)
-            self.wait(0.3)
-
-        # Advantage bullets
-        advantages = VGroup(
-            make_label("✓  Any replica can serve — no pinning", font_size=11, color=GREEN),
-            make_label("✓  Failover transparent — just pick another replica", font_size=11, color=GREEN),
-            make_label("⚠  High replication lag may cause brief blocking", font_size=11, color=ORANGE),
-        ).arrange(DOWN, buff=0.12, aligned_edge=LEFT)
-        advantages.to_edge(DOWN, buff=0.4)
-        self.play(FadeIn(advantages, shift=UP * 0.1))
+        badge2.to_edge(DOWN, buff=0.3)
+        bullets = VGroup(
+            make_label("✓  Any replica can serve — no sticky sessions", font_size=10, color=GREEN),
+            make_label("✓  Failover transparent — route to any fresh replica", font_size=10, color=GREEN),
+            make_label("⚠  High replication lag may cause brief blocking at stale replica", font_size=10, color=ORANGE),
+        ).arrange(DOWN, buff=0.09, aligned_edge=LEFT)
+        bullets.next_to(badge2, UP, buff=0.13)
+        self.play(FadeIn(bullets), FadeIn(badge2, shift=UP * 0.1))
         self.wait(4)
         self.play(FadeOut(*self.mobjects))
 
