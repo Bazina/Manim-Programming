@@ -1,4 +1,3 @@
-from ensurepip import bootstrap
 import sys
 from pathlib import Path
 
@@ -9,16 +8,12 @@ from manim import (
     Scene,
     VGroup,
     RoundedRectangle,
-    Rectangle,
     Arrow,
     Line,
     FadeIn,
     FadeOut,
     GrowArrow,
-    AnimationGroup,
     AddTextLetterByLetter,
-    Indicate,
-    ORIGIN,
     UP,
     DOWN,
     LEFT,
@@ -41,7 +36,6 @@ from libs.ddia_components import (
     ICON_DATABASE,
     ICON_SERVER,
     ICON_CHECK,
-    ICON_DANGER,
     ICON_LIGHTNING,
     ICON_CODE,
     ICON_STOPWATCH,
@@ -56,7 +50,6 @@ from libs.ddia_components import (
     ICON_CLOUD,
     make_label,
     make_icon,
-    make_icon_card,
     make_code_text,
     create_rect_glow,
 )
@@ -88,7 +81,7 @@ JAVA_T2C = {
     "currentTimeMillis": "#DCDCAA",
     "create": "#DCDCAA",
     "Session": "#DCDCAA",
-    "createText": "#DCDCAA",
+    "Text": "#DCDCAA",
     "send": "#DCDCAA",
     "start": "#DCDCAA",
     "put": "#DCDCAA",
@@ -99,7 +92,7 @@ JAVA_T2C = {
     '"value"': "#CE9178",
     '"localhost:9092"': "#CE9178",
     "//": "#6A9955",
-    "System.currentTimeMillis()": "#DCDCAA",
+    "System": "#DCDCAA",
     "(": "#FFD700",
     ")": "#FFD700",
     "{": "#FFD700",
