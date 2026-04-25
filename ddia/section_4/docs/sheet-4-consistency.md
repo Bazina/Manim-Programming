@@ -173,8 +173,6 @@ Refusing the read IS the partition-tolerant behavior. The system detected the sp
 ### Solution: Version Timestamps
 
 **Approach:** Track the version (logical timestamp) of the last read value and attach it to subsequent queries.
-Figure 5-4. A user first reads from a fresh replica, then from a stale replica. Time
-appears to go backward. To prevent this anomaly, we need monotonic reads
 
 ```
 Step 1: Client reads from Replica A → gets value at timestamp T=42
