@@ -390,7 +390,7 @@ class Sheet4Consistency(Scene):
         badge = self._verdict_badge("YES — History H is Linearizable  ✓", GREEN, width=6.5)
         badge.to_edge(DOWN, buff=0.2)
         reason = make_label(
-            "write(2)→t=1.8 then write(1)→t=2.5 (final R=1)  |  A reads 1 ✓  |  B reads 1 ✓  |  C reads 1 ✓",
+            "A reads 1 ✓  |  B reads 1 ✓  |  C reads 1 ✓",
             font_size=9, color=GREY_A,
         )
         reason.next_to(badge, UP, buff=0.12)
@@ -466,7 +466,7 @@ class Sheet4Consistency(Scene):
         )
         badge.to_edge(DOWN, buff=0.2)
         reason = make_label(
-            "write(1) was last applied (t=2.5) → final R=1  |  C reading R=2 = time going backwards ✗",
+            "C reading R=2 = time going backwards ✗",
             font_size=9, color=RED,
         )
         reason.next_to(badge, UP, buff=0.12)
