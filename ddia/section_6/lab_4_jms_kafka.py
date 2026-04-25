@@ -42,7 +42,6 @@ from libs.ddia_components import (
     ICON_STRUCTURE,
     ICON_GRAPH,
     ICON_BOOK,
-    ICON_LAYERS,
     ICON_TRANSFER,
     ICON_CHECKLIST,
     ICON_CODE_FILE,
@@ -123,7 +122,6 @@ class Lab4JMSKafka(Scene):
         self.scene_max_throughput()
         self.scene_median_latency()
         self.scene_usability()
-        self.scene_integrations()
         self.scene_deliverables()
         self.scene_closing()
 
@@ -604,67 +602,7 @@ class Lab4JMSKafka(Scene):
         self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
-    # ─── Scene 9: Integrations ────────────────────────────────────────
-    def scene_integrations(self):
-        header = self._section_header("C) Integrations", color=TEAL)
-        self.play(AddTextLetterByLetter(header, time_per_char=0.04))
-        self.wait(0.5)
-
-        note = make_label(
-            "Research task — find integrations relevant to Data-Intensive Applications (with references)",
-            font_size=13,
-            color=GREY_A,
-        )
-        note.next_to(header, DOWN, buff=0.3)
-        self.play(FadeIn(note))
-        self.wait(0.5)
-
-        categories = [
-            (ICON_DATABASE, BLUE,   "Hadoop Ecosystem",
-             "HDFS · Hive · HBase\nKafka: Kafka Connect HDFS sink\nJMS: limited native support"),
-            (ICON_LAYERS,   PURPLE, "Columnar Stores",
-             "Cassandra · ClickHouse\nKafka: Kafka Connect Cassandra sink\nJMS: manual integration"),
-            (ICON_CLOUD,    TEAL,   "Cloud Platforms",
-             "AWS MSK · GCP Pub/Sub · Azure Event Hub\nKafka: managed cloud offerings\nJMS: ActiveMQ on EC2/VMs"),
-        ]
-        cat_cards = VGroup()
-        for icon, color, title, body in categories:
-            ic = make_icon(icon, color=color, height=0.45)
-            lbl = make_label(title, font_size=15, color=color, weight=BOLD)
-            body_lbl = make_label(body, font_size=11, color=GREY_B)
-            content = VGroup(ic, lbl, body_lbl).arrange(DOWN, buff=0.1)
-            box = RoundedRectangle(
-                corner_radius=0.12,
-                width=3.8,
-                height=2.5,
-                fill_color=DARK_BG,
-                fill_opacity=0.95,
-                stroke_color=color,
-                stroke_width=1.3,
-            )
-            content.move_to(box.get_center())
-            cat_cards.add(VGroup(box, content))
-
-        cat_cards.arrange(RIGHT, buff=0.5)
-        cat_cards.next_to(note, DOWN, buff=0.5)
-
-        for card in cat_cards:
-            self.play(FadeIn(card, shift=UP * 0.25), run_time=0.4)
-            self.wait(0.25)
-
-        self.wait(1.5)
-
-        research_tip = make_label(
-            "Tip: Kafka has 200+ connectors via Confluent Hub · JMS connectors are vendor-specific",
-            font_size=12,
-            color=YELLOW,
-        )
-        research_tip.to_edge(DOWN, buff=0.4)
-        self.play(FadeIn(research_tip))
-        self.wait(3)
-        self.play(FadeOut(*self.mobjects))
-
-    # ─── Scene 10: Deliverables ───────────────────────────────────────
+    # ─── Scene 9: Deliverables ────────────────────────────────────────
     def scene_deliverables(self):
         header = self._section_header("Deliverables", color=GREEN)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
@@ -672,53 +610,49 @@ class Lab4JMSKafka(Scene):
 
         items = [
             (ICON_CHART,     ORANGE, "Performance Table",
-             "Produce RT · Consume RT · Max Throughput · Median Latency"),
+             "Produce RT · Consume RT · Max Throughput · Median Latency — values for both tools"),
             (ICON_CODE_FILE, BLUE,   "Code Snippets",
              "Measurement code for each metric in both JMS and Kafka"),
             (ICON_CHECKLIST, GREEN,  "Usability Table",
-             "Setup steps · Lines of code · API calls per operation"),
-            (ICON_BOOK,      PURPLE, "Integrations Summary",
-             "Research findings with references for both tools"),
-            (ICON_STRUCTURE, TEAL,   "Tool Summary",
-             "Advantages & Disadvantages per tool"),
+             "Setup steps · Lines of code · API calls per operation — filled with your measurements"),
+            (ICON_CLOUD,     TEAL,   "Integrations Summary",
+             "Research: Hadoop · Cassandra · Cloud platforms — with proper references"),
+            (ICON_STRUCTURE, PURPLE, "Tool Summary",
+             "Advantages & Disadvantages section per tool"),
             (ICON_CHECK,     YELLOW, "Conclusion",
-             "Recommendation with clear justification"),
+             "Your recommendation with clear data-driven justification"),
         ]
 
-        left_items = items[:3]
-        right_items = items[3:]
-
-        def make_item_row(icon, color, title, desc):
-            ic = make_icon(icon, color=color, height=0.3)
-            lbl = make_label(title, font_size=13, color=color, weight=BOLD)
-            d = make_label(desc, font_size=10, color=GREY_B)
-            row_content = VGroup(ic, VGroup(lbl, d).arrange(DOWN, buff=0.04)).arrange(
-                RIGHT, buff=0.18
+        rows = VGroup()
+        for icon_path, color, title, desc in items:
+            ic = make_icon(icon_path, color=color, height=0.27)
+            t = make_label(title, font_size=13, color=color, weight=BOLD)
+            d = make_label(desc, font_size=11, color=GREY_A)
+            content = VGroup(ic, t, d).arrange(RIGHT, buff=0.18)
+            box = RoundedRectangle(
+                corner_radius=0.08,
+                width=content.width + 0.5,
+                height=content.height + 0.28,
+                fill_color=DARK_BG,
+                fill_opacity=0.9,
+                stroke_color=color,
+                stroke_width=1.1,
             )
-            return row_content
+            content.move_to(box.get_center())
+            rows.add(VGroup(box, content))
 
-        left_vg = VGroup(*[make_item_row(*it) for it in left_items]).arrange(
-            DOWN, buff=0.35, aligned_edge=LEFT
-        )
-        right_vg = VGroup(*[make_item_row(*it) for it in right_items]).arrange(
-            DOWN, buff=0.35, aligned_edge=LEFT
-        )
-        columns = VGroup(left_vg, right_vg).arrange(RIGHT, buff=1.2)
-        columns.next_to(header, DOWN, buff=0.55)
-
-        for lrow, rrow in zip(left_vg, right_vg):
-            self.play(FadeIn(lrow, shift=RIGHT * 0.2), FadeIn(rrow, shift=RIGHT * 0.2), run_time=0.4)
-            self.wait(0.25)
-
-        self.wait(2)
+        rows.arrange(DOWN, buff=0.1).next_to(header, DOWN, buff=0.35)
+        for row in rows:
+            self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.45)
+            self.wait(0.4)
 
         note = make_label(
             "All members must be ready to answer questions  ·  No copying from other teams",
-            font_size=12,
+            font_size=13,
             color=RED,
         )
         note.to_edge(DOWN, buff=0.4)
-        self.play(FadeIn(note))
+        self.play(FadeIn(note, shift=UP * 0.1))
         self.wait(3)
         self.play(FadeOut(*self.mobjects))
 
