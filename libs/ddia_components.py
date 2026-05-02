@@ -18,6 +18,7 @@ from manim import (
     ImageMobject,
     RoundedRectangle,
     SVGMobject,
+    Code,
     Text,
     VGroup,
 )
@@ -380,17 +381,50 @@ def make_comparison_table(
     return VGroup(hdrs, div, all_rows)
 
 
-def make_code_text(text, font_size=16, position=ORIGIN, t2c=None, glow=True, glow_color=None):
-    """Create an IDE-styled syntax-highlighted code snippet with a dark background and optional glow."""
-    code = Text(
-        text,
-        font=FONT,
-        font_size=font_size,
-        color="#D4D4D4",
-        weight=BOLD,
-        stroke_width=0,
-        t2c=t2c or SQL_T2C,
-    )
+def make_code_text(
+    text,
+    font_size=16,
+    position=ORIGIN,
+    t2c=None,
+    glow=True,
+    glow_color=None,
+    language="text",
+    use_code_object=True,
+    force_code_object=False,
+    with_background=True,
+):
+    """Create a styled code snippet using Manim Code (or Text fallback) with optional card/glow."""
+    if use_code_object:
+        try:
+            code = Code(
+                code_string=text,
+                language=language,
+                formatter_style="monokai",
+                add_line_numbers=False,
+                background="rectangle",
+                background_config={"fill_opacity": 0.0, "stroke_opacity": 0.0},
+                paragraph_config={"font_size": font_size},
+            )
+        except Exception as exc:
+            if force_code_object:
+                raise RuntimeError("make_code_text failed to create a Manim Code object") from exc
+            use_code_object = False
+
+    if not use_code_object:
+        code = Text(
+            text,
+            font=FONT,
+            font_size=font_size,
+            color="#D4D4D4",
+            weight=BOLD,
+            stroke_width=0,
+            t2c=t2c or SQL_T2C,
+        )
+
+    if not with_background:
+        code.move_to(position)
+        return code
+
     bg = RoundedRectangle(
         corner_radius=0.1,
         width=code.width + 0.4,

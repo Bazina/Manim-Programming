@@ -33,6 +33,11 @@ from manim import (
     YELLOW,
 )
 
+try:
+    from manim_slides import Slide as BaseSlide
+except Exception:
+    BaseSlide = Scene
+
 from libs.ddia_components import (
     DARK_BG,
     ICON_DATABASE,
@@ -43,17 +48,24 @@ from libs.ddia_components import (
     ICON_GRAPH,
     ICON_LOCK,
     ICON_SHIELD,
+    make_code_text,
     make_label,
     make_icon,
     make_comparison_table,
 )
+from libs.slide_controls import slide_checkpoint
 
 config.background_color = "#0D1117"
 
 ICON_STREAMING = "assets/icons/devices/LightningBold.svg"
 
 
-class Sheet5Streaming(Scene):
+class Sheet5Streaming(BaseSlide):
+
+    # Stop policy: "off", "scene", or "phase".
+    slide_stop_mode = "phase"
+    # Avoid reverse-video generation to prevent PyAV malloc failures on long renders.
+    max_duration_before_split_reverse = 4.0
 
     def construct(self):
         self.scene_title()
@@ -66,6 +78,36 @@ class Sheet5Streaming(Scene):
         self.scene_q2_global_sequence()
         self.scene_q3_tools()
         self.scene_closing()
+
+    def _next_slide(
+        self,
+        phase=False,
+        enabled=True,
+        notes="",
+        loop=False,
+        auto_next=False,
+        playback_rate=1.0,
+        reversed_playback_rate=1.0,
+        dedent_notes=True,
+        skip_animations=False,
+        direction="horizontal",
+        **kwargs,
+    ):
+        slide_checkpoint(
+            self,
+            phase=phase,
+            enabled=enabled,
+            slide_stop_mode=self.slide_stop_mode,
+            loop=loop,
+            auto_next=auto_next,
+            playback_rate=playback_rate,
+            reversed_playback_rate=reversed_playback_rate,
+            notes=notes,
+            dedent_notes=dedent_notes,
+            skip_animations=skip_animations,
+            direction=direction,
+            **kwargs,
+        )
 
     # ─── Helpers ──────────────────────────────────────────────────────
 
@@ -143,6 +185,7 @@ class Sheet5Streaming(Scene):
         self.wait(0.4)
         self.play(FadeIn(sub, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 2: Q1 Overview ─────────────────────────────────────────
@@ -190,6 +233,7 @@ class Sheet5Streaming(Scene):
             self.wait(0.35)
 
         self.wait(2.5)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 3: Drop Messages ───────────────────────────────────────
@@ -228,6 +272,7 @@ class Sheet5Streaming(Scene):
         tradeoff.to_edge(DOWN, buff=0.45)
         self.play(FadeIn(tradeoff, shift=UP * 0.1))
         self.wait(3.5)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 4: Buffer Messages ─────────────────────────────────────
@@ -274,6 +319,7 @@ class Sheet5Streaming(Scene):
         self.play(FadeIn(overflow, shift=UP * 0.1))
         self.play(FadeIn(tradeoff, shift=UP * 0.1))
         self.wait(3.5)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 5: Backpressure ────────────────────────────────────────
@@ -334,6 +380,7 @@ class Sheet5Streaming(Scene):
         tradeoff.to_edge(DOWN, buff=0.35)
         self.play(FadeIn(tradeoff, shift=UP * 0.1))
         self.wait(3.5)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 6: Q2 Overview ─────────────────────────────────────────
@@ -366,17 +413,22 @@ class Sheet5Streaming(Scene):
         topic_lbl = make_label("Topic", font_size=11, color=GREY_B)
         topic_lbl.next_to(parts, UP, buff=0.2)
 
-        cross_note = make_label(
-            "Reading across partitions gives: 1,4,7,2,5,8,3,6,9 — NOT ordered",
-            font_size=12, color=RED,
+        cross_title = make_label("Reading across partitions gives:", font_size=11, color=RED)
+        cross_seq = make_code_text(
+            "1,4,7,2,5,8,3,6,9",
+            font_size=11,
+            language="text",
+            force_code_object=True,
+            glow=False,
         )
-        cross_note.next_to(parts, DOWN, buff=0.3)
+        cross_note = VGroup(cross_title, cross_seq).arrange(DOWN, buff=0.08)
+        cross_note.next_to(parts, DOWN, buff=0.25)
 
         self.play(FadeIn(topic_lbl))
         for p in parts:
             self.play(FadeIn(p, shift=UP * 0.15), run_time=0.4)
         self.play(FadeIn(cross_note, shift=UP * 0.1))
-        self.play(Indicate(cross_note, color=RED, run_time=1.2))
+        self.play(Indicate(cross_seq, color=RED, run_time=1.2))
         self.wait(0.5)
 
         approach_lbl = make_label(
@@ -386,6 +438,7 @@ class Sheet5Streaming(Scene):
         approach_lbl.to_edge(DOWN, buff=0.4)
         self.play(FadeIn(approach_lbl, shift=UP * 0.15))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 7: Approach 1 — Merge Sweep ───────────────────────────
@@ -425,6 +478,7 @@ class Sheet5Streaming(Scene):
         self.play(GrowArrow(aA), GrowArrow(aB), GrowArrow(aC))
         self.play(GrowArrow(aM))
         self.wait(0.6)
+        self._next_slide(phase=True, notes="Merge sweep flow complete; discuss pros/cons")
 
         pros_title = make_label("Advantages", font_size=13, color=GREEN)
         pros = VGroup(
@@ -448,6 +502,7 @@ class Sheet5Streaming(Scene):
         self.play(FadeIn(cons_group, shift=UP * 0.1))
         self.play(Indicate(cons[0], color=RED, run_time=1.2))
         self.wait(3.5)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 8: Approach 2 — Global Sequence ────────────────────────
@@ -494,6 +549,7 @@ class Sheet5Streaming(Scene):
         ordered_lbl.next_to(consumer, DOWN, buff=0.2)
         self.play(FadeIn(ordered_lbl))
         self.wait(0.5)
+        self._next_slide(phase=True, notes="Global ordering idea complete; discuss pros/cons")
 
         pros_title = make_label("Advantages", font_size=13, color=GREEN)
         pros = VGroup(
@@ -516,6 +572,7 @@ class Sheet5Streaming(Scene):
         self.play(FadeIn(cons_group, shift=UP * 0.1))
         self.play(Indicate(cons[1], color=RED, run_time=1.2))
         self.wait(3.5)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 9: Q3 — Streaming Tools ───────────────────────────────
@@ -550,6 +607,7 @@ class Sheet5Streaming(Scene):
             self.wait(0.15)
 
         self.wait(0.3)
+        self._next_slide(phase=True, notes="Transmission models done; move to tool table")
 
         # ── Tool comparison table ──
         # each row: (col0_text, col0_color, col1_text, col1_color, col2_text, col2_color)
@@ -566,6 +624,7 @@ class Sheet5Streaming(Scene):
             col_x_positions = [-4.2,    0.2,      3.8],
             rows_data       = tools_rows,
         )
+
         table.next_to(model_rows, DOWN, buff=0.32)
         hdrs_grp, div, all_rows = table[0], table[1], table[2]
 
@@ -582,6 +641,7 @@ class Sheet5Streaming(Scene):
         self.play(Indicate(all_rows[3][1], color=TEAL, run_time=1.0))
 
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 10: Closing ────────────────────────────────────────────
@@ -615,4 +675,5 @@ class Sheet5Streaming(Scene):
         themes.move_to(DOWN * 1.5)
         self.play(FadeIn(themes, shift=UP * 0.2))
         self.wait(4)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))

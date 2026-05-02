@@ -36,6 +36,11 @@ from manim import (
     YELLOW,
 )
 
+try:
+    from manim_slides import Slide as BaseSlide
+except Exception:
+    BaseSlide = Scene
+
 from libs.ddia_components import (
     DARK_BG,
     ICON_DATABASE,
@@ -45,9 +50,11 @@ from libs.ddia_components import (
     ICON_LOCK,
     ICON_SHIELD,
     ICON_USER,
+    make_code_text,
     make_label,
     make_icon,
 )
+from libs.slide_controls import slide_checkpoint
 
 config.background_color = "#0D1117"
 
@@ -63,7 +70,12 @@ def _tx(t):
     return _TL_X0 + t * (_TL_X1 - _TL_X0) / _T_MAX
 
 
-class Sheet4Consistency(Scene):
+class Sheet4Consistency(BaseSlide):
+
+    # Stop policy: "off", "scene", or "phase".
+    slide_stop_mode = "phase"
+    # Avoid reverse-video generation to prevent PyAV malloc failures on long renders.
+    max_duration_before_split_reverse = 4.0
 
     def construct(self):
         self.scene_title()
@@ -74,6 +86,36 @@ class Sheet4Consistency(Scene):
         self.scene_q4_cap()
         self.scene_q5_monotonic()
         self.scene_closing()
+
+    def _next_slide(
+        self,
+        phase=False,
+        enabled=True,
+        notes="",
+        loop=False,
+        auto_next=False,
+        playback_rate=1.0,
+        reversed_playback_rate=1.0,
+        dedent_notes=True,
+        skip_animations=False,
+        direction="horizontal",
+        **kwargs,
+    ):
+        slide_checkpoint(
+            self,
+            phase=phase,
+            enabled=enabled,
+            slide_stop_mode=self.slide_stop_mode,
+            loop=loop,
+            auto_next=auto_next,
+            playback_rate=playback_rate,
+            reversed_playback_rate=reversed_playback_rate,
+            notes=notes,
+            dedent_notes=dedent_notes,
+            skip_animations=skip_animations,
+            direction=direction,
+            **kwargs,
+        )
 
     # ─── Shared helpers ───────────────────────────────────────────────
 
@@ -204,6 +246,7 @@ class Sheet4Consistency(Scene):
         self.wait(0.4)
         self.play(FadeIn(sub, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 2: Q1 — Isolation vs Ordering ─────────────────────────
@@ -325,6 +368,7 @@ class Sheet4Consistency(Scene):
         note.to_edge(DOWN, buff=0.35)
         self.play(FadeIn(note, shift=UP * 0.1))
         self.wait(3.5)
+        self._next_slide(phase=True, notes="Anomaly finished; switch to timestamp fix")
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 3: Q2 — History H (Linearizable) ──────────────────────
@@ -398,6 +442,7 @@ class Sheet4Consistency(Scene):
         self.play(FadeIn(badge, shift=UP * 0.15))
         self.play(Circumscribe(badge, color=GREEN, buff=0.05, run_time=1.5))
         self.wait(4)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 4: Q2 — Making H Non-Linearizable ─────────────────────
@@ -474,6 +519,7 @@ class Sheet4Consistency(Scene):
         self.play(FadeIn(badge, shift=UP * 0.15))
         self.play(Circumscribe(badge, color=RED, buff=0.04, run_time=1.5))
         self.wait(4)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 5: Q3 — FIFO Queue ────────────────────────────────────
@@ -567,6 +613,7 @@ class Sheet4Consistency(Scene):
         badge.to_edge(DOWN, buff=0.3)
         self.play(FadeIn(badge, shift=UP * 0.15))
         self.wait(4)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 6: Q4 — CAP Trade-off ─────────────────────────────────
@@ -656,6 +703,7 @@ class Sheet4Consistency(Scene):
         cap_summary.to_edge(DOWN, buff=0.35)
         self.play(FadeIn(cap_summary, shift=UP * 0.15))
         self.wait(4)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 7: Q5 — Monotonic Reads ───────────────────────────────
@@ -716,9 +764,12 @@ class Sheet4Consistency(Scene):
         self.wait(0.3)
 
         # User 1234 → Leader: INSERT
-        ins_lbl = make_label(
+        ins_lbl = make_code_text(
             "insert into comments\n(author, reply_to, message)\nvalues(1234, 55555, 'Sounds good!')",
-            font_size=7, color=TEAL,
+            font_size=7,
+            language="sql",
+            force_code_object=True,
+            glow=False,
         )
         ins_lbl.move_to([_tx(1.2), ROW_U1 + 0.5, 0])
         a_u1_l = _arr(1.5, ROW_U1, 2.3, ROW_L, TEAL)
@@ -746,8 +797,12 @@ class Sheet4Consistency(Scene):
         self.wait(0.3)
 
         # User 2345 → Follower 1: Read ① (fresh → 1 result)
-        q1 = make_label(
-            "select * from comments\nwhere reply_to = 55555", font_size=7, color=PURPLE,
+        q1 = make_code_text(
+            "select * from comments\nwhere reply_to = 55555",
+            font_size=7,
+            language="sql",
+            force_code_object=True,
+            glow=False,
         )
         q1.move_to([_tx(3.9), ROW_U2 - 0.38, 0])
         a_u2_f1 = _arr(3.6, ROW_U2, 4.3, ROW_F1, PURPLE)
@@ -760,8 +815,12 @@ class Sheet4Consistency(Scene):
         self.wait(0.5)
 
         # User 2345 → Follower 2: Read ② (stale → no results!)
-        q2 = make_label(
-            "select * from comments\nwhere reply_to = 55555", font_size=7, color=PURPLE,
+        q2 = make_code_text(
+            "select * from comments\nwhere reply_to = 55555",
+            font_size=7,
+            language="sql",
+            force_code_object=True,
+            glow=False,
         )
         q2.move_to([_tx(6.0), ROW_U2 - 0.38, 0])
         a_u2_f2 = _arr(5.7, ROW_U2, 6.2, ROW_F2, PURPLE)
@@ -780,6 +839,7 @@ class Sheet4Consistency(Scene):
         badge1.to_edge(DOWN, buff=0.3)
         self.play(FadeIn(badge1, shift=UP * 0.1))
         self.wait(3.5)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
         # ── Phase 2: Fix with min_timestamp ──────────────────────────
@@ -805,9 +865,12 @@ class Sheet4Consistency(Scene):
         self.wait(0.3)
 
         # Same first half: User 1234 inserts, replication fans out
-        ins_lbl2 = make_label(
+        ins_lbl2 = make_code_text(
             "insert into comments...\nvalues(1234, 55555, 'Sounds good!')",
-            font_size=7, color=TEAL,
+            font_size=7,
+            language="sql",
+            force_code_object=True,
+            glow=False,
         )
         ins_lbl2.move_to([_tx(1.2), ROW_U1 + 0.4, 0])
         a2_u1_l = _arr(1.5, ROW_U1, 2.3, ROW_L,  TEAL)
@@ -823,8 +886,12 @@ class Sheet4Consistency(Scene):
         self.play(GrowArrow(a2_l_f2), run_time=0.6)
 
         # User 2345 Read ①: same as anomaly, stores T=100
-        q2_1 = make_label(
-            "select * from comments\nwhere reply_to = 55555", font_size=7, color=PURPLE,
+        q2_1 = make_code_text(
+            "select * from comments\nwhere reply_to = 55555",
+            font_size=7,
+            language="sql",
+            force_code_object=True,
+            glow=False,
         )
         q2_1.move_to([_tx(3.9), ROW_U2 - 0.38, 0])
         a2_u2_f1 = _arr(3.6, ROW_U2, 4.3, ROW_F1, PURPLE)
@@ -835,9 +902,12 @@ class Sheet4Consistency(Scene):
         self.wait(0.4)
 
         # User 2345 Read ②: carries min_timestamp=100 → Follower 2 blocks
-        q2_2 = make_label(
+        q2_2 = make_code_text(
             "select * from comments\nwhere reply_to = 55555 { min_timestamp: 100 }",
-            font_size=7, color=PURPLE,
+            font_size=7,
+            language="sql",
+            force_code_object=True,
+            glow=False,
         )
         q2_2.move_to([_tx(5.9), ROW_U2 - 0.38, 0])
         a2_u2_f2 = _arr(5.7, ROW_U2, 6.2, ROW_F2, PURPLE)
@@ -869,6 +939,7 @@ class Sheet4Consistency(Scene):
         badge2.to_edge(DOWN * 1.7, buff=0.3)
         self.play(FadeIn(badge2, shift=UP * 0.1))
         self.wait(4)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 8: Closing ─────────────────────────────────────────────
@@ -902,4 +973,5 @@ class Sheet4Consistency(Scene):
         themes.move_to(DOWN * 1.5)
         self.play(FadeIn(themes, shift=UP * 0.2))
         self.wait(4)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))

@@ -30,6 +30,11 @@ from manim import (
     YELLOW,
 )
 
+try:
+    from manim_slides import Slide as BaseSlide
+except Exception:
+    BaseSlide = Scene
+
 from libs.ddia_components import (
     DARK_BG,
     ICON_DATABASE,
@@ -52,6 +57,7 @@ from libs.ddia_components import (
     make_comparison_table,
     create_rect_glow,
 )
+from libs.slide_controls import slide_checkpoint
 
 config.background_color = "#0D1117"
 config.pixel_height = 1080
@@ -112,7 +118,12 @@ BASH_T2C = {
 }
 
 
-class Lab4JMSKafka(Scene):
+class Lab4JMSKafka(BaseSlide):
+    # Stop policy: "off", "scene", or "phase".
+    slide_stop_mode = "phase"
+    # Avoid reverse-video generation to prevent PyAV malloc failures on long renders.
+    max_duration_before_split_reverse = 4.0
+
     def construct(self):
         self.scene_title()
         self.scene_lab_overview()
@@ -124,6 +135,36 @@ class Lab4JMSKafka(Scene):
         self.scene_usability()
         self.scene_deliverables()
         self.scene_closing()
+
+    def _next_slide(
+        self,
+        phase=False,
+        enabled=True,
+        notes="",
+        loop=False,
+        auto_next=False,
+        playback_rate=1.0,
+        reversed_playback_rate=1.0,
+        dedent_notes=True,
+        skip_animations=False,
+        direction="horizontal",
+        **kwargs,
+    ):
+        slide_checkpoint(
+            self,
+            phase=phase,
+            enabled=enabled,
+            slide_stop_mode=self.slide_stop_mode,
+            loop=loop,
+            auto_next=auto_next,
+            playback_rate=playback_rate,
+            reversed_playback_rate=reversed_playback_rate,
+            notes=notes,
+            dedent_notes=dedent_notes,
+            skip_animations=skip_animations,
+            direction=direction,
+            **kwargs,
+        )
 
     # ─── Helpers ──────────────────────────────────────────────────────
     def _tool_card(self, title, subtitle, icon, color, width=3.8, height=2.0):
@@ -170,7 +211,13 @@ class Lab4JMSKafka(Scene):
             stroke_width=1.2,
         )
         title_lbl = make_label(title, font_size=10, color=color)
-        code = make_code_text(text, font_size=font_size, t2c=t2c or JAVA_T2C)
+        code = make_code_text(
+            text,
+            font_size=font_size,
+            language="java",
+            force_code_object=True,
+            with_background=False,
+        )
         content = VGroup(title_lbl, code).arrange(DOWN, buff=0.1)
         content.move_to(box.get_center())
         return VGroup(box, content)
@@ -191,6 +238,7 @@ class Lab4JMSKafka(Scene):
         self.wait(0.4)
         self.play(FadeIn(sub, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 2: Lab Overview ────────────────────────────────────────
@@ -246,6 +294,7 @@ class Lab4JMSKafka(Scene):
         constraint_lbl.to_edge(DOWN, buff=0.4)
         self.play(FadeIn(constraint_lbl, shift=UP * 0.15))
         self.wait(2)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 3: Tools Introduction ─────────────────────────────────
@@ -286,6 +335,7 @@ class Lab4JMSKafka(Scene):
         kafka_model.next_to(kafka_card, DOWN, buff=0.25)
         self.play(FadeIn(jms_model), FadeIn(kafka_model))
         self.wait(1.5)
+        self._next_slide(phase=True, notes="Compare transmission model diagrams")
 
         # Simple broker diagram for JMS
         prod_box = RoundedRectangle(corner_radius=0.08, width=1.2, height=0.45,
@@ -347,6 +397,7 @@ class Lab4JMSKafka(Scene):
 
         self.play(FadeIn(jms_full_diag), FadeIn(kafka_full_diag))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 4: Performance Overview ───────────────────────────────
@@ -389,6 +440,7 @@ class Lab4JMSKafka(Scene):
             self.wait(0.3)
 
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 5: Response Time ───────────────────────────────────────
@@ -435,6 +487,7 @@ class Lab4JMSKafka(Scene):
         protocol.next_to(pair, DOWN, buff=0.4)
         self.play(FadeIn(protocol))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 6: Max Throughput ──────────────────────────────────────
@@ -457,17 +510,20 @@ class Lab4JMSKafka(Scene):
             stroke_color=GREEN, stroke_width=1.2,
         )
         algo_title = make_label("Algorithm", font_size=11, color=GREEN)
-        algo_code = make_code_text("\n".join(algo_lines), font_size=11, t2c={
-            "for": "#C586C0", "in": "#C586C0", "if": "#C586C0",
-            "range": "#DCDCAA", "sleep": "#DCDCAA",
-            "#": "#6A9955",
-        })
+        algo_code = make_code_text(
+            "\n".join(algo_lines),
+            font_size=11,
+            language="python",
+            force_code_object=True,
+            with_background=False,
+        )
         algo_content = VGroup(algo_title, algo_code).arrange(DOWN, buff=0.1)
         algo_content.move_to(algo_box.get_center())
         algo_vg = VGroup(algo_box, algo_content)
         algo_vg.next_to(header, DOWN, buff=0.45)
         self.play(FadeIn(algo_vg))
         self.wait(0.8)
+        self._next_slide(phase=True, notes="Switch from algorithm to tool-specific execution")
 
         kafka_script_lines = [
             "# Kafka built-in perf scripts:",
@@ -485,7 +541,13 @@ class Lab4JMSKafka(Scene):
             stroke_color=TEAL, stroke_width=1.2,
         )
         k_title = make_label("Kafka — Built-in Scripts", font_size=11, color=TEAL)
-        k_code = make_code_text("\n".join(kafka_script_lines), font_size=10, t2c=BASH_T2C)
+        k_code = make_code_text(
+            "\n".join(kafka_script_lines),
+            font_size=10,
+            language="bash",
+            force_code_object=True,
+            with_background=False,
+        )
         k_content = VGroup(k_title, k_code).arrange(DOWN, buff=0.1)
         k_content.move_to(kafka_box.get_center())
         kafka_vg = VGroup(kafka_box, k_content)
@@ -510,6 +572,7 @@ class Lab4JMSKafka(Scene):
         self.wait(0.3)
         self.play(FadeIn(kafka_vg, shift=RIGHT * 0.3))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 7: Median Latency ──────────────────────────────────────
@@ -546,6 +609,7 @@ class Lab4JMSKafka(Scene):
             self.wait(0.25)
 
         self.wait(1.5)
+        self._next_slide(phase=True, notes="After method steps, show timeline intuition")
 
         # Producer timeline arrows
         prod = make_label("Producer", font_size=12, color=ORANGE)
@@ -560,6 +624,7 @@ class Lab4JMSKafka(Scene):
         timeline.next_to(step_vg, RIGHT, buff=1.0)
         self.play(FadeIn(prod), GrowArrow(arrow), FadeIn(latency_lbl), FadeIn(cons))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 8: Usability ───────────────────────────────────────────
@@ -600,6 +665,7 @@ class Lab4JMSKafka(Scene):
             self.wait(0.2)
 
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 9: Deliverables ────────────────────────────────────────
@@ -654,6 +720,7 @@ class Lab4JMSKafka(Scene):
         note.to_edge(DOWN, buff=0.4)
         self.play(FadeIn(note, shift=UP * 0.1))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 11: Closing ────────────────────────────────────────────
@@ -679,4 +746,5 @@ class Lab4JMSKafka(Scene):
         self.wait(0.4)
         self.play(FadeIn(sub2, shift=UP * 0.15))
         self.wait(4)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
