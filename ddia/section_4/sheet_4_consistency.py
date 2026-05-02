@@ -75,7 +75,7 @@ class Sheet4Consistency(BaseSlide):
     # Stop policy: "off", "scene", or "phase".
     slide_stop_mode = "phase"
     # Avoid reverse-video generation to prevent PyAV malloc failures on long renders.
-    max_duration_before_split_reverse = 4.0
+    max_duration_before_split_reverse = 8.0
 
     def construct(self):
         self.scene_title()
