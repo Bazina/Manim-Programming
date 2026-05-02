@@ -727,7 +727,7 @@ class Sheet4Consistency(Scene):
 
         # Leader → User 1234: "insert ok"
         a_l_u1 = _arr(2.3, ROW_L, 3.0, ROW_U1, BLUE)
-        m_ok = _msg(a_l_u1, "insert ok", DOWN * 0.22, BLUE)
+        m_ok = _msg(a_l_u1, "insert ok", DOWN * 0.4, BLUE)
         self.play(GrowArrow(a_l_u1), run_time=0.4)
         self.play(FadeIn(m_ok))
 
@@ -778,12 +778,7 @@ class Sheet4Consistency(Scene):
             "Time appears to go backward — Monotonic Reads violated  ✗", RED, width=8.2,
         )
         badge1.to_edge(DOWN, buff=0.3)
-        note1 = make_label(
-            "Follower 2 is stale — same query returns fewer results than Read ① saw",
-            font_size=9, color=RED,
-        )
-        note1.next_to(badge1, UP, buff=0.12)
-        self.play(FadeIn(note1), FadeIn(badge1, shift=UP * 0.1))
+        self.play(FadeIn(badge1, shift=UP * 0.1))
         self.wait(3.5)
         self.play(FadeOut(*self.mobjects))
 
@@ -817,7 +812,7 @@ class Sheet4Consistency(Scene):
         ins_lbl2.move_to([_tx(1.2), ROW_U1 + 0.4, 0])
         a2_u1_l = _arr(1.5, ROW_U1, 2.3, ROW_L,  TEAL)
         a2_l_u1 = _arr(2.3, ROW_L,  3.0, ROW_U1, BLUE)
-        m2_ok   = _msg(a2_l_u1, "insert ok", DOWN * 0.22, BLUE)
+        m2_ok   = _msg(a2_l_u1, "insert ok", DOWN * 0.4, BLUE)
         a2_l_f1 = _arr(2.3, ROW_L,  3.5, ROW_F1, GREEN)
         m2_rep1 = _msg(a2_l_f1, "insert into\ncomments...", UP * 0.27, GREEN, fs=7)
         a2_l_f2 = _arr(2.3, ROW_L,  7.6, ROW_F2, ORANGE)
@@ -841,28 +836,28 @@ class Sheet4Consistency(Scene):
 
         # User 2345 Read ②: carries min_timestamp=100 → Follower 2 blocks
         q2_2 = make_label(
-            "select * from comments\nwhere reply_to = 55555\n{ min_timestamp: 100 }",
+            "select * from comments\nwhere reply_to = 55555 { min_timestamp: 100 }",
             font_size=7, color=PURPLE,
         )
-        q2_2.move_to([_tx(5.9), ROW_U2 - 0.48, 0])
+        q2_2.move_to([_tx(5.9), ROW_U2 - 0.38, 0])
         a2_u2_f2 = _arr(5.7, ROW_U2, 6.2, ROW_F2, PURPLE)
         self.play(FadeIn(q2_2), GrowArrow(a2_u2_f2), run_time=0.4)
 
         blk_x = make_label("✗", font_size=18, color=RED)
         blk_x.move_to([_tx(6.5), ROW_F2, 0])
         blk_note = make_label("T=80 < 100 → blocked", font_size=8, color=RED)
-        blk_note.next_to(blk_x, DOWN, buff=0.08)
+        blk_note.next_to(blk_x, DOWN * 1.5, buff=0.08)
         self.play(FadeIn(blk_x), FadeIn(blk_note))
         self.wait(0.3)
 
         # Rerouted to Follower 1 → fresh "1 result"
         a2_rt = _arr(6.8, ROW_U2, 7.3, ROW_F1, TEAL)
-        m2_rt = _msg(a2_rt, "retry → Follower 1", UP * 0.26, TEAL, fs=8)
+        m2_rt = _msg(a2_rt, "retry → Follower 1", UP * 0.7 + LEFT * 0.4, TEAL, fs=8)
         self.play(GrowArrow(a2_rt), run_time=0.4)
         self.play(FadeIn(m2_rt))
 
         a2_ok = _arr(7.3, ROW_F1, 7.8, ROW_U2, GREEN)
-        m2_ok2 = _msg(a2_ok, "1 result  ✓", RIGHT * 0.4 + UP * 0.2, GREEN, fs=9)
+        m2_ok2 = _msg(a2_ok, "1 result  ✓", RIGHT * 0.4 + UP * 0.7, GREEN, fs=9)
         self.play(GrowArrow(a2_ok), run_time=0.4)
         self.play(FadeIn(m2_ok2))
         self.play(Indicate(m2_ok2, color=GREEN, run_time=1.2))
@@ -871,14 +866,8 @@ class Sheet4Consistency(Scene):
         badge2 = self._verdict_badge(
             "Monotonic Reads guaranteed — T never goes backward  ✓", GREEN, width=7.8,
         )
-        badge2.to_edge(DOWN, buff=0.3)
-        bullets = VGroup(
-            make_label("✓  Any replica can serve — no sticky sessions", font_size=10, color=GREEN),
-            make_label("✓  Failover transparent — route to any fresh replica", font_size=10, color=GREEN),
-            make_label("⚠  High replication lag may cause brief blocking at stale replica", font_size=10, color=ORANGE),
-        ).arrange(DOWN, buff=0.09, aligned_edge=LEFT)
-        bullets.next_to(badge2, UP, buff=0.13)
-        self.play(FadeIn(bullets), FadeIn(badge2, shift=UP * 0.1))
+        badge2.to_edge(DOWN * 1.7, buff=0.3)
+        self.play(FadeIn(badge2, shift=UP * 0.1))
         self.wait(4)
         self.play(FadeOut(*self.mobjects))
 
