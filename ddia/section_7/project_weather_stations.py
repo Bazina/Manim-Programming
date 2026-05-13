@@ -30,6 +30,7 @@ from manim import (
     TEAL,
     PURPLE,
     YELLOW,
+    PINK,
 )
 
 try:
@@ -82,6 +83,7 @@ class ProjectWeatherStations(BaseSlide):
         self.scene_kubernetes()
         self.scene_jfr_profiling()
         self.scene_deliverables()
+        self.scene_bonus()
         self.scene_closing()
 
     # ─── Helpers ──────────────────────────────────────────────────────
@@ -89,8 +91,8 @@ class ProjectWeatherStations(BaseSlide):
     def _card(self, title, desc, color, width=11.5, height=None, title_size=13, desc_size=11):
         t = make_label(title, font_size=title_size, color=color)
         d = make_label(desc, font_size=desc_size, color=GREY_A)
-        content = VGroup(t, d).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
-        h = height or content.height + 0.38
+        content = VGroup(t, d).arrange(DOWN, buff=0.12, aligned_edge=LEFT)
+        h = height or content.height + 0.42
         box = RoundedRectangle(
             corner_radius=0.09,
             width=width, height=h,
@@ -100,18 +102,20 @@ class ProjectWeatherStations(BaseSlide):
         content.move_to(box.get_center())
         return VGroup(box, content)
 
-    def _icon_row_card(self, icon_path, color, title, desc, row_w=11.5):
-        ic = make_icon(icon_path, color=color, height=0.28)
+    def _icon_row_card(self, icon_path, color, title, desc, row_w=12.5):
+        ic = make_icon(icon_path, color=color, height=0.32)
         t = make_label(title, font_size=13, color=color)
         d = make_label(desc, font_size=11, color=GREY_A)
-        content = VGroup(ic, t, d).arrange(RIGHT, buff=0.18)
+        text_col = VGroup(t, d).arrange(DOWN, buff=0.05, aligned_edge=LEFT)
+        content = VGroup(ic, text_col).arrange(RIGHT, buff=0.22)
         box = RoundedRectangle(
             corner_radius=0.09,
-            width=row_w, height=content.height + 0.3,
+            width=row_w,
+            height=max(content.height + 0.36, 0.75),
             fill_color=DARK_BG, fill_opacity=0.9,
             stroke_color=color, stroke_width=1.1,
         )
-        content.move_to(box.get_center())
+        content.move_to(box.get_center()).shift(LEFT * ((row_w - content.width) * 0.3))
         return VGroup(box, content)
 
     def _flow_node(self, label, color, width=2.2, height=0.9):
@@ -189,24 +193,27 @@ class ProjectWeatherStations(BaseSlide):
             force_code_object=True,
             with_background=False,
         )
-        content = VGroup(title_lbl, code).arrange(DOWN, buff=0.1)
+        content = VGroup(title_lbl, code).arrange(DOWN, buff=0.12)
         content.move_to(box.get_center())
         return VGroup(box, content)
 
     # ─── Scene 1: Title ───────────────────────────────────────────────
     def scene_title(self):
         icon = make_icon(ICON_CLOUD, color=TEAL, height=1.1)
-        title = make_label("Project: Weather Stations Monitoring", font_size=32, color=TEAL)
+        title = make_label("Project: Weather Stations Monitoring", font_size=34, color=TEAL)
         sub = make_label(
             "IoT Data Streams  ·  Kafka  ·  BitCask  ·  Parquet  ·  Kubernetes",
             font_size=17, color=GREY_B,
         )
-        VGroup(icon, title, sub).arrange(DOWN, buff=0.38)
+        course = make_label("CSE-4E3  ·  Designing Data-Intensive Applications", font_size=13, color=GREY_B)
+        VGroup(icon, title, sub, course).arrange(DOWN, buff=0.4)
         self.play(FadeIn(icon, shift=DOWN * 0.3))
         self.wait(0.4)
         self.play(AddTextLetterByLetter(title, time_per_char=0.04))
         self.wait(0.4)
         self.play(FadeIn(sub, shift=UP * 0.2))
+        self.wait(0.3)
+        self.play(FadeIn(course, shift=UP * 0.15))
         self.wait(3)
         self._next_slide()
         self.play(FadeOut(*self.mobjects))
@@ -221,7 +228,7 @@ class ProjectWeatherStations(BaseSlide):
             "IoT devices emit high-frequency data streams — weather stations report status every second",
             font_size=13, color=GREY_A,
         )
-        context.next_to(header, DOWN, buff=0.3)
+        context.next_to(header, DOWN, buff=0.35)
         self.play(FadeIn(context, shift=UP * 0.1))
         self.wait(0.4)
 
@@ -238,11 +245,11 @@ class ProjectWeatherStations(BaseSlide):
         rows = VGroup()
         for icon_path, color, title, desc in items:
             rows.add(self._icon_row_card(icon_path, color, title, desc))
-        rows.arrange(DOWN, buff=0.1).next_to(context, DOWN, buff=0.35)
+        rows.arrange(DOWN, buff=0.15).next_to(context, DOWN, buff=0.38)
 
         for row in rows:
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.45)
-            self.wait(0.3)
+            self.wait(0.25)
 
         self.wait(2.5)
         self._next_slide()
@@ -254,12 +261,12 @@ class ProjectWeatherStations(BaseSlide):
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.5)
 
-        # Stage nodes
-        stage1 = self._flow_node("Data Acquisition\n(Stations → Kafka)", ORANGE, width=3.2, height=1.1)
-        stage2 = self._flow_node("Processing &\nArchiving\n(Central Station)", BLUE, width=3.0, height=1.3)
-        stage3 = self._flow_node("Indexing\n(BitCask + ES/Kibana)", GREEN, width=3.2, height=1.1)
+        # Stage nodes — vertically centred with room below for sub-labels
+        stage1 = self._flow_node("Data Acquisition\n(Stations → Kafka)", ORANGE, width=3.4, height=1.1)
+        stage2 = self._flow_node("Processing &\nArchiving\n(Central Station)", BLUE, width=3.2, height=1.3)
+        stage3 = self._flow_node("Indexing\n(BitCask + ES/Kibana)", GREEN, width=3.4, height=1.1)
 
-        stages = VGroup(stage1, stage2, stage3).arrange(RIGHT, buff=1.0).move_to(UP * 0.5)
+        stages = VGroup(stage1, stage2, stage3).arrange(RIGHT, buff=1.2).move_to(UP * 0.8)
         a1 = self._flow_arrow(stage1, stage2, ORANGE, "Kafka stream")
         a2 = self._flow_arrow(stage2, stage3, BLUE, "indexed")
 
@@ -268,32 +275,20 @@ class ProjectWeatherStations(BaseSlide):
         self.play(GrowArrow(a2[0]), FadeIn(a2[1]))
         self.wait(0.6)
 
-        # Sub-component labels
-        sub1 = make_label(
-            "10 weather stations\n1 Kafka + 1 Zookeeper",
-            font_size=11, color=ORANGE,
-        )
-        sub2 = make_label(
-            "Consumes from Kafka\nWrites Parquet files",
-            font_size=11, color=BLUE,
-        )
-        sub3 = make_label(
-            "BitCask: latest view\nES/Kibana: history queries",
-            font_size=11, color=GREEN,
-        )
-        sub1.next_to(stage1, DOWN, buff=0.25)
-        sub2.next_to(stage2, DOWN, buff=0.25)
-        sub3.next_to(stage3, DOWN, buff=0.25)
+        # Sub-component labels — placed directly below each stage
+        sub1 = make_label("10 weather stations\n1 Kafka + 1 Zookeeper", font_size=11, color=ORANGE)
+        sub2 = make_label("Consumes from Kafka\nWrites Parquet files", font_size=11, color=BLUE)
+        sub3 = make_label("BitCask: latest view\nES/Kibana: history queries", font_size=11, color=GREEN)
+        sub1.next_to(stage1, DOWN, buff=0.3)
+        sub2.next_to(stage2, DOWN, buff=0.3)
+        sub3.next_to(stage3, DOWN, buff=0.3)
 
         for lbl in [sub1, sub2, sub3]:
             self.play(FadeIn(lbl, shift=UP * 0.1), run_time=0.4)
             self.wait(0.2)
 
-        cluster_note = make_label(
-            "All running inside a Kubernetes cluster",
-            font_size=13, color=PURPLE,
-        )
-        cluster_note.to_edge(DOWN, buff=0.4)
+        cluster_note = make_label("All running inside a Kubernetes cluster", font_size=13, color=PURPLE)
+        cluster_note.to_edge(DOWN, buff=0.5)
         self.play(FadeIn(cluster_note, shift=UP * 0.15))
         self.wait(3.5)
         self._next_slide()
@@ -308,46 +303,46 @@ class ProjectWeatherStations(BaseSlide):
         schema_lines = [
             "{",
             '  "station_id": <long>,',
-            '  "s_no": <long>,          // sequence number',
+            '  "s_no": <long>,           // auto-incremental per station',
             '  "battery_status": "low" | "medium" | "high",',
             '  "status_timestamp": <epoch_ms>,',
             '  "weather": {',
-            '    "humidity": <int>,',
-            '    "temperature": <int>,',
-            '    "wind_speed": <int>',
+            '    "humidity": <int>,      // percentage',
+            '    "temperature": <int>,   // fahrenheit',
+            '    "wind_speed": <int>     // km/h',
             "  }",
             "}",
         ]
-        schema_box = self._code_box(schema_lines, "Weather Status Message (JSON)", ORANGE, width=7.2, font_size=10)
-        schema_box.next_to(header, DOWN, buff=0.4).shift(LEFT * 2.5)
+        schema_box = self._code_box(schema_lines, "Weather Status Message (JSON)", ORANGE, width=7.5, font_size=10)
+        schema_box.next_to(header, DOWN, buff=0.45).shift(LEFT * 2.8)
         self.play(FadeIn(schema_box, shift=LEFT * 0.3))
         self.wait(0.5)
         self._next_slide(phase=True, notes="Schema shown; discuss fields before distribution")
 
-        # Battery distribution
+        # Battery distribution card — right of schema
         dist_title = make_label("Battery Status Distribution", font_size=13, color=YELLOW)
         dist_rows = VGroup(
-            make_label("Low     = 30% of messages per station", font_size=12, color=RED),
-            make_label("Medium  = 40% of messages per station", font_size=12, color=ORANGE),
-            make_label("High    = 30% of messages per station", font_size=12, color=GREEN),
-        ).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
+            make_label("Low      =  30 % of messages per station", font_size=12, color=RED),
+            make_label("Medium  =  40 % of messages per station", font_size=12, color=ORANGE),
+            make_label("High      =  30 % of messages per station", font_size=12, color=GREEN),
+        ).arrange(DOWN, buff=0.14, aligned_edge=LEFT)
+        dist_content = VGroup(dist_title, dist_rows).arrange(DOWN, buff=0.18, aligned_edge=LEFT)
         dist_box = RoundedRectangle(
-            corner_radius=0.09, width=5.5, height=dist_rows.height + 0.8,
+            corner_radius=0.09, width=6.0, height=dist_content.height + 0.5,
             fill_color=DARK_BG, fill_opacity=0.9,
             stroke_color=YELLOW, stroke_width=1.2,
         )
-        dist_content = VGroup(dist_title, dist_rows).arrange(DOWN, buff=0.15, aligned_edge=LEFT)
-        dist_content.move_to(dist_box.get_center())
+        dist_content.move_to(dist_box.get_center()).shift(LEFT * 0.15)
         dist_group = VGroup(dist_box, dist_content)
-        dist_group.next_to(header, DOWN, buff=0.4).shift(RIGHT * 3.0)
+        dist_group.next_to(header, DOWN, buff=0.45).shift(RIGHT * 3.2)
         self.play(FadeIn(dist_group, shift=RIGHT * 0.3))
         self.wait(0.5)
 
         drop_lbl = make_label(
-            "⚠  Randomly DROP 10% of messages  — simulates network loss",
+            "⚠  Randomly DROP 10 % of messages — simulates network loss",
             font_size=13, color=RED,
         )
-        drop_lbl.to_edge(DOWN, buff=0.4)
+        drop_lbl.to_edge(DOWN, buff=0.45)
         self.play(FadeIn(drop_lbl, shift=UP * 0.15))
         self.play(Indicate(drop_lbl, color=RED, run_time=1.2))
         self.wait(3.5)
@@ -360,20 +355,24 @@ class ProjectWeatherStations(BaseSlide):
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.5)
 
-        station = self._flow_node("Weather\nStation", ORANGE, width=2.0, height=0.9)
-        kafka = self._flow_node("Kafka\nTopic", TEAL, width=2.0, height=0.9)
-        processor = self._flow_node("Kafka\nProcessor", PURPLE, width=2.0, height=0.9)
-        rain_topic = self._flow_node("Rain Alerts\nTopic", RED, width=2.2, height=0.9)
-        central = self._flow_node("Central\nStation", BLUE, width=2.0, height=0.9)
+        # Top row: Station → Kafka → Central
+        station   = self._flow_node("Weather\nStation", ORANGE, width=2.1, height=0.9)
+        kafka     = self._flow_node("Kafka\nTopic", TEAL,   width=2.1, height=0.9)
+        central   = self._flow_node("Central\nStation", BLUE,  width=2.1, height=0.9)
+        VGroup(station, kafka, central).arrange(RIGHT, buff=1.2).move_to(UP * 1.3)
 
-        VGroup(station, kafka, central).arrange(RIGHT, buff=1.1).move_to(UP * 1.0)
-        a1 = self._flow_arrow(station, kafka, ORANGE, "produce")
-        a2 = self._flow_arrow(kafka, central, TEAL, "consume")
+        a1 = self._flow_arrow(station, kafka,   ORANGE, "produce")
+        a2 = self._flow_arrow(kafka,   central, TEAL,   "consume")
 
+        # Bottom row: Processor → Rain Topic
+        processor  = self._flow_node("Kafka\nProcessor", PURPLE, width=2.1, height=0.9)
+        rain_topic = self._flow_node("Rain Alerts\nTopic",    RED,    width=2.4, height=0.9)
         processor.next_to(kafka, DOWN, buff=1.1)
         rain_topic.next_to(processor, RIGHT, buff=1.1)
-        a3 = Arrow(kafka.get_bottom(), processor.get_top(), buff=0.1, stroke_width=1.8, color=PURPLE, tip_length=0.13)
-        a4 = self._flow_arrow(processor, rain_topic, RED, "humidity > 70%")
+
+        a3 = Arrow(kafka.get_bottom(), processor.get_top(),
+                   buff=0.1, stroke_width=1.8, color=PURPLE, tip_length=0.13)
+        a4 = self._flow_arrow(processor, rain_topic, RED, "humidity > 70 %")
 
         self.play(AnimationGroup(FadeIn(station), FadeIn(kafka), FadeIn(central), lag_ratio=0.2))
         self.play(GrowArrow(a1[0]), FadeIn(a1[1]))
@@ -389,10 +388,10 @@ class ProjectWeatherStations(BaseSlide):
 
         notes = VGroup(
             make_label("✓  Java Kafka Producer API — send() to main topic", font_size=12, color=GREEN),
-            make_label("✓  Kafka Processor (or Kafka DSL) — filter humidity > 70% → rain alert topic", font_size=12, color=GREEN),
-            make_label("✓  Try a simple producer example first — confirm output before integrating", font_size=12, color=YELLOW),
-        ).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
-        notes.to_edge(DOWN, buff=0.35)
+            make_label("✓  Kafka Processor (or Kafka DSL) — filter humidity > 70 % → rain alert topic", font_size=12, color=GREEN),
+            make_label("✓  Try simple producer example first — confirm output before integrating", font_size=12, color=YELLOW),
+        ).arrange(DOWN, buff=0.14, aligned_edge=LEFT)
+        notes.to_edge(DOWN, buff=0.42)
         self.play(FadeIn(notes, shift=UP * 0.1))
         self.wait(3.5)
         self._next_slide()
@@ -408,24 +407,24 @@ class ProjectWeatherStations(BaseSlide):
             "Key-value store — key = station_id  ·  value = latest weather status",
             font_size=13, color=GREY_A,
         )
-        desc.next_to(header, DOWN, buff=0.3)
+        desc.next_to(header, DOWN, buff=0.35)
         self.play(FadeIn(desc))
         self.wait(0.4)
 
         impl_items = [
             (ICON_FILE,      GREEN,  "Segment Files",
-             "Append-only log files — each write appended to active segment"),
-            (ICON_CODE_FILE, TEAL,   "Hint Files",
-             "Required — index of key → (file_id, offset, size) for fast crash recovery"),
+             "Append-only log files — each write appended to the active segment"),
+            (ICON_CODE_FILE, TEAL,   "Hint Files  (required)",
+             "Index of key → (file_id, offset, size) — mandatory for fast crash recovery"),
             (ICON_SETTINGS,  ORANGE, "Compaction",
-             "Scheduled merge of segment files — removes stale keys, runs non-disruptively"),
+             "Scheduled merge of segment files — removes stale keys, non-disruptive to readers"),
             (ICON_STRUCTURE, BLUE,   "In-Memory KeyDir",
-             "Hash table maps every key to its latest value location — O(1) reads"),
+             "Hash table maps every key to latest value location — O(1) reads"),
         ]
         rows = VGroup()
         for icon_path, color, title, desc_text in impl_items:
             rows.add(self._icon_row_card(icon_path, color, title, desc_text))
-        rows.arrange(DOWN, buff=0.08).next_to(desc, DOWN, buff=0.3)
+        rows.arrange(DOWN, buff=0.15).next_to(desc, DOWN, buff=0.35)
 
         for row in rows:
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.4)
@@ -435,7 +434,7 @@ class ProjectWeatherStations(BaseSlide):
             "NOT required: checksums  ·  tombstone deletions",
             font_size=12, color=GREY_B,
         )
-        not_required.to_edge(DOWN, buff=0.4)
+        not_required.to_edge(DOWN, buff=0.45)
         self.play(FadeIn(not_required, shift=UP * 0.1))
         self.wait(3)
         self._next_slide()
@@ -457,27 +456,27 @@ class ProjectWeatherStations(BaseSlide):
         ]
         rows = VGroup()
         for cmd, desc_text in client_items:
-            cmd_lbl = make_label(f"./bitcask_client.sh {cmd}", font_size=12, color=TEAL)
+            cmd_lbl  = make_label(f"./bitcask_client.sh  {cmd}", font_size=12, color=TEAL)
             desc_lbl = make_label(desc_text, font_size=11, color=GREY_A)
-            content = VGroup(cmd_lbl, desc_lbl).arrange(DOWN, buff=0.08, aligned_edge=LEFT)
+            content  = VGroup(cmd_lbl, desc_lbl).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
             box = RoundedRectangle(
-                corner_radius=0.09, width=12.0, height=content.height + 0.3,
+                corner_radius=0.09, width=12.5, height=content.height + 0.38,
                 fill_color=DARK_BG, fill_opacity=0.9,
                 stroke_color=TEAL, stroke_width=1.1,
             )
-            content.move_to(box.get_center()).shift(LEFT * 0.2)
+            content.move_to(box.get_center()).shift(LEFT * 0.15)
             rows.add(VGroup(box, content))
-        rows.arrange(DOWN, buff=0.12).next_to(header, DOWN, buff=0.45)
+        rows.arrange(DOWN, buff=0.18).next_to(header, DOWN, buff=0.5)
 
         for row in rows:
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.45)
             self.wait(0.4)
 
         use_note = make_label(
-            "Used by TAs during discussion — correctness of BitCask verified via this client",
+            "Used by TAs during discussion — BitCask correctness verified via this client",
             font_size=13, color=YELLOW,
         )
-        use_note.to_edge(DOWN, buff=0.4)
+        use_note.to_edge(DOWN, buff=0.45)
         self.play(FadeIn(use_note, shift=UP * 0.1))
         self.wait(3.5)
         self._next_slide()
@@ -491,7 +490,7 @@ class ProjectWeatherStations(BaseSlide):
 
         parquet_items = [
             (ICON_LAYERS, BLUE,   "Parquet Files",
-             "Append all statuses to Parquet — partitioned by time + station_id"),
+             "Archive all statuses — partitioned by time and station_id"),
             (ICON_CODE,   TEAL,   "Batch Writes",
              "Write in batches of ~10 000 records — avoids frequent IO blocking"),
             (ICON_CHART,  ORANGE, "ElasticSearch / Kibana",
@@ -499,22 +498,22 @@ class ProjectWeatherStations(BaseSlide):
         ]
         rows = VGroup()
         for icon_path, color, title, desc_text in parquet_items:
-            rows.add(self._icon_row_card(icon_path, color, title, desc_text, row_w=12.0))
-        rows.arrange(DOWN, buff=0.1).next_to(header, DOWN, buff=0.38)
+            rows.add(self._icon_row_card(icon_path, color, title, desc_text))
+        rows.arrange(DOWN, buff=0.18).next_to(header, DOWN, buff=0.45)
 
         for row in rows:
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.45)
             self.wait(0.35)
 
-        self.wait(0.5)
+        self.wait(0.4)
 
         kibana_title = make_label("Required Kibana Visualizations", font_size=14, color=YELLOW)
         kibana_rows = VGroup(
-            make_label("▸  Count of low-battery statuses per station  (should confirm ~30%)", font_size=12, color=GREEN),
-            make_label("▸  Count of dropped messages per station  (should confirm ~10%)", font_size=12, color=RED),
-        ).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
-        kib_group = VGroup(kibana_title, kibana_rows).arrange(DOWN, buff=0.15, aligned_edge=LEFT)
-        kib_group.to_edge(DOWN, buff=0.4)
+            make_label("▸  Count of low-battery statuses per station  (should confirm ~30 %)", font_size=12, color=GREEN),
+            make_label("▸  Count of dropped messages per station  (should confirm ~10 %)", font_size=12, color=RED),
+        ).arrange(DOWN, buff=0.14, aligned_edge=LEFT)
+        kib_group = VGroup(kibana_title, kibana_rows).arrange(DOWN, buff=0.18, aligned_edge=LEFT)
+        kib_group.to_edge(DOWN, buff=0.45)
         self.play(FadeIn(kib_group, shift=UP * 0.1))
         self.wait(3.5)
         self._next_slide()
@@ -532,14 +531,14 @@ class ProjectWeatherStations(BaseSlide):
             (ICON_CODE_FILE, BLUE,   "Dockerfile — Central Station",
              "Containerize the Java central server"),
             (ICON_LAYERS,    PURPLE, "K8s yaml — Full Cluster",
-             "10× weather station  ·  1× central station  ·  Kafka + Zookeeper  ·  ES + Kibana"),
+             "10× station  ·  1× central  ·  Kafka + Zookeeper  ·  Elastic + Kibana"),
             (ICON_DATABASE,  GREEN,  "Shared Persistent Volume",
              "Mounted storage for Parquet files + BitCask segment files across pods"),
         ]
         rows = VGroup()
         for icon_path, color, title, desc_text in k8s_items:
-            rows.add(self._icon_row_card(icon_path, color, title, desc_text, row_w=12.0))
-        rows.arrange(DOWN, buff=0.1).next_to(header, DOWN, buff=0.38)
+            rows.add(self._icon_row_card(icon_path, color, title, desc_text))
+        rows.arrange(DOWN, buff=0.18).next_to(header, DOWN, buff=0.45)
 
         for row in rows:
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.45)
@@ -556,10 +555,10 @@ class ProjectWeatherStations(BaseSlide):
         self.wait(0.5)
 
         intro = make_label(
-            "JFR: built into JVM · near-zero overhead · diagnostic + profiling data",
+            "JFR: built into JVM  ·  near-zero overhead  ·  diagnostic + profiling data",
             font_size=13, color=GREY_A,
         )
-        intro.next_to(header, DOWN, buff=0.3)
+        intro.next_to(header, DOWN, buff=0.35)
         self.play(FadeIn(intro))
         self.wait(0.4)
 
@@ -567,26 +566,26 @@ class ProjectWeatherStations(BaseSlide):
             (ICON_MONITOR,   ORANGE, "Top 10 Classes by Memory",
              "Highest total heap allocated — reveals memory-hungry objects"),
             (ICON_STOPWATCH, RED,    "GC Pauses Count",
-             "Number of garbage collection stop-the-world events in 1-minute run"),
-            (ICON_STOPWATCH, YELLOW, "GC Max Pause Duration",
+             "Number of garbage collection stop-the-world events in a 1-minute run"),
+            (ICON_STOPWATCH, YELLOW, "GC Maximum Pause Duration",
              "Longest single GC pause — indicator of latency spikes"),
-            (ICON_CHART,     BLUE,   "I/O Operations List",
+            (ICON_CHART,     BLUE,   "List of I/O Operations",
              "File reads/writes during the run — confirms Parquet + BitCask IO patterns"),
         ]
         rows = VGroup()
         for icon_path, color, title, desc_text in metrics:
-            rows.add(self._icon_row_card(icon_path, color, title, desc_text, row_w=12.0))
-        rows.arrange(DOWN, buff=0.08).next_to(intro, DOWN, buff=0.3)
+            rows.add(self._icon_row_card(icon_path, color, title, desc_text))
+        rows.arrange(DOWN, buff=0.15).next_to(intro, DOWN, buff=0.35)
 
         for row in rows:
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.4)
             self.wait(0.3)
 
         run_note = make_label(
-            "Run the full system for 1 minute → record JFR snapshot → include report",
+            "Run full system for 1 minute → record JFR snapshot → include report",
             font_size=13, color=GREEN,
         )
-        run_note.to_edge(DOWN, buff=0.4)
+        run_note.to_edge(DOWN, buff=0.45)
         self.play(FadeIn(run_note, shift=UP * 0.15))
         self.wait(3.5)
         self._next_slide()
@@ -604,9 +603,9 @@ class ProjectWeatherStations(BaseSlide):
             (ICON_CODE_FILE, ORANGE, "Docker & K8s Files",
              "Dockerfile (station)  ·  Dockerfile (central)  ·  K8s yaml"),
             (ICON_CHART,     BLUE,   "Kibana Screenshots",
-             "Battery distribution (30/40/30)  ·  10% dropped messages — verified"),
+             "Battery distribution (30/40/30)  ·  10 % dropped messages — verified"),
             (ICON_FILE,      PURPLE, "Sample Parquet File",
-             "Example output file demonstrating partitioned archiving"),
+             "Example output demonstrating time + station_id partitioned archiving"),
             (ICON_DATABASE,  GREEN,  "Sample BitCask LSM Directory",
              "Segment files + hint files snapshot"),
             (ICON_BOOK,      YELLOW, "Report",
@@ -614,48 +613,97 @@ class ProjectWeatherStations(BaseSlide):
         ]
         rows = VGroup()
         for icon_path, color, title, desc_text in items:
-            ic = make_icon(icon_path, color=color, height=0.27)
-            t = make_label(title, font_size=13, color=color, weight=BOLD)
-            d = make_label(desc_text, font_size=11, color=GREY_A)
-            content = VGroup(ic, t, d).arrange(RIGHT, buff=0.18)
-            box = RoundedRectangle(
-                corner_radius=0.08,
-                width=content.width + 0.5,
-                height=content.height + 0.28,
-                fill_color=DARK_BG, fill_opacity=0.9,
-                stroke_color=color, stroke_width=1.1,
-            )
-            content.move_to(box.get_center())
-            rows.add(VGroup(box, content))
+            rows.add(self._icon_row_card(icon_path, color, title, desc_text))
+        rows.arrange(DOWN, buff=0.12).next_to(header, DOWN, buff=0.42)
 
-        rows.arrange(DOWN, buff=0.1).next_to(header, DOWN, buff=0.35)
         for row in rows:
-            self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.4)
-            self.wait(0.35)
+            self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.38)
+            self.wait(0.28)
 
         note = make_label(
             "Groups of 4  ·  All members must be ready to answer questions  ·  No copying",
             font_size=13, color=RED,
         )
-        note.to_edge(DOWN, buff=0.4)
+        note.to_edge(DOWN, buff=0.45)
         self.play(FadeIn(note, shift=UP * 0.1))
         self.wait(3)
         self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
-    # ─── Scene 11: Closing ────────────────────────────────────────────
+    # ─── Scene 11: Bonus ──────────────────────────────────────────────
+    def scene_bonus(self):
+        header = self._section_header("Bonus", color=PINK)
+        self.play(AddTextLetterByLetter(header, time_per_char=0.04))
+        self.wait(0.5)
+
+        # Open-Meteo block
+        meteo_title = make_label("Open-Meteo Integration", font_size=15, color=TEAL)
+        meteo_desc = make_label(
+            "Integrate with open-meteo.com — free open-source weather API\n"
+            "Collect real weather data and feed it into Kafka alongside station mocks\n"
+            "Requires implementing a Channel Adapter pattern",
+            font_size=12, color=GREY_A,
+        )
+        meteo_content = VGroup(meteo_title, meteo_desc).arrange(DOWN, buff=0.12, aligned_edge=LEFT)
+        meteo_box = RoundedRectangle(
+            corner_radius=0.09, width=12.5, height=meteo_content.height + 0.44,
+            fill_color=DARK_BG, fill_opacity=0.9,
+            stroke_color=TEAL, stroke_width=1.2,
+        )
+        meteo_content.move_to(meteo_box.get_center()).shift(LEFT * 0.2)
+        meteo_group = VGroup(meteo_box, meteo_content)
+        meteo_group.next_to(header, DOWN, buff=0.45)
+
+        self.play(FadeIn(meteo_group, shift=LEFT * 0.3))
+        self.wait(0.5)
+        self._next_slide(phase=True, notes="Open-Meteo shown; move to EIP patterns")
+
+        # EIP patterns block
+        eip_title = make_label("Enterprise Integration Patterns  (5–6 patterns required)", font_size=15, color=ORANGE)
+        patterns = [
+            ("Dead-Letter Channel",   RED,    "Route unprocessable messages to a side channel"),
+            ("Claim Check",           BLUE,   "Store large payloads externally, pass only a token"),
+            ("Invalid-Message Channel", ORANGE, "Separate invalid-format messages from main flow"),
+            ("Polling Consumer",      GREEN,  "Pull from queue at regular intervals"),
+            ("Idempotent Receiver",   TEAL,   "Safely re-process duplicate messages"),
+            ("Envelope Wrapper",      PURPLE, "Wrap message with metadata before publishing"),
+        ]
+        pattern_rows = VGroup()
+        for name, color, hint in patterns:
+            n_lbl = make_label(f"▸  {name}", font_size=12, color=color, weight=BOLD)
+            h_lbl = make_label(hint, font_size=11, color=GREY_A)
+            row   = VGroup(n_lbl, h_lbl).arrange(RIGHT, buff=0.35)
+            pattern_rows.add(row)
+        pattern_rows.arrange(DOWN, buff=0.14, aligned_edge=LEFT)
+
+        eip_content = VGroup(eip_title, pattern_rows).arrange(DOWN, buff=0.18, aligned_edge=LEFT)
+        eip_box = RoundedRectangle(
+            corner_radius=0.09, width=12.5, height=eip_content.height + 0.44,
+            fill_color=DARK_BG, fill_opacity=0.9,
+            stroke_color=ORANGE, stroke_width=1.2,
+        )
+        eip_content.move_to(eip_box.get_center()).shift(LEFT * 0.2)
+        eip_group = VGroup(eip_box, eip_content)
+        eip_group.next_to(meteo_group, DOWN, buff=0.28)
+
+        self.play(FadeIn(eip_group, shift=LEFT * 0.3))
+        self.wait(3.5)
+        self._next_slide()
+        self.play(FadeOut(*self.mobjects))
+
+    # ─── Scene 12: Closing ────────────────────────────────────────────
     def scene_closing(self):
         icon = make_icon(ICON_CLOUD, color=TEAL, height=0.9)
-        title = make_label("Good luck!", font_size=36, color=WHITE)
+        title = make_label("Good luck!", font_size=38, color=WHITE)
         sub1 = make_label(
-            "Build the pipeline · Index the data · Containerize everything",
+            "Build the pipeline  ·  Index the data  ·  Containerize everything",
             font_size=17, color=GREY_A,
         )
         sub2 = make_label(
             "Stations → Kafka → Central Station → BitCask + Parquet → Kibana",
             font_size=14, color=GREY_B,
         )
-        VGroup(icon, title, sub1, sub2).arrange(DOWN, buff=0.35)
+        VGroup(icon, title, sub1, sub2).arrange(DOWN, buff=0.38)
         self.play(FadeIn(icon, shift=DOWN * 0.2))
         self.wait(0.3)
         self.play(AddTextLetterByLetter(title, time_per_char=0.05))
