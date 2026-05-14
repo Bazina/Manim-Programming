@@ -141,30 +141,12 @@ SQL_T2C = {
 # ── Glow effects ──────────────────────────────────────────────────────
 
 
-def create_glow(vmobject, color=YELLOW, rad=1, num_layers=60):
-    """
-    Create a radial glow behind any VMobject using concentric circles.
-
-    Good for dots, small circles, or any focal-point mobject.
-    """
-    glow_group = VGroup()
-    for idx in range(num_layers):
-        new_circle = Circle(
-            radius=rad * (1.002 ** (idx ** 2)) / 400,
-            stroke_opacity=0,
-            fill_color=color,
-            fill_opacity=max(0, 0.2 - idx / 300),
-        ).move_to(vmobject)
-        glow_group.add(new_circle)
-    return glow_group
-
-
 def create_rect_glow(
-        rect,
-        color=None,
-        layers=20,
-        max_opacity=0.12,
-        spread=0.25,
+    rect,
+    color=None,
+    layers=20,
+    max_opacity=0.12,
+    spread=0.25,
 ):
     """
     Create a soft rectangular glow behind a RoundedRectangle (or any rect-like VMobject).
@@ -223,14 +205,14 @@ def make_label(text, font_size=20, color=WHITE, weight=BOLD):
 
 
 def make_card(
-        label_text,
-        width=2.2,
-        height=0.8,
-        fill_color=CARD_BG,
-        label_color=WHITE,
-        font_size=18,
-        glow=True,
-        glow_color=None,
+    label_text,
+    width=2.2,
+    height=0.8,
+    fill_color=CARD_BG,
+    label_color=WHITE,
+    font_size=18,
+    glow=True,
+    glow_color=None,
 ):
     """Create a rounded-rectangle card with a centered label and optional glow."""
     rect = RoundedRectangle(
@@ -300,7 +282,9 @@ def make_fit_box(
     else:
         content.move_to(box.get_center())
     if glow:
-        g = create_rect_glow(box, color=color, max_opacity=glow_opacity, spread=glow_spread)
+        g = create_rect_glow(
+            box, color=color, max_opacity=glow_opacity, spread=glow_spread
+        )
         g.set_z_index(0)
         card = VGroup(box, content)
         card.set_z_index(1)
@@ -309,8 +293,14 @@ def make_fit_box(
 
 
 def make_icon_card(
-        label_text, icon_path, color=BLUE, width=2.0, height=1.6, font_size=14,
-        glow=True, glow_color=None,
+    label_text,
+    icon_path,
+    color=BLUE,
+    width=2.0,
+    height=1.6,
+    font_size=14,
+    glow=True,
+    glow_color=None,
 ):
     """Card with an SVG icon on top and a label below, with optional glow."""
     rect = RoundedRectangle(
@@ -416,7 +406,7 @@ def make_comparison_table(
         row_y -= row_spacing
         row = VGroup()
         for i in range(n_cols):
-            text  = entry[i * 2]
+            text = entry[i * 2]
             color = entry[i * 2 + 1]
             fs = note_font_size if i == n_cols - 1 else row_font_size
             lbl = make_label(text, font_size=fs, color=color)
@@ -453,7 +443,9 @@ def make_code_text(
             )
         except Exception as exc:
             if force_code_object:
-                raise RuntimeError("make_code_text failed to create a Manim Code object") from exc
+                raise RuntimeError(
+                    "make_code_text failed to create a Manim Code object"
+                ) from exc
             use_code_object = False
 
     if not use_code_object:
