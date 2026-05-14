@@ -10,7 +10,9 @@ from manim import (
     BOLD,
     DOWN,
     GREY_B,
+    LEFT,
     ORIGIN,
+    RIGHT,
     WHITE,
     YELLOW,
     Circle,
@@ -260,6 +262,50 @@ def make_icon(icon_path, color=WHITE, height=0.6):
     icon = SVGMobject(icon_path, fill_color=color)
     icon.set(height=height)
     return icon
+
+
+def make_fit_box(
+    content,
+    color,
+    pad_x=0.85,
+    pad_y=0.4,
+    align="left",
+    left_pad=0.4,
+    stroke_width=1.2,
+    corner_radius=0.09,
+    fill_color=DARK_BG,
+    fill_opacity=0.9,
+    glow=False,
+    glow_opacity=0.22,
+    glow_spread=0.3,
+):
+    """Wrap *content* in a RoundedRectangle that auto-sizes to the content.
+
+    align='left'   — content pinned to left edge with *left_pad* padding.
+    align='center' — content centered inside the box.
+    glow=True      — prepend glow shells so they render behind the box.
+    Returns VGroup(box, content) or VGroup(glow, box, content).
+    """
+    box = RoundedRectangle(
+        corner_radius=corner_radius,
+        width=content.width + pad_x,
+        height=content.height + pad_y,
+        fill_color=fill_color,
+        fill_opacity=fill_opacity,
+        stroke_color=color,
+        stroke_width=stroke_width,
+    )
+    if align == "left":
+        content.align_to(box, LEFT).shift(RIGHT * left_pad)
+    else:
+        content.move_to(box.get_center())
+    if glow:
+        g = create_rect_glow(box, color=color, max_opacity=glow_opacity, spread=glow_spread)
+        g.set_z_index(0)
+        card = VGroup(box, content)
+        card.set_z_index(1)
+        return (card, g)
+    return VGroup(box, content)
 
 
 def make_icon_card(
