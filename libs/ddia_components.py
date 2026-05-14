@@ -14,7 +14,6 @@ from manim import (
     ORIGIN,
     RIGHT,
     WHITE,
-    YELLOW,
     Circle,
     Group,
     ImageMobject,

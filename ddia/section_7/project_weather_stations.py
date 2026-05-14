@@ -126,6 +126,15 @@ class ProjectWeatherStations(BaseSlide):
         content = VGroup(ic, text_col).arrange(RIGHT, buff=0.22)
         return make_fit_box(content, color, pad_x=0.85, pad_y=max(0.36, 0.75 - content.height), glow=glow)
 
+    def _play_glow_row(self, row, glow, color):
+        """Pulse card with Indicate then bloom the glow in the same beat.
+        Glow stays behind card via z_index (card=1, glow=0) set in make_fit_box.
+        """
+        self.play(
+            Indicate(row, color=color, scale_factor=1.04, run_time=0.7),
+            FadeIn(glow, run_time=1.0),
+        )
+
     def _flow_node(self, label, color, width=2.2, height=0.9):
         box = RoundedRectangle(
             corner_radius=0.1,
@@ -285,12 +294,14 @@ class ProjectWeatherStations(BaseSlide):
         GLOW = {2}
         rows = VGroup()
         glow_map = {}
+        color_map = {}
         for j, (icon_path, color, title, desc) in enumerate(items):
             result = self._icon_row_card(icon_path, color, title, desc, glow=(j in GLOW))
             if isinstance(result, tuple):
                 card, g = result
                 rows.add(card)
                 glow_map[j] = g
+                color_map[j] = color
             else:
                 rows.add(result)
         rows.arrange(DOWN, buff=0.15, aligned_edge=LEFT).next_to(context, DOWN, buff=0.38)
@@ -300,7 +311,7 @@ class ProjectWeatherStations(BaseSlide):
         for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.45)
             if i in glow_map:
-                self.play(Indicate(row, scale_factor=1.04, run_time=0.7), FadeIn(glow_map[i], run_time=1.0))
+                self._play_glow_row(row, glow_map[i], color_map[i])
             self.wait(0.25)
             if i < len(rows) - 1:
                 self._next_slide(phase=True)
@@ -665,12 +676,14 @@ class ProjectWeatherStations(BaseSlide):
         GLOW = {1, 2}
         rows = VGroup()
         glow_map = {}
+        color_map = {}
         for j, (icon_path, color, title, desc_text) in enumerate(impl_items):
             result = self._icon_row_card(icon_path, color, title, desc_text, glow=(j in GLOW))
             if isinstance(result, tuple):
                 card, g = result
                 rows.add(card)
                 glow_map[j] = g
+                color_map[j] = color
             else:
                 rows.add(result)
         rows.arrange(DOWN, buff=0.15, aligned_edge=LEFT).next_to(desc, DOWN, buff=0.35)
@@ -680,7 +693,7 @@ class ProjectWeatherStations(BaseSlide):
         for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.4)
             if i in glow_map:
-                self.play(Indicate(row, scale_factor=1.04, run_time=0.7), FadeIn(glow_map[i], run_time=1.0))
+                self._play_glow_row(row, glow_map[i], color_map[i])
             self.wait(0.3)
             if i < len(rows) - 1:
                 self._next_slide(phase=True)
@@ -771,12 +784,14 @@ class ProjectWeatherStations(BaseSlide):
         GLOW = {1, 2}
         rows = VGroup()
         glow_map = {}
+        color_map = {}
         for j, (icon_path, color, title, desc_text) in enumerate(parquet_items):
             result = self._icon_row_card(icon_path, color, title, desc_text, glow=(j in GLOW))
             if isinstance(result, tuple):
                 card, g = result
                 rows.add(card)
                 glow_map[j] = g
+                color_map[j] = color
             else:
                 rows.add(result)
         rows.arrange(DOWN, buff=0.18, aligned_edge=LEFT).next_to(header, DOWN, buff=0.45)
@@ -786,7 +801,7 @@ class ProjectWeatherStations(BaseSlide):
         for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.45)
             if i in glow_map:
-                self.play(Indicate(row, scale_factor=1.04, run_time=0.7), FadeIn(glow_map[i], run_time=1.0))
+                self._play_glow_row(row, glow_map[i], color_map[i])
             self.wait(0.35)
             if i < len(rows) - 1:
                 self._next_slide(phase=True)
@@ -853,12 +868,14 @@ class ProjectWeatherStations(BaseSlide):
         GLOW = {2}
         rows = VGroup()
         glow_map = {}
+        color_map = {}
         for j, (icon_path, color, title, desc_text) in enumerate(k8s_items):
             result = self._icon_row_card(icon_path, color, title, desc_text, glow=(j in GLOW))
             if isinstance(result, tuple):
                 card, g = result
                 rows.add(card)
                 glow_map[j] = g
+                color_map[j] = color
             else:
                 rows.add(result)
         rows.arrange(DOWN, buff=0.18, aligned_edge=LEFT).next_to(header, DOWN, buff=0.45)
@@ -868,7 +885,7 @@ class ProjectWeatherStations(BaseSlide):
         for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.45)
             if i in glow_map:
-                self.play(Indicate(row, scale_factor=1.04, run_time=0.7), FadeIn(glow_map[i], run_time=1.0))
+                self._play_glow_row(row, glow_map[i], color_map[i])
             self.wait(0.35)
             if i < len(rows) - 1:
                 self._next_slide(phase=True)
@@ -923,12 +940,14 @@ class ProjectWeatherStations(BaseSlide):
         GLOW = {0}
         rows = VGroup()
         glow_map = {}
+        color_map = {}
         for j, (icon_path, color, title, desc_text) in enumerate(metrics):
             result = self._icon_row_card(icon_path, color, title, desc_text, glow=(j in GLOW))
             if isinstance(result, tuple):
                 card, g = result
                 rows.add(card)
                 glow_map[j] = g
+                color_map[j] = color
             else:
                 rows.add(result)
         rows.arrange(DOWN, buff=0.15, aligned_edge=LEFT).next_to(intro, DOWN, buff=0.35)
@@ -938,7 +957,7 @@ class ProjectWeatherStations(BaseSlide):
         for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.4)
             if i in glow_map:
-                self.play(Indicate(row, scale_factor=1.04, run_time=0.7), FadeIn(glow_map[i], run_time=1.0))
+                self._play_glow_row(row, glow_map[i], color_map[i])
             self.wait(0.3)
             if i < len(rows) - 1:
                 self._next_slide(phase=True)
@@ -1038,7 +1057,7 @@ class ProjectWeatherStations(BaseSlide):
         finale_box.move_to(ORIGIN)
         finale_glow.move_to(finale_box)
         self.play(FadeIn(finale_box, scale=0.85), run_time=1.2)
-        self.play(Indicate(finale_box, scale_factor=1.03, run_time=0.7), FadeIn(finale_glow, run_time=1.0))
+        self._play_glow_row(finale_box, finale_glow, GOLD)
         self.wait(4)
         self._next_slide()
         self.play(FadeOut(*self.mobjects))
