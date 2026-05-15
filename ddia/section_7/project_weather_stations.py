@@ -234,7 +234,7 @@ class ProjectWeatherStations(BaseSlide):
             color=GREY_B,
         )
         course = make_label(
-            "CSE-4E3  ·  Designing Data-Intensive Applications",
+            "Designing Data-Intensive Applications",
             font_size=13,
             color=GREY_B,
         )
@@ -371,7 +371,7 @@ class ProjectWeatherStations(BaseSlide):
         st1  = arch_node(ICON_CPU_BOLT, "Station 1",  BLUE, icon_h=0.4)
         st2  = arch_node(ICON_CPU_BOLT, "Station 2",  BLUE, icon_h=0.4)
         st3  = arch_node(ICON_CPU_BOLT, "Station 3",  BLUE, icon_h=0.4)
-        dots = make_label("· · ·", font_size=14, color=GREY_B)
+        dots = make_label("·\n·\n·", font_size=14, color=GREY_B)
         st10 = arch_node(ICON_CPU_BOLT, "Station 10", BLUE, icon_h=0.4)
         station_col = VGroup(st1, st2, st3, dots, st10)
         station_col.arrange(DOWN, buff=0.22).move_to([SEC1_X - 1.0, MAIN_Y, 0])
@@ -456,7 +456,7 @@ class ProjectWeatherStations(BaseSlide):
         # ── Elasticsearch + Kibana ────────────────────────────────────
         es_node = arch_node(ICON_ES, "elasticsearch", YELLOW, icon_h=0.48)
         kibana_node = arch_node(ICON_KIBANA, "Kibana", PINK, icon_h=0.48)
-        VGroup(es_node, kibana_node).arrange(DOWN, buff=0.45).move_to(
+        VGroup(es_node, kibana_node).arrange(RIGHT, buff=0.3).move_to(
             [SEC3_X + 0.8, -1.1, 0]
         )
 
@@ -468,19 +468,11 @@ class ProjectWeatherStations(BaseSlide):
             color=TEAL,
             tip_length=0.13,
         )
-        p2kib = Arrow(
-            parquet_node.get_right(),
-            kibana_node.get_left(),
-            buff=0.1,
-            stroke_width=1.7,
-            color=TEAL,
-            tip_length=0.13,
-        )
 
         self.play(
             FadeIn(es_node, shift=RIGHT * 0.2), FadeIn(kibana_node, shift=RIGHT * 0.2)
         )
-        self.play(GrowArrow(p2es), GrowArrow(p2kib))
+        self.play(GrowArrow(p2es))
 
         cluster_note = make_label(
             "All components run inside a Kubernetes cluster", font_size=12, color=PURPLE
