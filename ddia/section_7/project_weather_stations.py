@@ -457,7 +457,7 @@ class ProjectWeatherStations(BaseSlide):
         es_node = arch_node(ICON_ES, "elasticsearch", YELLOW, icon_h=0.48)
         kibana_node = arch_node(ICON_KIBANA, "Kibana", PINK, icon_h=0.48)
         VGroup(es_node, kibana_node).arrange(RIGHT, buff=0.3).move_to(
-            [SEC3_X + 0.8, -1.1, 0]
+            [SEC3_X + 0.3, -1.1, 0]
         )
 
         p2es = Arrow(
