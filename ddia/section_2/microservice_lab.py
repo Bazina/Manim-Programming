@@ -34,6 +34,12 @@ from manim import (
     YELLOW,
 )
 
+try:
+    from manim_slides import Slide as BaseSlide
+except Exception:
+    BaseSlide = Scene
+
+from libs.slide_controls import slide_checkpoint
 from libs.ddia_components import (
     DARK_BG,
     ICON_SERVER,
@@ -101,7 +107,40 @@ MYSQL_T2C = {
 }
 
 
-class MicroserviceLab(Scene):
+class MicroserviceLab(BaseSlide):
+    slide_stop_mode = "phase"
+    max_duration_before_split_reverse = 4.0
+
+    def _next_slide(
+        self,
+        phase=False,
+        enabled=True,
+        notes="",
+        loop=False,
+        auto_next=False,
+        playback_rate=1.0,
+        reversed_playback_rate=1.0,
+        dedent_notes=True,
+        skip_animations=False,
+        direction="horizontal",
+        **kwargs,
+    ):
+        slide_checkpoint(
+            self,
+            phase=phase,
+            enabled=enabled,
+            slide_stop_mode=self.slide_stop_mode,
+            loop=loop,
+            auto_next=auto_next,
+            playback_rate=playback_rate,
+            reversed_playback_rate=reversed_playback_rate,
+            notes=notes,
+            dedent_notes=dedent_notes,
+            skip_animations=skip_animations,
+            direction=direction,
+            **kwargs,
+        )
+
     def construct(self):
         self.scene_title()
         self.scene_lab_overview()
@@ -135,6 +174,7 @@ class MicroserviceLab(Scene):
         self.wait(0.5)
         self.play(FadeIn(subtitle, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 2: Lab Overview ────────────────────────────────────────
@@ -197,9 +237,11 @@ class MicroserviceLab(Scene):
 
         rows.arrange(DOWN, buff=0.15).next_to(header, DOWN, buff=0.5)
 
-        for row in rows:
+        for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.5)
             self.wait(0.8)
+            if i < len(rows) - 1:
+                self._next_slide(phase=True)
 
         self.wait(1)
 
@@ -211,6 +253,7 @@ class MicroserviceLab(Scene):
         note.to_edge(DOWN, buff=0.5)
         self.play(FadeIn(note, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 3: Monolith vs Microservices ──────────────────────────
@@ -289,6 +332,7 @@ class MicroserviceLab(Scene):
         self.play(FadeIn(vs_label, scale=1.5))
 
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 4: Movie Rating App Architecture ───────────────────────
@@ -419,6 +463,7 @@ class MicroserviceLab(Scene):
         goal.to_edge(DOWN, buff=0.3)
         self.play(FadeIn(goal, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 5: Ratings → MySQL ────────────────────────────────────
@@ -511,6 +556,7 @@ class MicroserviceLab(Scene):
         )
         self.play(FadeIn(code, shift=UP * 0.3))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 6: MongoDB Caching ─────────────────────────────────────
@@ -655,6 +701,7 @@ class MicroserviceLab(Scene):
         insight.to_edge(DOWN, buff=0.4)
         self.play(FadeIn(insight, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 7: gRPC Trending Movies Service ────────────────────────
@@ -780,6 +827,7 @@ class MicroserviceLab(Scene):
             )
         )
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 8: JMeter Overview ─────────────────────────────────────
@@ -899,6 +947,7 @@ class MicroserviceLab(Scene):
             )
         )
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 9: Deliverables ───────────────────────────────────────
@@ -945,9 +994,11 @@ class MicroserviceLab(Scene):
 
         rows.arrange(DOWN, buff=0.1).next_to(header, DOWN, buff=0.4)
 
-        for row in rows:
+        for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.4)
             self.wait(0.5)
+            if i < len(rows) - 1:
+                self._next_slide(phase=True)
 
         self.wait(2)
 
@@ -959,6 +1010,7 @@ class MicroserviceLab(Scene):
         warning.to_edge(DOWN, buff=0.4)
         self.play(FadeIn(warning, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 10: Closing ────────────────────────────────────────────
@@ -999,4 +1051,5 @@ class MicroserviceLab(Scene):
         themes.move_to(DOWN * 1.2)
         self.play(FadeIn(themes, shift=UP * 0.2))
         self.wait(4)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))

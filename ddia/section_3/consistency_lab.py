@@ -41,6 +41,12 @@ from manim import (
     YELLOW,
 )
 
+try:
+    from manim_slides import Slide as BaseSlide
+except Exception:
+    BaseSlide = Scene
+
+from libs.slide_controls import slide_checkpoint
 from libs.ddia_components import (
     DARK_BG,
     ICON_DATABASE,
@@ -103,7 +109,40 @@ CQL_T2C = {
 }
 
 
-class ConsistencyLab(Scene):
+class ConsistencyLab(BaseSlide):
+    slide_stop_mode = "phase"
+    max_duration_before_split_reverse = 4.0
+
+    def _next_slide(
+        self,
+        phase=False,
+        enabled=True,
+        notes="",
+        loop=False,
+        auto_next=False,
+        playback_rate=1.0,
+        reversed_playback_rate=1.0,
+        dedent_notes=True,
+        skip_animations=False,
+        direction="horizontal",
+        **kwargs,
+    ):
+        slide_checkpoint(
+            self,
+            phase=phase,
+            enabled=enabled,
+            slide_stop_mode=self.slide_stop_mode,
+            loop=loop,
+            auto_next=auto_next,
+            playback_rate=playback_rate,
+            reversed_playback_rate=reversed_playback_rate,
+            notes=notes,
+            dedent_notes=dedent_notes,
+            skip_animations=skip_animations,
+            direction=direction,
+            **kwargs,
+        )
+
     def construct(self):
         self.scene_title()
         self.scene_lab_overview()
@@ -173,6 +212,7 @@ class ConsistencyLab(Scene):
         self.wait(0.4)
         self.play(FadeIn(sub, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 2: Lab Overview ────────────────────────────────────────
@@ -234,9 +274,11 @@ class ConsistencyLab(Scene):
             rows.add(VGroup(box, content))
 
         rows.arrange(DOWN, buff=0.1).next_to(header, DOWN, buff=0.4)
-        for row in rows:
+        for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.5)
             self.wait(0.55)
+            if i < len(rows) - 1:
+                self._next_slide(phase=True)
 
         note = make_label(
             "Groups of 3 — each student changes a column value between inserts!",
@@ -246,6 +288,7 @@ class ConsistencyLab(Scene):
         note.to_edge(DOWN, buff=0.4)
         self.play(FadeIn(note, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 3: Cluster Architecture ───────────────────────────────
@@ -267,7 +310,7 @@ class ConsistencyLab(Scene):
         node_labels = ["Node 1\n(seed)", "Node 2", "Node 3"]
         node_cards = []
 
-        for angle, color, label in zip(angles, colors, node_labels):
+        for i, (angle, color, label) in enumerate(zip(angles, colors, node_labels)):
             pos = ring_center + np.array(
                 [
                     2.1 * math.cos(math.radians(angle)),
@@ -280,6 +323,8 @@ class ConsistencyLab(Scene):
             node_cards.append(card)
             self.play(FadeIn(card, shift=(ring_center - pos) * 0.15), run_time=0.5)
             self.wait(0.2)
+            if i < len(angles) - 1:
+                self._next_slide(phase=True)
 
         token = make_label(
             "Consistent hashing: partition key  →  token  →  replica node(s)",
@@ -289,6 +334,7 @@ class ConsistencyLab(Scene):
         token.to_edge(DOWN, buff=0.45)
         self.play(FadeIn(token, shift=UP * 0.1))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 4: Cassandra Data Model ───────────────────────────────
@@ -336,8 +382,10 @@ class ConsistencyLab(Scene):
 
         self.play(FadeIn(pk_group, shift=DOWN * 0.2))
         self.play(Circumscribe(pk_box, color=BLUE, buff=0.05, run_time=1.5))
-        for brick in cl_bricks:
+        for i, brick in enumerate(cl_bricks):
             self.play(FadeIn(brick, shift=DOWN * 0.2), run_time=0.4)
+            if i < len(cl_bricks) - 1:
+                self._next_slide(phase=True)
 
         note_pk = make_label(
             "Partition key → hashed to token → determines which node(s) store this row",
@@ -367,6 +415,7 @@ class ConsistencyLab(Scene):
         code.to_edge(DOWN, buff=0.25)
         self.play(FadeIn(code, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 5: Consistency Levels ─────────────────────────────────
@@ -428,9 +477,11 @@ class ConsistencyLab(Scene):
             req_l.move_to([COL_REQ_X + req_l.width / 2, row_y, 0])
             tradeoff_l.move_to([COL_TRADE_X + tradeoff_l.width / 2, row_y, 0])
 
-        for row in rows:
+        for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.2), run_time=0.4)
             self.wait(0.45)
+            if i < len(rows) - 1:
+                self._next_slide(phase=True)
 
         # Highlight QUORUM row as the lab default
         self.play(
@@ -445,6 +496,7 @@ class ConsistencyLab(Scene):
         speed.to_edge(DOWN, buff=0.4)
         self.play(FadeIn(speed, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 6: Quorum Formula ──────────────────────────────────────
@@ -524,6 +576,7 @@ class ConsistencyLab(Scene):
         take.to_edge(DOWN, buff=0.4)
         self.play(FadeIn(take, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 7: RF = 1 Experiments ─────────────────────────────────
@@ -583,6 +636,7 @@ class ConsistencyLab(Scene):
         tip.to_edge(DOWN, buff=0.4)
         self.play(FadeIn(tip))
         self.wait(2)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 8: RF = 2 Experiments ─────────────────────────────────
@@ -640,6 +694,7 @@ class ConsistencyLab(Scene):
         self.play(FadeIn(r3))
         self.play(Indicate(r3, color=GREEN, run_time=1.2))
         self.wait(2.5)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 9: RF = 3 Experiments ─────────────────────────────────
@@ -696,6 +751,7 @@ class ConsistencyLab(Scene):
         cl_tip.to_edge(DOWN, buff=0.4)
         self.play(FadeIn(cl_tip))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 10: Tips & Tricks ──────────────────────────────────────
@@ -763,14 +819,17 @@ class ConsistencyLab(Scene):
             rows.add(VGroup(box, content))
 
         rows.arrange(DOWN, buff=0.1).next_to(header, DOWN, buff=0.35)
-        for row in rows:
+        for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.2), run_time=0.4)
             self.wait(0.45)
+            if i < len(rows) - 1:
+                self._next_slide(phase=True)
 
         # Highlight the "Avoid ALLOW FILTERING" warning
         self.play(Indicate(rows[4], color=RED, run_time=1.5))
 
         self.wait(2)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 12: Closing ────────────────────────────────────────────
@@ -809,4 +868,5 @@ class ConsistencyLab(Scene):
         themes.move_to(DOWN * 1.5)
         self.play(FadeIn(themes, shift=UP * 0.2))
         self.wait(4)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))

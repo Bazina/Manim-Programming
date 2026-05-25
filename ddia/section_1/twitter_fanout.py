@@ -41,6 +41,12 @@ from manim import (
     config,
 )
 
+try:
+    from manim_slides import Slide as BaseSlide
+except Exception:
+    BaseSlide = Scene
+
+from libs.slide_controls import slide_checkpoint
 from libs.ddia_components import (
     FONT,
     SQL_T2C,
@@ -52,7 +58,40 @@ from libs.ddia_components import (
 config.background_color = "#0D1117"
 
 
-class TwitterFanOut(Scene):
+class TwitterFanOut(BaseSlide):
+    slide_stop_mode = "phase"
+    max_duration_before_split_reverse = 4.0
+
+    def _next_slide(
+        self,
+        phase=False,
+        enabled=True,
+        notes="",
+        loop=False,
+        auto_next=False,
+        playback_rate=1.0,
+        reversed_playback_rate=1.0,
+        dedent_notes=True,
+        skip_animations=False,
+        direction="horizontal",
+        **kwargs,
+    ):
+        slide_checkpoint(
+            self,
+            phase=phase,
+            enabled=enabled,
+            slide_stop_mode=self.slide_stop_mode,
+            loop=loop,
+            auto_next=auto_next,
+            playback_rate=playback_rate,
+            reversed_playback_rate=reversed_playback_rate,
+            notes=notes,
+            dedent_notes=dedent_notes,
+            skip_animations=skip_animations,
+            direction=direction,
+            **kwargs,
+        )
+
     def construct(self):
         self.scene_title()
         self.scene_problem_setup()
@@ -120,6 +159,7 @@ class TwitterFanOut(Scene):
         self.play(AddTextLetterByLetter(challenge, time_per_char=0.03))
         self.wait(3)
 
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 3: Approach 1 — Fan-out on Read (Pull) ────────────────
@@ -259,6 +299,7 @@ class TwitterFanOut(Scene):
         self.play(Indicate(warning, color=RED, scale_factor=1.2))
         self.wait(3)
 
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 4: Approach 2 — Fan-out on Write (Push) ───────────────
@@ -432,6 +473,7 @@ class TwitterFanOut(Scene):
         self.play(AddTextLetterByLetter(delivery, time_per_char=0.03))
         self.wait(3)
 
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 5: Hybrid Approach ─────────────────────────────────────
@@ -573,4 +615,5 @@ class TwitterFanOut(Scene):
         self.play(Indicate(summary, color=GREEN, scale_factor=1.2))
         self.wait(3)
 
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))

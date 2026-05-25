@@ -418,17 +418,22 @@ class Sheet4Consistency(BaseSlide):
             (op_b_w1, ret_b_w1), (op_a_r, ret_a_r), (op_c_w2, ret_c_w2),
             (op_b_r2, ret_b_r2), (op_a_qw, ret_a_qw), (op_c_r2, ret_c_r2),
         ]
-        for op, ret in all_ops:
+        for i, (op, ret) in enumerate(all_ops):
             self.play(FadeIn(op), run_time=0.35)
             self.play(FadeIn(ret), run_time=0.25)
             self.wait(0.15)
+            if i < len(all_ops) - 1:
+                self._next_slide(phase=True)
 
         # DB: write(2) tick at t=1.8 → R=2, write(1) tick at t=2.5 → R=1 (overwrites)
         db0 = self._db_marker(0.0, "R=0", DB_Y, GREY_B)
         db2 = self._db_marker(1.8, "R=2", DB_Y, ORANGE)
         db1 = self._db_marker(2.5, "R=1", DB_Y, BLUE)
-        for m in [db0, db2, db1]:
+        db_markers = [db0, db2, db1]
+        for i, m in enumerate(db_markers):
             self.play(FadeIn(m), run_time=0.3)
+            if i < len(db_markers) - 1:
+                self._next_slide(phase=True)
         self.wait(0.6)
 
         badge = self._verdict_badge("YES — History H is Linearizable  ✓", GREEN, width=6.5)
@@ -482,16 +487,22 @@ class Sheet4Consistency(BaseSlide):
         # Violation: C reads 2 after A and B both observed R=1
         op_c_r2, ret_c_r2 = self._op_box(6.3, 7.8, "R.read()", "2  ✗", ROW_C, ORANGE, ret_color=RED)
 
-        for op, ret in [(op_b_w1, ret_b_w1), (op_a_r, ret_a_r), (op_c_w2, ret_c_w2),
-                        (op_b_r2, ret_b_r2), (op_a_qw, ret_a_qw)]:
+        q2_ops = [(op_b_w1, ret_b_w1), (op_a_r, ret_a_r), (op_c_w2, ret_c_w2),
+                  (op_b_r2, ret_b_r2), (op_a_qw, ret_a_qw)]
+        for i, (op, ret) in enumerate(q2_ops):
             self.play(FadeIn(op), run_time=0.3)
             self.play(FadeIn(ret), run_time=0.2)
+            if i < len(q2_ops) - 1:
+                self._next_slide(phase=True)
 
         db0 = self._db_marker(0.0, "R=0", DB_Y, GREY_B)
         db2 = self._db_marker(1.8, "R=2", DB_Y, ORANGE)
         db1 = self._db_marker(2.5, "R=1", DB_Y, BLUE)
-        for m in [db0, db2, db1]:
+        q2_dbs = [db0, db2, db1]
+        for i, m in enumerate(q2_dbs):
             self.play(FadeIn(m), run_time=0.25)
+            if i < len(q2_dbs) - 1:
+                self._next_slide(phase=True)
 
         # Highlight A and B both reading 1 — establishing the agreed-upon state
         self.play(Indicate(ret_a_r, color=GREEN, run_time=1.0))
@@ -556,9 +567,11 @@ class Sheet4Consistency(BaseSlide):
         op_rows.align_to(hist_hdr, LEFT)
 
         self.play(FadeIn(hist_hdr))
-        for row in op_rows:
+        for i, row in enumerate(op_rows):
             self.play(FadeIn(row, shift=RIGHT * 0.1), run_time=0.28)
             self.wait(0.08)
+            if i < len(op_rows) - 1:
+                self._next_slide(phase=True)
 
         # Queue state visual (right)
         q_hdr = make_label("Queue State", font_size=13, color=GREY_A)

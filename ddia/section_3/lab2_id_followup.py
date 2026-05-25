@@ -34,6 +34,12 @@ from manim import (
     YELLOW,
 )
 
+try:
+    from manim_slides import Slide as BaseSlide
+except Exception:
+    BaseSlide = Scene
+
+from libs.slide_controls import slide_checkpoint
 from libs.ddia_components import (
     DARK_BG,
     ICON_DATABASE,
@@ -76,7 +82,40 @@ MYSQL_T2C = {
 }
 
 
-class Lab2IDFollowUp(Scene):
+class Lab2IDFollowUp(BaseSlide):
+    slide_stop_mode = "phase"
+    max_duration_before_split_reverse = 4.0
+
+    def _next_slide(
+        self,
+        phase=False,
+        enabled=True,
+        notes="",
+        loop=False,
+        auto_next=False,
+        playback_rate=1.0,
+        reversed_playback_rate=1.0,
+        dedent_notes=True,
+        skip_animations=False,
+        direction="horizontal",
+        **kwargs,
+    ):
+        slide_checkpoint(
+            self,
+            phase=phase,
+            enabled=enabled,
+            slide_stop_mode=self.slide_stop_mode,
+            loop=loop,
+            auto_next=auto_next,
+            playback_rate=playback_rate,
+            reversed_playback_rate=reversed_playback_rate,
+            notes=notes,
+            dedent_notes=dedent_notes,
+            skip_animations=skip_animations,
+            direction=direction,
+            **kwargs,
+        )
+
     def construct(self):
         self.scene_title()
         self.scene_the_question()
@@ -123,6 +162,7 @@ class Lab2IDFollowUp(Scene):
         self.wait(0.4)
         self.play(FadeIn(subtitle, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 2: The Question ────────────────────────────────────────
@@ -157,9 +197,11 @@ class Lab2IDFollowUp(Scene):
 
         cards.arrange(RIGHT, buff=0.5).move_to(DOWN * 0.2)
 
-        for card in cards:
+        for i, card in enumerate(cards):
             self.play(FadeIn(card, shift=UP * 0.2), run_time=0.5)
             self.wait(0.4)
+            if i < len(cards) - 1:
+                self._next_slide(phase=True)
 
         question = make_label(
             "One user, one movie, one rating — which key enforces that?",
@@ -169,6 +211,7 @@ class Lab2IDFollowUp(Scene):
         question.to_edge(DOWN, buff=0.5)
         self.play(FadeIn(question, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 3: Option A — Auto-Increment ──────────────────────────
@@ -239,6 +282,7 @@ class Lab2IDFollowUp(Scene):
         uniq_warn.next_to(cons_group, DOWN, buff=0.22, aligned_edge=LEFT)
         self.play(FadeIn(uniq_warn, shift=UP * 0.1))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 4: Option B — Composite PK ────────────────────────────
@@ -304,6 +348,7 @@ class Lab2IDFollowUp(Scene):
         badge.to_edge(DOWN, buff=0.5)
         self.play(FadeIn(badge, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 5: Option C — UUID ─────────────────────────────────────
@@ -364,6 +409,7 @@ class Lab2IDFollowUp(Scene):
         self.wait(0.5)
         self.play(FadeIn(cons_group, shift=LEFT * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 6: Atomicity Deep-Dive ────────────────────────────────
@@ -530,6 +576,7 @@ class Lab2IDFollowUp(Scene):
         insight.to_edge(DOWN, buff=0.3)
         self.play(FadeIn(insight, shift=UP * 0.2))
         self.wait(4)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 7: Side-by-Side Comparison ────────────────────────────
@@ -630,12 +677,15 @@ class Lab2IDFollowUp(Scene):
             all_rows.add(row)
 
         all_rows.arrange(DOWN, buff=0.06).next_to(header_cells, DOWN, buff=0.06)
-        for row in all_rows:
+        for i, row in enumerate(all_rows):
             self.play(FadeIn(row, shift=LEFT * 0.2), run_time=0.3)
             self.wait(0.15)
+            if i < len(all_rows) - 1:
+                self._next_slide(phase=True)
 
         # Indicate the best strategy cell(s) per row
         for row_idx, row in enumerate(all_rows):
+            i = row_idx
             for col_idx in best_cols_by_row.get(row_idx, []):
                 self.play(
                     Indicate(
@@ -645,7 +695,10 @@ class Lab2IDFollowUp(Scene):
                     ),
                 )
                 self.wait(0.4)
+            if i < len(all_rows) - 1:
+                self._next_slide(phase=True)
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 8: Verdict ────────────────────────────────────────────
@@ -693,4 +746,5 @@ class Lab2IDFollowUp(Scene):
         warning.to_edge(DOWN, buff=0.45)
         self.play(FadeIn(warning, shift=UP * 0.2))
         self.wait(4)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))

@@ -36,6 +36,11 @@ from manim import (
     config,
 )
 
+try:
+    from manim_slides import Slide as BaseSlide
+except Exception:
+    BaseSlide = Scene
+
 from libs.ddia_components import (
     DARK_BG,
     ICON_DATABASE,
@@ -50,11 +55,45 @@ from libs.ddia_components import (
     make_icon_card,
     make_label,
 )
+from libs.slide_controls import slide_checkpoint
 
 config.background_color = "#0D1117"
 
 
-class Scalability(Scene):
+class Scalability(BaseSlide):
+    slide_stop_mode = "phase"
+    max_duration_before_split_reverse = 4.0
+
+    def _next_slide(
+        self,
+        phase=False,
+        enabled=True,
+        notes="",
+        loop=False,
+        auto_next=False,
+        playback_rate=1.0,
+        reversed_playback_rate=1.0,
+        dedent_notes=True,
+        skip_animations=False,
+        direction="horizontal",
+        **kwargs,
+    ):
+        slide_checkpoint(
+            self,
+            phase=phase,
+            enabled=enabled,
+            slide_stop_mode=self.slide_stop_mode,
+            loop=loop,
+            auto_next=auto_next,
+            playback_rate=playback_rate,
+            reversed_playback_rate=reversed_playback_rate,
+            notes=notes,
+            dedent_notes=dedent_notes,
+            skip_animations=skip_animations,
+            direction=direction,
+            **kwargs,
+        )
+
     def construct(self):
         self.scene_title()
         self.scene_describing_load()
@@ -82,6 +121,7 @@ class Scalability(Scene):
         self.wait(0.5)
         self.play(FadeIn(subtitle, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 2: Describing Load ─────────────────────────────────────
@@ -136,9 +176,11 @@ class Scalability(Scene):
         )
         self.wait(2)
 
-        for c in cards:
+        for i, c in enumerate(cards):
             self.play(Indicate(c, color=YELLOW, scale_factor=1.05), run_time=0.4)
             self.wait(0.3)
+            if i < len(cards) - 1:
+                self._next_slide(phase=True)
 
         self.wait(1)
 
@@ -150,6 +192,7 @@ class Scalability(Scene):
         bottom.to_edge(DOWN, buff=0.5)
         self.play(FadeIn(bottom, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 3: Describing Performance ──────────────────────────────
@@ -228,6 +271,7 @@ class Scalability(Scene):
         self.wait(1.5)
         self.play(FadeIn(right_group, shift=LEFT * 0.3))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 4: Percentiles ─────────────────────────────────────────
@@ -334,6 +378,7 @@ class Scalability(Scene):
 
         self.play(FadeIn(tail_group, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 5: Scale Up vs Scale Out ───────────────────────────────
@@ -417,6 +462,7 @@ class Scalability(Scene):
         insight.to_edge(DOWN, buff=0.5)
         self.play(FadeIn(insight, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 6: Elastic vs Manual Scaling ───────────────────────────
@@ -490,6 +536,7 @@ class Scalability(Scene):
         tradeoff.to_edge(DOWN, buff=0.5)
         self.play(FadeIn(tradeoff, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 7: No Magic Scaling Sauce ──────────────────────────────
@@ -577,6 +624,7 @@ class Scalability(Scene):
         takeaway.to_edge(DOWN, buff=0.4)
         self.play(FadeIn(takeaway, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 8: Closing ─────────────────────────────────────────────
@@ -617,4 +665,5 @@ class Scalability(Scene):
         takeaway.move_to(DOWN * 1.5)
         self.play(FadeIn(takeaway, shift=UP * 0.2))
         self.wait(4)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))

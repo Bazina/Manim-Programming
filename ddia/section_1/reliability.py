@@ -35,7 +35,12 @@ from manim import (
     config,
 )
 
+try:
+    from manim_slides import Slide as BaseSlide
+except Exception:
+    BaseSlide = Scene
 from libs.custom_colors import TRUE_RED
+from libs.slide_controls import slide_checkpoint
 from libs.ddia_components import (
     DARK_BG,
     ICON_BOMB,
@@ -57,7 +62,10 @@ from libs.ddia_components import (
 config.background_color = "#0D1117"
 
 
-class Reliability(Scene):
+class Reliability(BaseSlide):
+    slide_stop_mode = "phase"
+    max_duration_before_split_reverse = 4.0
+
     def construct(self):
         self.scene_title()
         self.scene_what_is_reliability()
@@ -67,6 +75,36 @@ class Reliability(Scene):
         self.scene_human_errors()
         self.scene_why_it_matters()
         self.scene_closing()
+
+    def _next_slide(
+        self,
+        phase=False,
+        enabled=True,
+        notes="",
+        loop=False,
+        auto_next=False,
+        playback_rate=1.0,
+        reversed_playback_rate=1.0,
+        dedent_notes=True,
+        skip_animations=False,
+        direction="horizontal",
+        **kwargs,
+    ):
+        slide_checkpoint(
+            self,
+            phase=phase,
+            enabled=enabled,
+            slide_stop_mode=self.slide_stop_mode,
+            loop=loop,
+            auto_next=auto_next,
+            playback_rate=playback_rate,
+            reversed_playback_rate=reversed_playback_rate,
+            notes=notes,
+            dedent_notes=dedent_notes,
+            skip_animations=skip_animations,
+            direction=direction,
+            **kwargs,
+        )
 
     # ─── Scene 1: Title ───────────────────────────────────────────────
     def scene_title(self):
@@ -84,6 +122,7 @@ class Reliability(Scene):
         self.wait(0.5)
         self.play(FadeIn(subtitle, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 2: What is Reliability? ────────────────────────────────
@@ -147,6 +186,7 @@ class Reliability(Scene):
         bottom.to_edge(DOWN, buff=0.5)
         self.play(FadeIn(bottom, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 3: Fault vs Failure ────────────────────────────────────
@@ -216,6 +256,7 @@ class Reliability(Scene):
         insight.to_edge(DOWN, buff=0.5)
         self.play(AddTextLetterByLetter(insight, time_per_char=0.03))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 4: Hardware Faults ─────────────────────────────────────
@@ -275,6 +316,7 @@ class Reliability(Scene):
         solutions.next_to(solution_title, DOWN, buff=0.2)
         self.play(FadeIn(solutions, shift=UP))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 5: Software Errors ─────────────────────────────────────
@@ -330,9 +372,11 @@ class Reliability(Scene):
         self.wait(2)
 
         # Indicate each
-        for c in cards:
+        for i, c in enumerate(cards):
             self.play(Indicate(c, color=YELLOW, scale_factor=1.05), run_time=0.5)
             self.wait(0.5)
+            if i < len(cards) - 1:
+                self._next_slide(phase=True)
 
         self.wait(1)
 
@@ -344,6 +388,7 @@ class Reliability(Scene):
         bottom.to_edge(DOWN, buff=0.4)
         self.play(FadeIn(bottom, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 6: Human Errors ────────────────────────────────────────
@@ -392,11 +437,14 @@ class Reliability(Scene):
 
         rows.arrange(DOWN, buff=0.12).next_to(quote, DOWN, buff=0.4)
 
-        for row in rows:
+        for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.5)
             self.wait(0.5)
+            if i < len(rows) - 1:
+                self._next_slide(phase=True)
 
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 7: Why Reliability Matters ─────────────────────────────
@@ -445,9 +493,11 @@ class Reliability(Scene):
         )
         self.wait(2)
 
-        for c in cards:
+        for i, c in enumerate(cards):
             self.play(Indicate(c, color=YELLOW, scale_factor=1.05), run_time=0.5)
             self.wait(0.5)
+            if i < len(cards) - 1:
+                self._next_slide(phase=True)
 
         self.wait(1)
 
@@ -459,6 +509,7 @@ class Reliability(Scene):
         caveat.to_edge(DOWN, buff=0.5)
         self.play(FadeIn(caveat, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 8: Closing ─────────────────────────────────────────────
@@ -498,4 +549,5 @@ class Reliability(Scene):
         takeaway.move_to(DOWN * 1.5)
         self.play(FadeIn(takeaway, shift=UP * 0.2))
         self.wait(4)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))

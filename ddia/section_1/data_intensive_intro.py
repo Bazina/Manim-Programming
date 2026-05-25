@@ -37,6 +37,12 @@ from manim import (
     PURPLE,
 )
 
+try:
+    from manim_slides import Slide as BaseSlide
+except Exception:
+    BaseSlide = Scene
+
+from libs.slide_controls import slide_checkpoint
 from libs.ddia_components import (
     DARK_BG,
     ICON_CHECK,
@@ -57,7 +63,40 @@ from libs.ddia_components import (
 config.background_color = "#0D1117"
 
 
-class DataIntensiveIntro(Scene):
+class DataIntensiveIntro(BaseSlide):
+    slide_stop_mode = "phase"
+    max_duration_before_split_reverse = 4.0
+
+    def _next_slide(
+        self,
+        phase=False,
+        enabled=True,
+        notes="",
+        loop=False,
+        auto_next=False,
+        playback_rate=1.0,
+        reversed_playback_rate=1.0,
+        dedent_notes=True,
+        skip_animations=False,
+        direction="horizontal",
+        **kwargs,
+    ):
+        slide_checkpoint(
+            self,
+            phase=phase,
+            enabled=enabled,
+            slide_stop_mode=self.slide_stop_mode,
+            loop=loop,
+            auto_next=auto_next,
+            playback_rate=playback_rate,
+            reversed_playback_rate=reversed_playback_rate,
+            notes=notes,
+            dedent_notes=dedent_notes,
+            skip_animations=skip_animations,
+            direction=direction,
+            **kwargs,
+        )
+
     def construct(self):
         self.scene_title()
         self.scene_comparison()
@@ -82,6 +121,7 @@ class DataIntensiveIntro(Scene):
         self.wait(0.5)
         self.play(FadeIn(subtitle, shift=UP * 0.2))
         self.wait(3)
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 2: Data-Intensive vs Compute-Intensive ─────────────────
@@ -132,9 +172,11 @@ class DataIntensiveIntro(Scene):
         self.wait(2)
 
         # Emphasize data-intensive bullets one by one
-        for bullet in right_bullets:
+        for i, bullet in enumerate(right_bullets):
             self.play(Indicate(bullet, color=YELLOW, scale_factor=1.3))
             self.wait(0.5)
+            if i < len(right_bullets) - 1:
+                self._next_slide(phase=True)
 
         # VS label
         vs_label = make_label("VS", font_size=28, color=ORANGE)
@@ -148,6 +190,7 @@ class DataIntensiveIntro(Scene):
         self.play(AddTextLetterByLetter(highlight, time_per_char=0.03))
         self.wait(3)
 
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 3: Data Challenges — visual diagrams ───────────────────
@@ -193,7 +236,8 @@ class DataIntensiveIntro(Scene):
         self.wait(0.5)
 
         # Loop: 3 waves of arrows hitting the server
-        for wave in range(3):
+        _waves = range(3)
+        for i, wave in enumerate(_waves):
             arrows = VGroup()
             for pos in user_positions:
                 arr = Arrow(
@@ -212,6 +256,8 @@ class DataIntensiveIntro(Scene):
                 run_time=0.4,
             )
             self.play(FadeOut(arrows), run_time=0.3)
+            if i < len(_waves) - 1:
+                self._next_slide(phase=True)
 
         self.wait(2)
 
@@ -304,6 +350,8 @@ class DataIntensiveIntro(Scene):
         for i, layer in enumerate(db_layers):
             self.play(FadeIn(layer, shift=UP * 0.2), run_time=0.4)
             self.wait(0.3)
+            if i < len(db_layers) - 1:
+                self._next_slide(phase=True)
 
         self.wait(1)
 
@@ -332,6 +380,7 @@ class DataIntensiveIntro(Scene):
         self.play(FadeIn(takeaway, shift=UP * 0.2))
         self.wait(3)
 
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 4: The 5 Building Blocks ──────────────────────────────
@@ -401,6 +450,7 @@ class DataIntensiveIntro(Scene):
         self.play(AddTextLetterByLetter(bottom_text, time_per_char=0.03))
         self.wait(3)
 
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 5: Architecture Diagram ────────────────────────────────
@@ -519,6 +569,7 @@ class DataIntensiveIntro(Scene):
         self.play(AddTextLetterByLetter(callout, time_per_char=0.03))
         self.wait(3)
 
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 6: Tricky Design Questions ─────────────────────────────
@@ -556,16 +607,20 @@ class DataIntensiveIntro(Scene):
         q_groups.arrange(DOWN, buff=0.2).move_to(ORIGIN + DOWN * 0.2)
 
         # Stagger fade in
-        for qg in q_groups:
+        for i, qg in enumerate(q_groups):
             self.play(FadeIn(qg, shift=LEFT * 0.3), run_time=0.6)
             self.wait(0.5)
+            if i < len(q_groups) - 1:
+                self._next_slide(phase=True)
 
         self.wait(2)
 
         # Indicate each row
-        for qg in q_groups:
+        for i, qg in enumerate(q_groups):
             self.play(Indicate(qg, color=YELLOW, scale_factor=1.05), run_time=0.5)
             self.wait(0.5)
+            if i < len(q_groups) - 1:
+                self._next_slide(phase=True)
 
         self.wait(1)
 
@@ -575,6 +630,7 @@ class DataIntensiveIntro(Scene):
         self.play(AddTextLetterByLetter(bottom, time_per_char=0.03))
         self.wait(3)
 
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 7: Closing ─────────────────────────────────────────────
@@ -614,4 +670,5 @@ class DataIntensiveIntro(Scene):
         self.play(FadeIn(themes, shift=UP * 0.2))
         self.wait(4)
 
+        self._next_slide()
         self.play(FadeOut(*self.mobjects))

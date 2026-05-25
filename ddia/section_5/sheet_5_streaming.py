@@ -228,9 +228,11 @@ class Sheet5Streaming(BaseSlide):
             rows.add(self._icon_row_card(ICON_LIGHTNING, color, title, desc))
         rows.arrange(DOWN, buff=0.1).next_to(flow, DOWN, buff=0.55)
 
-        for row in rows:
+        for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.45)
             self.wait(0.35)
+            if i < len(rows) - 1:
+                self._next_slide(phase=True)
 
         self.wait(2.5)
         self._next_slide()
@@ -261,9 +263,11 @@ class Sheet5Streaming(BaseSlide):
             rows.add(self._icon_row_card(icon_path, color, title, desc))
         rows.arrange(DOWN, buff=0.1).next_to(when_lbl, DOWN, buff=0.3)
 
-        for row in rows:
+        for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.45)
             self.wait(0.4)
+            if i < len(rows) - 1:
+                self._next_slide(phase=True)
 
         tradeoff = VGroup(
             make_label("✓  Zero memory overhead — simplest implementation", font_size=12, color=GREEN),
@@ -300,9 +304,11 @@ class Sheet5Streaming(BaseSlide):
             rows.add(self._icon_row_card(icon_path, color, title, desc))
         rows.arrange(DOWN, buff=0.1).next_to(when_lbl, DOWN, buff=0.3)
 
-        for row in rows:
+        for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.45)
             self.wait(0.4)
+            if i < len(rows) - 1:
+                self._next_slide(phase=True)
 
         # Buffer overflow warning
         overflow = make_label(
@@ -345,9 +351,11 @@ class Sheet5Streaming(BaseSlide):
             rows.add(self._icon_row_card(icon_path, color, title, desc, row_w=11.0))
         rows.arrange(DOWN, buff=0.1).next_to(when_lbl, DOWN, buff=0.3)
 
-        for row in rows:
+        for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.45)
             self.wait(0.4)
+            if i < len(rows) - 1:
+                self._next_slide(phase=True)
 
         # Flow diagram: consumer throttles producer
         prod_bp = self._flow_node("Producer", GREEN, width=2.0)
@@ -425,8 +433,10 @@ class Sheet5Streaming(BaseSlide):
         cross_note.next_to(parts, DOWN, buff=0.25)
 
         self.play(FadeIn(topic_lbl))
-        for p in parts:
+        for i, p in enumerate(parts):
             self.play(FadeIn(p, shift=UP * 0.15), run_time=0.4)
+            if i < len(parts) - 1:
+                self._next_slide(phase=True)
         self.play(FadeIn(cross_note, shift=UP * 0.1))
         self.play(Indicate(cross_seq, color=RED, run_time=1.2))
         self.wait(0.5)
@@ -602,9 +612,11 @@ class Sheet5Streaming(BaseSlide):
             model_rows.add(VGroup(box, content))
         model_rows.arrange(DOWN, buff=0.07).next_to(header, DOWN, buff=0.28)
 
-        for row in model_rows:
+        for i, row in enumerate(model_rows):
             self.play(FadeIn(row, shift=LEFT * 0.2), run_time=0.35)
             self.wait(0.15)
+            if i < len(model_rows) - 1:
+                self._next_slide(phase=True)
 
         self.wait(0.3)
         self._next_slide(phase=True, notes="Transmission models done; move to tool table")
@@ -630,9 +642,11 @@ class Sheet5Streaming(BaseSlide):
 
         self.play(FadeIn(hdrs_grp))
         self.play(FadeIn(div))
-        for row in all_rows:
+        for i, row in enumerate(all_rows):
             self.play(FadeIn(row, shift=RIGHT * 0.2), run_time=0.3)
             self.wait(0.12)
+            if i < len(all_rows) - 1:
+                self._next_slide(phase=True)
 
         self.wait(0.8)
         self.play(Indicate(all_rows[0][1], color=ORANGE, run_time=1.0))
