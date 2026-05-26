@@ -26,8 +26,10 @@ ddia/
 │   └── sheet_5_streaming.py
 ├── section_6/
 │   └── lab_4_jms_kafka.py
-└── section_7/
-    └── project_weather_stations.py
+├── section_7/
+│   └── project_weather_stations.py
+└── section_8/
+    └── sheet_6_integration_patterns.py  ← Sheet 6: Integration Patterns
 libs/
 ├── ddia_components.py   # primitives: make_label, make_icon, make_fit_box, create_rect_glow, ICON_* constants
 ├── slide_controls.py    # slide_checkpoint helper for manim-slides
@@ -44,6 +46,7 @@ assets/icons/            # SVG icon library
 | Sheet 3 | Partitioning (hash mod N · consistent hashing) | `ddia/section_3/sheet_3_partitioning.py` |
 | Sheet 4 | Consistency (isolation · linearizability · FIFO · CAP) | `ddia/section_4/sheet_4_consistency.py` |
 | Sheet 5 | Streaming (backpressure · ordering · transmission models) | `ddia/section_5/sheet_5_streaming.py` |
+| Sheet 6 | Integration Patterns (aggregators · channels · routers · transformers · endpoints) | `ddia/section_8/sheet_6_integration_patterns.py` |
 
 ## Architecture
 
