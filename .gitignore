@@ -138,7 +138,6 @@ package-lock.json
 media/
 *.mp4
 *.gif
-*.png
 partial_movie_files/
 slides/
 *.pdf
