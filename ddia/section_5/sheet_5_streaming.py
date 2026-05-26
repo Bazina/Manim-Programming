@@ -53,17 +53,16 @@ from libs.ddia_components import (
     make_icon,
     make_comparison_table,
 )
-from libs.slide_controls import slide_checkpoint
+from libs.slide_style import SlideStyleMixin
 
 config.background_color = "#0D1117"
 
 ICON_STREAMING = "assets/icons/devices/LightningBold.svg"
 
 
-class Sheet5Streaming(BaseSlide):
+class Sheet5Streaming(SlideStyleMixin, BaseSlide):
 
     # Stop policy: "off", "scene", or "phase".
-    slide_stop_mode = "phase"
     # Avoid reverse-video generation to prevent PyAV malloc failures on long renders.
     max_duration_before_split_reverse = 8.0
 
@@ -79,96 +78,6 @@ class Sheet5Streaming(BaseSlide):
         self.scene_q3_tools()
         self.scene_closing()
 
-    def _next_slide(
-        self,
-        phase=False,
-        enabled=True,
-        notes="",
-        loop=False,
-        auto_next=False,
-        playback_rate=1.0,
-        reversed_playback_rate=1.0,
-        dedent_notes=True,
-        skip_animations=False,
-        direction="horizontal",
-        **kwargs,
-    ):
-        slide_checkpoint(
-            self,
-            phase=phase,
-            enabled=enabled,
-            slide_stop_mode=self.slide_stop_mode,
-            loop=loop,
-            auto_next=auto_next,
-            playback_rate=playback_rate,
-            reversed_playback_rate=reversed_playback_rate,
-            notes=notes,
-            dedent_notes=dedent_notes,
-            skip_animations=skip_animations,
-            direction=direction,
-            **kwargs,
-        )
-
-    # ─── Helpers ──────────────────────────────────────────────────────
-
-    def _card(self, title, desc, color, width=11.5, height=None, title_size=13, desc_size=11):
-        t = make_label(title, font_size=title_size, color=color)
-        d = make_label(desc, font_size=desc_size, color=GREY_A)
-        content = VGroup(t, d).arrange(DOWN, buff=0.1, aligned_edge=LEFT)
-        h = height or content.height + 0.38
-        box = RoundedRectangle(
-            corner_radius=0.09,
-            width=width, height=h,
-            fill_color=DARK_BG, fill_opacity=0.9,
-            stroke_color=color, stroke_width=1.3,
-        )
-        content.move_to(box.get_center())
-        return VGroup(box, content)
-
-    def _icon_row_card(self, icon_path, color, title, desc, row_w=11.5):
-        ic = make_icon(icon_path, color=color, height=0.28)
-        t = make_label(title, font_size=13, color=color)
-        d = make_label(desc, font_size=11, color=GREY_A)
-        content = VGroup(ic, t, d).arrange(RIGHT, buff=0.18)
-        box = RoundedRectangle(
-            corner_radius=0.09,
-            width=row_w, height=content.height + 0.3,
-            fill_color=DARK_BG, fill_opacity=0.9,
-            stroke_color=color, stroke_width=1.1,
-        )
-        content.move_to(box.get_center())
-        return VGroup(box, content)
-
-    def _flow_node(self, label, color, width=2.0, height=0.9):
-        box = RoundedRectangle(
-            corner_radius=0.1, width=width, height=height,
-            fill_color=DARK_BG, fill_opacity=0.9,
-            stroke_color=color, stroke_width=1.5,
-        )
-        lbl = make_label(label, font_size=10, color=color)
-        lbl.move_to(box.get_center())
-        return VGroup(box, lbl)
-
-    def _flow_arrow(self, left_node, right_node, color=GREY_A, label=None):
-        a = Arrow(
-            left_node.get_right(), right_node.get_left(),
-            buff=0.1, stroke_width=2.0, color=color, tip_length=0.15,
-        )
-        if label:
-            lbl = make_label(label, font_size=9, color=color)
-            lbl.next_to(a, UP, buff=0.07)
-            return VGroup(a, lbl)
-        return a
-
-    def _verdict(self, text, color, width=9.5):
-        box = RoundedRectangle(
-            corner_radius=0.1, width=width, height=0.56,
-            fill_color=DARK_BG, fill_opacity=0.95,
-            stroke_color=color, stroke_width=1.8,
-        )
-        lbl = make_label(text, font_size=13, color=color)
-        lbl.move_to(box.get_center())
-        return VGroup(box, lbl)
 
     # ─── Scene 1: Title ───────────────────────────────────────────────
     def scene_title(self):
@@ -190,11 +99,10 @@ class Sheet5Streaming(BaseSlide):
 
     # ─── Scene 2: Q1 Overview ─────────────────────────────────────────
     def scene_q1_overview(self):
-        header = make_label(
+        header = self._section_header(
             "Q1: Producer Faster Than Consumer — 3 Strategies",
-            font_size=24, color=ORANGE,
+            color=ORANGE,
         )
-        header.to_edge(UP, buff=0.4)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.4)
 
@@ -223,13 +131,27 @@ class Sheet5Streaming(BaseSlide):
             (BLUE,   "Buffer Messages",    "Queue excess — absorbs bursts, risk of overflow"),
             (GREEN,  "Backpressure",       "Throttle producer — zero data loss, requires protocol support"),
         ]
+        GLOW = {2}
         rows = VGroup()
-        for color, title, desc in strategies:
-            rows.add(self._icon_row_card(ICON_LIGHTNING, color, title, desc))
+        glow_map = {}
+        color_map = {}
+        for j, (color, title, desc) in enumerate(strategies):
+            result = self._icon_row_card(ICON_LIGHTNING, color, title, desc, glow=(j in GLOW))
+            if isinstance(result, tuple):
+                card, g = result
+                rows.add(card)
+                glow_map[j] = g
+                color_map[j] = color
+            else:
+                rows.add(result)
         rows.arrange(DOWN, buff=0.1).next_to(flow, DOWN, buff=0.55)
+        for idx, g in glow_map.items():
+            g.move_to(rows[idx])
 
         for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.45)
+            if i in glow_map:
+                self._play_glow_row(row, glow_map[i], color_map[i])
             self.wait(0.35)
             if i < len(rows) - 1:
                 self._next_slide(phase=True)
@@ -240,8 +162,7 @@ class Sheet5Streaming(BaseSlide):
 
     # ─── Scene 3: Drop Messages ───────────────────────────────────────
     def scene_q1_drop(self):
-        header = make_label("Q1A: Drop Messages", font_size=28, color=RED)
-        header.to_edge(UP, buff=0.4)
+        header = self._section_header("Q1A: Drop Messages", color=RED)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.4)
 
@@ -258,13 +179,27 @@ class Sheet5Streaming(BaseSlide):
             (ICON_LIGHTNING, ORANGE, "Heartbeat messages",
              "Purpose is 'I'm alive' — stale heartbeats carry no value"),
         ]
+        GLOW = {0}
         rows = VGroup()
-        for icon_path, color, title, desc in cases:
-            rows.add(self._icon_row_card(icon_path, color, title, desc))
+        glow_map = {}
+        color_map = {}
+        for j, (icon_path, color, title, desc) in enumerate(cases):
+            result = self._icon_row_card(icon_path, color, title, desc, glow=(j in GLOW))
+            if isinstance(result, tuple):
+                card, g = result
+                rows.add(card)
+                glow_map[j] = g
+                color_map[j] = color
+            else:
+                rows.add(result)
         rows.arrange(DOWN, buff=0.1).next_to(when_lbl, DOWN, buff=0.3)
+        for idx, g in glow_map.items():
+            g.move_to(rows[idx])
 
         for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.45)
+            if i in glow_map:
+                self._play_glow_row(row, glow_map[i], color_map[i])
             self.wait(0.4)
             if i < len(rows) - 1:
                 self._next_slide(phase=True)
@@ -281,8 +216,7 @@ class Sheet5Streaming(BaseSlide):
 
     # ─── Scene 4: Buffer Messages ─────────────────────────────────────
     def scene_q1_buffer(self):
-        header = make_label("Q1B: Buffer / Queue Messages", font_size=28, color=BLUE)
-        header.to_edge(UP, buff=0.4)
+        header = self._section_header("Q1B: Buffer / Queue Messages", color=BLUE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.4)
 
@@ -299,13 +233,27 @@ class Sheet5Streaming(BaseSlide):
             (ICON_DATABASE,  BLUE,   "One-shot event producers",
              "Lambda / serverless function — exits after emit, cannot retry"),
         ]
+        GLOW = {1}
         rows = VGroup()
-        for icon_path, color, title, desc in cases:
-            rows.add(self._icon_row_card(icon_path, color, title, desc))
+        glow_map = {}
+        color_map = {}
+        for j, (icon_path, color, title, desc) in enumerate(cases):
+            result = self._icon_row_card(icon_path, color, title, desc, glow=(j in GLOW))
+            if isinstance(result, tuple):
+                card, g = result
+                rows.add(card)
+                glow_map[j] = g
+                color_map[j] = color
+            else:
+                rows.add(result)
         rows.arrange(DOWN, buff=0.1).next_to(when_lbl, DOWN, buff=0.3)
+        for idx, g in glow_map.items():
+            g.move_to(rows[idx])
 
         for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.45)
+            if i in glow_map:
+                self._play_glow_row(row, glow_map[i], color_map[i])
             self.wait(0.4)
             if i < len(rows) - 1:
                 self._next_slide(phase=True)
@@ -330,8 +278,7 @@ class Sheet5Streaming(BaseSlide):
 
     # ─── Scene 5: Backpressure ────────────────────────────────────────
     def scene_q1_backpressure(self):
-        header = make_label("Q1C: Backpressure", font_size=28, color=GREEN)
-        header.to_edge(UP, buff=0.4)
+        header = self._section_header("Q1C: Backpressure", color=GREEN)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.4)
 
@@ -346,13 +293,27 @@ class Sheet5Streaming(BaseSlide):
             (ICON_SHIELD, PURPLE, "Payment / trading pipelines",
              "Missing a trade or payment event causes data integrity failure"),
         ]
+        GLOW = {1}
         rows = VGroup()
-        for icon_path, color, title, desc in cases:
-            rows.add(self._icon_row_card(icon_path, color, title, desc, row_w=11.0))
+        glow_map = {}
+        color_map = {}
+        for j, (icon_path, color, title, desc) in enumerate(cases):
+            result = self._icon_row_card(icon_path, color, title, desc, glow=(j in GLOW))
+            if isinstance(result, tuple):
+                card, g = result
+                rows.add(card)
+                glow_map[j] = g
+                color_map[j] = color
+            else:
+                rows.add(result)
         rows.arrange(DOWN, buff=0.1).next_to(when_lbl, DOWN, buff=0.3)
+        for idx, g in glow_map.items():
+            g.move_to(rows[idx])
 
         for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.45)
+            if i in glow_map:
+                self._play_glow_row(row, glow_map[i], color_map[i])
             self.wait(0.4)
             if i < len(rows) - 1:
                 self._next_slide(phase=True)
@@ -393,8 +354,7 @@ class Sheet5Streaming(BaseSlide):
 
     # ─── Scene 6: Q2 Overview ─────────────────────────────────────────
     def scene_q2_overview(self):
-        header = make_label("Q2: Topic-Level Ordering Guarantee", font_size=26, color=TEAL)
-        header.to_edge(UP, buff=0.4)
+        header = self._section_header("Q2: Topic-Level Ordering Guarantee", color=TEAL)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.4)
 
@@ -453,8 +413,7 @@ class Sheet5Streaming(BaseSlide):
 
     # ─── Scene 7: Approach 1 — Merge Sweep ───────────────────────────
     def scene_q2_merge_sweep(self):
-        header = make_label("Q2 — Approach 1: Merge Sweep", font_size=26, color=BLUE)
-        header.to_edge(UP, buff=0.4)
+        header = self._section_header("Q2 — Approach 1: Merge Sweep", color=BLUE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.4)
 
@@ -517,8 +476,7 @@ class Sheet5Streaming(BaseSlide):
 
     # ─── Scene 8: Approach 2 — Global Sequence ────────────────────────
     def scene_q2_global_sequence(self):
-        header = make_label("Q2 — Approach 2: Global Sequence Number", font_size=25, color=ORANGE)
-        header.to_edge(UP, buff=0.4)
+        header = self._section_header("Q2 — Approach 2: Global Sequence Number", color=ORANGE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.4)
 
@@ -587,8 +545,7 @@ class Sheet5Streaming(BaseSlide):
 
     # ─── Scene 9: Q3 — Streaming Tools ───────────────────────────────
     def scene_q3_tools(self):
-        header = make_label("Q3: Streaming Tools & Transmission Models", font_size=25, color=PURPLE)
-        header.to_edge(UP, buff=0.4)
+        header = self._section_header("Q3: Streaming Tools & Transmission Models", color=PURPLE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.4)
 

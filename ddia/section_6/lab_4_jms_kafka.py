@@ -57,7 +57,7 @@ from libs.ddia_components import (
     make_comparison_table,
     create_rect_glow,
 )
-from libs.slide_controls import slide_checkpoint
+from libs.slide_style import SlideStyleMixin
 
 config.background_color = "#0D1117"
 config.pixel_height = 1080
@@ -118,12 +118,9 @@ BASH_T2C = {
 }
 
 
-class Lab4JMSKafka(BaseSlide):
+class Lab4JMSKafka(SlideStyleMixin, BaseSlide):
     # Stop policy: "off", "scene", or "phase".
-    slide_stop_mode = "phase"
     # Avoid reverse-video generation to prevent PyAV malloc failures on long renders.
-    max_duration_before_split_reverse = 4.0
-
     def construct(self):
         self.scene_title()
         self.scene_lab_overview()
@@ -136,37 +133,7 @@ class Lab4JMSKafka(BaseSlide):
         self.scene_deliverables()
         self.scene_closing()
 
-    def _next_slide(
-        self,
-        phase=False,
-        enabled=True,
-        notes="",
-        loop=False,
-        auto_next=False,
-        playback_rate=1.0,
-        reversed_playback_rate=1.0,
-        dedent_notes=True,
-        skip_animations=False,
-        direction="horizontal",
-        **kwargs,
-    ):
-        slide_checkpoint(
-            self,
-            phase=phase,
-            enabled=enabled,
-            slide_stop_mode=self.slide_stop_mode,
-            loop=loop,
-            auto_next=auto_next,
-            playback_rate=playback_rate,
-            reversed_playback_rate=reversed_playback_rate,
-            notes=notes,
-            dedent_notes=dedent_notes,
-            skip_animations=skip_animations,
-            direction=direction,
-            **kwargs,
-        )
-
-    # ─── Helpers ──────────────────────────────────────────────────────
+    # ─── Visual style helpers (from project_weather_stations) ─────────
     def _tool_card(self, title, subtitle, icon, color, width=3.8, height=2.0):
         box = RoundedRectangle(
             corner_radius=0.12,
@@ -193,12 +160,6 @@ class Lab4JMSKafka(BaseSlide):
         jms.move_to([0.8, y, 0])
         kafka.move_to([3.8, y, 0])
         return VGroup(lbl, jms, kafka)
-
-    def _section_header(self, text, color=TEAL):
-        hdr = make_label(text, font_size=30, color=color)
-        hdr.to_edge(UP, buff=0.45)
-        return hdr
-
     def _code_box(self, lines, title, color, width=5.8, font_size=11, t2c=None):
         text = "\n".join(lines)
         box = RoundedRectangle(
@@ -257,31 +218,28 @@ class Lab4JMSKafka(BaseSlide):
             (ICON_BOOK,       PURPLE, "D) Report & Recommendation",
              "Summary per tool · Conclusion with justification"),
         ]
+        GLOW = {3}
         cards = VGroup()
-        for icon, color, label, desc in steps:
-            ic = make_icon(icon, color=color, height=0.38)
-            lbl = make_label(label, font_size=15, color=color, weight=BOLD)
-            d = make_label(desc, font_size=11, color=GREY_B)
-            row_content = VGroup(ic, VGroup(lbl, d).arrange(DOWN, buff=0.05)).arrange(
-                RIGHT, buff=0.25
-            )
-            box = RoundedRectangle(
-                corner_radius=0.1,
-                width=10,
-                height=0.9,
-                fill_color=DARK_BG,
-                fill_opacity=0.9,
-                stroke_color=color,
-                stroke_width=1.2,
-            )
-            row_content.move_to(box.get_center()).shift(LEFT * 0.3)
-            cards.add(VGroup(box, row_content))
+        glow_map = {}
+        color_map = {}
+        for j, (icon, color, label, desc) in enumerate(steps):
+            result = self._icon_row_card(icon, color, label, desc, glow=(j in GLOW))
+            if isinstance(result, tuple):
+                card, g = result
+                cards.add(card)
+                glow_map[j] = g
+                color_map[j] = color
+            else:
+                cards.add(result)
 
-        cards.arrange(DOWN, buff=0.2)
-        cards.next_to(header, DOWN, buff=0.5)
+        cards.arrange(DOWN, buff=0.2).next_to(header, DOWN, buff=0.5)
+        for idx, g in glow_map.items():
+            g.move_to(cards[idx])
 
-        for card in cards:
+        for i, card in enumerate(cards):
             self.play(FadeIn(card, shift=RIGHT * 0.3), run_time=0.4)
+            if i in glow_map:
+                self._play_glow_row(card, glow_map[i], color_map[i])
             self.wait(0.3)
 
         self.wait(2.5)
@@ -689,27 +647,28 @@ class Lab4JMSKafka(BaseSlide):
              "Your recommendation with clear data-driven justification"),
         ]
 
+        GLOW = {0, 5}
         rows = VGroup()
-        for icon_path, color, title, desc in items:
-            ic = make_icon(icon_path, color=color, height=0.27)
-            t = make_label(title, font_size=13, color=color, weight=BOLD)
-            d = make_label(desc, font_size=11, color=GREY_A)
-            content = VGroup(ic, t, d).arrange(RIGHT, buff=0.18)
-            box = RoundedRectangle(
-                corner_radius=0.08,
-                width=content.width + 0.5,
-                height=content.height + 0.28,
-                fill_color=DARK_BG,
-                fill_opacity=0.9,
-                stroke_color=color,
-                stroke_width=1.1,
-            )
-            content.move_to(box.get_center())
-            rows.add(VGroup(box, content))
+        glow_map = {}
+        color_map = {}
+        for j, (icon_path, color, title, desc) in enumerate(items):
+            result = self._icon_row_card(icon_path, color, title, desc, glow=(j in GLOW))
+            if isinstance(result, tuple):
+                card, g = result
+                rows.add(card)
+                glow_map[j] = g
+                color_map[j] = color
+            else:
+                rows.add(result)
 
-        rows.arrange(DOWN, buff=0.1).next_to(header, DOWN, buff=0.35)
-        for row in rows:
+        rows.arrange(DOWN, buff=0.15, aligned_edge=LEFT).next_to(header, DOWN, buff=0.35)
+        for idx, g in glow_map.items():
+            g.move_to(rows[idx])
+
+        for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.45)
+            if i in glow_map:
+                self._play_glow_row(row, glow_map[i], color_map[i])
             self.wait(0.4)
 
         note = make_label(

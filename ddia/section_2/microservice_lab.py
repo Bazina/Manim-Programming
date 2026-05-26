@@ -39,11 +39,10 @@ try:
 except Exception:
     BaseSlide = Scene
 
-from libs.slide_controls import slide_checkpoint
+from libs.slide_style import SlideStyleMixin
 from libs.ddia_components import (
     DARK_BG,
     ICON_SERVER,
-    ICON_CHECK,
     ICON_SETTINGS,
     ICON_STOPWATCH,
     ICON_CODE_FILE,
@@ -107,40 +106,8 @@ MYSQL_T2C = {
 }
 
 
-class MicroserviceLab(BaseSlide):
-    slide_stop_mode = "phase"
-    max_duration_before_split_reverse = 4.0
-
-    def _next_slide(
-        self,
-        phase=False,
-        enabled=True,
-        notes="",
-        loop=False,
-        auto_next=False,
-        playback_rate=1.0,
-        reversed_playback_rate=1.0,
-        dedent_notes=True,
-        skip_animations=False,
-        direction="horizontal",
-        **kwargs,
-    ):
-        slide_checkpoint(
-            self,
-            phase=phase,
-            enabled=enabled,
-            slide_stop_mode=self.slide_stop_mode,
-            loop=loop,
-            auto_next=auto_next,
-            playback_rate=playback_rate,
-            reversed_playback_rate=reversed_playback_rate,
-            notes=notes,
-            dedent_notes=dedent_notes,
-            skip_animations=skip_animations,
-            direction=direction,
-            **kwargs,
-        )
-
+class MicroserviceLab(SlideStyleMixin, BaseSlide):
+    # ─── Helpers ──────────────────────────────────────────────────────
     def construct(self):
         self.scene_title()
         self.scene_lab_overview()
@@ -179,8 +146,7 @@ class MicroserviceLab(BaseSlide):
 
     # ─── Scene 2: Lab Overview ────────────────────────────────────────
     def scene_lab_overview(self):
-        header = make_label("What Will You Do?", font_size=30, color=GREEN)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("What Will You Do?", color=GREEN)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -217,28 +183,28 @@ class MicroserviceLab(BaseSlide):
             ),
         ]
 
+        GLOW = {2}
+        glow_map = {}
+        color_map = {}
         rows = VGroup()
-        for icon_path, color, title, desc in steps:
-            ic = make_icon(icon_path, color=color, height=0.3)
-            t = make_label(title, font_size=15, color=color, weight=BOLD)
-            d = make_label(desc, font_size=11, color=GREY_A)
-            row_content = VGroup(ic, t, d).arrange(RIGHT, buff=0.15)
-            box = RoundedRectangle(
-                corner_radius=0.1,
-                width=13.5,
-                height=0.65,
-                fill_color=DARK_BG,
-                fill_opacity=0.9,
-                stroke_color=color,
-                stroke_width=1.2,
-            )
-            row_content.move_to(box.get_center())
-            rows.add(VGroup(box, row_content))
+        for j, (icon_path, color, title, desc) in enumerate(steps):
+            result = self._icon_row_card(icon_path, color, title, desc, glow=(j in GLOW))
+            if isinstance(result, tuple):
+                card, g = result
+                rows.add(card)
+                glow_map[j] = g
+                color_map[j] = color
+            else:
+                rows.add(result)
 
-        rows.arrange(DOWN, buff=0.15).next_to(header, DOWN, buff=0.5)
+        rows.arrange(DOWN, buff=0.15, aligned_edge=LEFT).next_to(header, DOWN, buff=0.5)
+        for idx, g in glow_map.items():
+            g.move_to(rows[idx])
 
         for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.5)
+            if i in glow_map:
+                self._play_glow_row(row, glow_map[i], color_map[i])
             self.wait(0.8)
             if i < len(rows) - 1:
                 self._next_slide(phase=True)
@@ -258,8 +224,7 @@ class MicroserviceLab(BaseSlide):
 
     # ─── Scene 3: Monolith vs Microservices ──────────────────────────
     def scene_monolith_vs_microservices(self):
-        header = make_label("Monolith vs Microservices", font_size=30, color=ORANGE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Monolith vs Microservices", color=ORANGE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -337,8 +302,7 @@ class MicroserviceLab(BaseSlide):
 
     # ─── Scene 4: Movie Rating App Architecture ───────────────────────
     def scene_app_architecture(self):
-        header = make_label("Movie Rating App Architecture", font_size=30, color=BLUE)
-        header.to_edge(UP, buff=0.3)
+        header = self._section_header("Movie Rating App Architecture", color=BLUE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.5)
 
@@ -468,8 +432,7 @@ class MicroserviceLab(BaseSlide):
 
     # ─── Scene 5: Ratings → MySQL ────────────────────────────────────
     def scene_ratings_mysql(self):
-        header = make_label("Step 1 — Ratings → MySQL", font_size=30, color=BLUE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Step 1 — Ratings → MySQL", color=BLUE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -561,8 +524,7 @@ class MicroserviceLab(BaseSlide):
 
     # ─── Scene 6: MongoDB Caching ─────────────────────────────────────
     def scene_mongodb_caching(self):
-        header = make_label("Step 2 — MongoDB Caching", font_size=30, color=TEAL)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Step 2 — MongoDB Caching", color=TEAL)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -706,10 +668,9 @@ class MicroserviceLab(BaseSlide):
 
     # ─── Scene 7: gRPC Trending Movies Service ────────────────────────
     def scene_grpc_trending(self):
-        header = make_label(
-            "Step 3 — gRPC Trending Movies Service", font_size=27, color=ORANGE
+        header = self._section_header(
+            "Step 3 — gRPC Trending Movies Service", color=ORANGE
         )
-        header.to_edge(UP, buff=0.5)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -832,10 +793,9 @@ class MicroserviceLab(BaseSlide):
 
     # ─── Scene 8: JMeter Overview ─────────────────────────────────────
     def scene_jmeter_overview(self):
-        header = make_label(
-            "Step 4 — JMeter Performance Testing", font_size=27, color=PURPLE
+        header = self._section_header(
+            "Step 4 — JMeter Performance Testing", color=PURPLE
         )
-        header.to_edge(UP, buff=0.5)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -952,50 +912,71 @@ class MicroserviceLab(BaseSlide):
 
     # ─── Scene 9: Deliverables ───────────────────────────────────────
     def scene_deliverables(self):
-        header = make_label("Deliverables", font_size=30, color=ORANGE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Deliverables", color=ORANGE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
         items = [
-            (ICON_TECH_MYSQL, BLUE, "MySQL schema — CREATE TABLE DDL for ratings"),
+            (
+                ICON_TECH_MYSQL,
+                BLUE,
+                "MySQL Schema",
+                "CREATE TABLE DDL for ratings",
+            ),
             (
                 ICON_TECH_MONGODB,
                 TEAL,
-                "MongoDB schema — collection structure & indexes",
+                "MongoDB Schema",
+                "Collection structure & indexes",
             ),
-            (ICON_CHART, ORANGE, "JMeter P90 & throughput — before vs after caching"),
-            (ICON_STOPWATCH, PURPLE, "JMeter test plans (.jmx files) for both tests"),
+            (
+                ICON_CHART,
+                ORANGE,
+                "JMeter P90 & Throughput",
+                "Measurements before vs after caching",
+            ),
+            (
+                ICON_STOPWATCH,
+                PURPLE,
+                "JMeter Test Plans",
+                ".jmx files for both performance & stress tests",
+            ),
             (
                 ICON_CODE_FILE,
                 GREEN,
-                "Running app: Catalog + Ratings + Trending services",
+                "Working App",
+                "Catalog + Ratings + Trending services running",
             ),
-            (ICON_BOOK, RED, "Final report with answers to discussion questions"),
+            (
+                ICON_BOOK,
+                RED,
+                "Final Report",
+                "Answers to all discussion questions",
+            ),
         ]
 
+        GLOW = {4}
+        glow_map = {}
+        color_map = {}
         rows = VGroup()
-        for icon_path, color, desc in items:
-            ic = make_icon(icon_path, color=color, height=0.25)
-            check = make_icon(ICON_CHECK, color=GREEN, height=0.2)
-            d = make_label(desc, font_size=13, color=GREY_A)
-            row_content = VGroup(check, ic, d).arrange(RIGHT, buff=0.12)
-            box = RoundedRectangle(
-                corner_radius=0.08,
-                width=10.5,
-                height=0.5,
-                fill_color=DARK_BG,
-                fill_opacity=0.9,
-                stroke_color=color,
-                stroke_width=1,
-            )
-            row_content.move_to(box.get_center())
-            rows.add(VGroup(box, row_content))
+        for j, (icon_path, color, title, desc) in enumerate(items):
+            result = self._icon_row_card(icon_path, color, title, desc, glow=(j in GLOW))
+            if isinstance(result, tuple):
+                card, g = result
+                rows.add(card)
+                glow_map[j] = g
+                color_map[j] = color
+            else:
+                rows.add(result)
 
-        rows.arrange(DOWN, buff=0.1).next_to(header, DOWN, buff=0.4)
+        rows.arrange(DOWN, buff=0.1, aligned_edge=LEFT).next_to(header, DOWN, buff=0.4)
+        for idx, g in glow_map.items():
+            g.move_to(rows[idx])
 
         for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.4)
+            if i in glow_map:
+                self._play_glow_row(row, glow_map[i], color_map[i])
             self.wait(0.5)
             if i < len(rows) - 1:
                 self._next_slide(phase=True)

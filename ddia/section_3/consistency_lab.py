@@ -12,11 +12,9 @@ from manim import (
     VGroup,
     RoundedRectangle,
     Rectangle,
-    Arrow,
     Circle,
     FadeIn,
     FadeOut,
-    GrowArrow,
     AnimationGroup,
     AddTextLetterByLetter,
     Circumscribe,
@@ -26,14 +24,11 @@ from manim import (
     DOWN,
     LEFT,
     RIGHT,
-    BOLD,
     WHITE,
     GREY_A,
     GREY_B,
     BLUE,
-    BLUE_B,
     GREEN,
-    GREEN_B,
     RED,
     ORANGE,
     TEAL,
@@ -46,12 +41,11 @@ try:
 except Exception:
     BaseSlide = Scene
 
-from libs.slide_controls import slide_checkpoint
+from libs.slide_style import SlideStyleMixin
 from libs.ddia_components import (
     DARK_BG,
     ICON_DATABASE,
     ICON_SERVER,
-    ICON_CHECK,
     ICON_DANGER,
     ICON_LOCK,
     ICON_SHIELD,
@@ -62,7 +56,6 @@ from libs.ddia_components import (
     ICON_GRAPH,
     make_label,
     make_icon,
-    make_icon_card,
     make_code_text,
     create_rect_glow,
 )
@@ -109,40 +102,8 @@ CQL_T2C = {
 }
 
 
-class ConsistencyLab(BaseSlide):
-    slide_stop_mode = "phase"
-    max_duration_before_split_reverse = 4.0
-
-    def _next_slide(
-        self,
-        phase=False,
-        enabled=True,
-        notes="",
-        loop=False,
-        auto_next=False,
-        playback_rate=1.0,
-        reversed_playback_rate=1.0,
-        dedent_notes=True,
-        skip_animations=False,
-        direction="horizontal",
-        **kwargs,
-    ):
-        slide_checkpoint(
-            self,
-            phase=phase,
-            enabled=enabled,
-            slide_stop_mode=self.slide_stop_mode,
-            loop=loop,
-            auto_next=auto_next,
-            playback_rate=playback_rate,
-            reversed_playback_rate=reversed_playback_rate,
-            notes=notes,
-            dedent_notes=dedent_notes,
-            skip_animations=skip_animations,
-            direction=direction,
-            **kwargs,
-        )
-
+class ConsistencyLab(SlideStyleMixin, BaseSlide):
+    # ─── Style Helpers (from project_weather_stations.py) ────────────
     def construct(self):
         self.scene_title()
         self.scene_lab_overview()
@@ -217,8 +178,7 @@ class ConsistencyLab(BaseSlide):
 
     # ─── Scene 2: Lab Overview ────────────────────────────────────────
     def scene_lab_overview(self):
-        header = make_label("What Will You Do?", font_size=30, color=GREEN)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("What Will You Do?", color=GREEN)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.8)
 
@@ -238,7 +198,7 @@ class ConsistencyLab(BaseSlide):
             (
                 ICON_SHIELD,
                 ORANGE,
-                "C) RF = 3",
+                "C) RF = 3 — Tunable consistency",
                 "Alter to RF=3 — repeat node-down experiments",
             ),
             (
@@ -254,28 +214,27 @@ class ConsistencyLab(BaseSlide):
                 "Explain your results and answer discussion questions",
             ),
         ]
-
+        GLOW = {2}
         rows = VGroup()
-        for icon_path, color, title, desc in steps:
-            ic = make_icon(icon_path, color=color, height=0.28)
-            t = make_label(title, font_size=13, color=color)
-            d = make_label(desc, font_size=11, color=GREY_A)
-            content = VGroup(ic, t, d).arrange(RIGHT, buff=0.18)
-            box = RoundedRectangle(
-                corner_radius=0.1,
-                width=content.width + 0.5,
-                height=content.height + 0.25,
-                fill_color=DARK_BG,
-                fill_opacity=0.9,
-                stroke_color=color,
-                stroke_width=1.1,
-            )
-            content.move_to(box.get_center())
-            rows.add(VGroup(box, content))
+        glow_map = {}
+        color_map = {}
+        for j, (icon_path, color, title, desc) in enumerate(steps):
+            result = self._icon_row_card(icon_path, color, title, desc, glow=(j in GLOW))
+            if isinstance(result, tuple):
+                card, g = result
+                rows.add(card)
+                glow_map[j] = g
+                color_map[j] = color
+            else:
+                rows.add(result)
+        rows.arrange(DOWN, buff=0.1, aligned_edge=LEFT).next_to(header, DOWN, buff=0.4)
+        for idx, g in glow_map.items():
+            g.move_to(rows[idx])
 
-        rows.arrange(DOWN, buff=0.1).next_to(header, DOWN, buff=0.4)
         for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.5)
+            if i in glow_map:
+                self._play_glow_row(row, glow_map[i], color_map[i])
             self.wait(0.55)
             if i < len(rows) - 1:
                 self._next_slide(phase=True)
@@ -293,8 +252,7 @@ class ConsistencyLab(BaseSlide):
 
     # ─── Scene 3: Cluster Architecture ───────────────────────────────
     def scene_cluster_architecture(self):
-        header = make_label("3-Node Cassandra Ring", font_size=30, color=TEAL)
-        header.to_edge(UP, buff=0.4)
+        header = self._section_header("3-Node Cassandra Ring", color=TEAL)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.5)
 
@@ -322,6 +280,8 @@ class ConsistencyLab(BaseSlide):
             card.move_to(pos)
             node_cards.append(card)
             self.play(FadeIn(card, shift=(ring_center - pos) * 0.15), run_time=0.5)
+            if i == 0:
+                self.play(Indicate(card, color=color, scale_factor=1.08, run_time=0.9))
             self.wait(0.2)
             if i < len(angles) - 1:
                 self._next_slide(phase=True)
@@ -339,8 +299,7 @@ class ConsistencyLab(BaseSlide):
 
     # ─── Scene 4: Cassandra Data Model ───────────────────────────────
     def scene_data_model(self):
-        header = make_label("Primary Key Anatomy", font_size=30, color=BLUE)
-        header.to_edge(UP, buff=0.4)
+        header = self._section_header("Primary Key Anatomy", color=BLUE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.5)
 
@@ -420,8 +379,7 @@ class ConsistencyLab(BaseSlide):
 
     # ─── Scene 5: Consistency Levels ─────────────────────────────────
     def scene_consistency_levels(self):
-        header = make_label("Cassandra Consistency Levels", font_size=28, color=TEAL)
-        header.to_edge(UP, buff=0.4)
+        header = self._section_header("Cassandra Consistency Levels", color=TEAL)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.5)
 
@@ -501,8 +459,7 @@ class ConsistencyLab(BaseSlide):
 
     # ─── Scene 6: Quorum Formula ──────────────────────────────────────
     def scene_quorum_formula(self):
-        header = make_label("The Quorum Formula", font_size=30, color=ORANGE)
-        header.to_edge(UP, buff=0.4)
+        header = self._section_header("The Quorum Formula", color=ORANGE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.5)
 
@@ -519,6 +476,14 @@ class ConsistencyLab(BaseSlide):
                 *[FadeIn(m, shift=DOWN * 0.15) for m in formula],
                 lag_ratio=0.15,
             )
+        )
+        formula_glow = create_rect_glow(formula, color=YELLOW, max_opacity=0.28, spread=0.45)
+        self.add(formula_glow)
+        formula_glow.set_opacity(0)
+        self.bring_to_back(formula_glow)
+        self.play(
+            Indicate(formula, color=YELLOW, scale_factor=1.08, run_time=0.9),
+            FadeIn(formula_glow, run_time=1.0),
         )
         self.wait(0.5)
 
@@ -581,8 +546,7 @@ class ConsistencyLab(BaseSlide):
 
     # ─── Scene 7: RF = 1 Experiments ─────────────────────────────────
     def scene_rf1_experiment(self):
-        header = make_label("RF = 1  —  Single Copy", font_size=28, color=GREY_B)
-        header.to_edge(UP, buff=0.4)
+        header = self._section_header("RF = 1  —  Single Copy", color=GREY_B)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.5)
 
@@ -641,8 +605,7 @@ class ConsistencyLab(BaseSlide):
 
     # ─── Scene 8: RF = 2 Experiments ─────────────────────────────────
     def scene_rf2_experiment(self):
-        header = make_label("RF = 2  —  Two Copies", font_size=28, color=ORANGE)
-        header.to_edge(UP, buff=0.4)
+        header = self._section_header("RF = 2  —  Two Copies", color=ORANGE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.5)
 
@@ -699,8 +662,7 @@ class ConsistencyLab(BaseSlide):
 
     # ─── Scene 9: RF = 3 Experiments ─────────────────────────────────
     def scene_rf3_experiment(self):
-        header = make_label("RF = 3  —  Full Replication", font_size=28, color=GREEN)
-        header.to_edge(UP, buff=0.4)
+        header = self._section_header("RF = 3  —  Full Replication", color=GREEN)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.5)
 
@@ -728,7 +690,14 @@ class ConsistencyLab(BaseSlide):
         )
         r1.next_to(qnote, DOWN, buff=0.3)
         self.play(FadeIn(r1))
-        self.play(Indicate(r1, color=GREEN, run_time=1.2))
+        r1_glow = create_rect_glow(r1, color=GREEN, max_opacity=0.3, spread=0.4)
+        self.add(r1_glow)
+        r1_glow.set_opacity(0)
+        self.bring_to_back(r1_glow)
+        self.play(
+            Indicate(r1, color=GREEN, scale_factor=1.06, run_time=1.0),
+            FadeIn(r1_glow, run_time=1.0),
+        )
         self.wait(1.0)
 
         # Down 2nd node → FAIL
@@ -756,8 +725,7 @@ class ConsistencyLab(BaseSlide):
 
     # ─── Scene 10: Tips & Tricks ──────────────────────────────────────
     def scene_tips(self):
-        header = make_label("Cassandra Tips & Tricks", font_size=28, color=ORANGE)
-        header.to_edge(UP, buff=0.4)
+        header = self._section_header("Cassandra Tips & Tricks", color=ORANGE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.5)
 
@@ -799,34 +767,30 @@ class ConsistencyLab(BaseSlide):
                 "New replicas may be empty without an explicit repair pass",
             ),
         ]
-
+        GLOW = {4}
         rows = VGroup()
-        for icon_path, color, title, desc in tips:
-            ic = make_icon(icon_path, color=color, height=0.27)
-            t = make_label(title, font_size=12, color=color)
-            d = make_label(desc, font_size=10, color=GREY_A)
-            content = VGroup(ic, t, d).arrange(RIGHT, buff=0.15)
-            box = RoundedRectangle(
-                corner_radius=0.08,
-                width=content.width + 0.5,
-                height=content.height + 0.25,
-                fill_color=DARK_BG,
-                fill_opacity=0.9,
-                stroke_color=color,
-                stroke_width=1.0,
-            )
-            content.move_to(box.get_center())
-            rows.add(VGroup(box, content))
+        glow_map = {}
+        color_map = {}
+        for j, (icon_path, color, title, desc) in enumerate(tips):
+            result = self._icon_row_card(icon_path, color, title, desc, glow=(j in GLOW))
+            if isinstance(result, tuple):
+                card, g = result
+                rows.add(card)
+                glow_map[j] = g
+                color_map[j] = color
+            else:
+                rows.add(result)
+        rows.arrange(DOWN, buff=0.1, aligned_edge=LEFT).next_to(header, DOWN, buff=0.35)
+        for idx, g in glow_map.items():
+            g.move_to(rows[idx])
 
-        rows.arrange(DOWN, buff=0.1).next_to(header, DOWN, buff=0.35)
         for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.2), run_time=0.4)
+            if i in glow_map:
+                self._play_glow_row(row, glow_map[i], color_map[i])
             self.wait(0.45)
             if i < len(rows) - 1:
                 self._next_slide(phase=True)
-
-        # Highlight the "Avoid ALLOW FILTERING" warning
-        self.play(Indicate(rows[4], color=RED, run_time=1.5))
 
         self.wait(2)
         self._next_slide()

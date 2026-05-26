@@ -9,7 +9,7 @@ try:
     from manim_slides import Slide as BaseSlide
 except Exception:
     BaseSlide = Scene
-from libs.slide_controls import slide_checkpoint
+from libs.slide_style import SlideStyleMixin
 from libs.ddia_components import (
     DARK_BG, CARD_BG,
     ICON_DATABASE, ICON_SERVER, ICON_SEARCH, ICON_CHECK,
@@ -24,40 +24,8 @@ from libs.ddia_components import (
 config.background_color = "#0D1117"
 
 
-class OlapLab(BaseSlide):
-    slide_stop_mode = "phase"
-    max_duration_before_split_reverse = 4.0
-
-    def _next_slide(
-        self,
-        phase=False,
-        enabled=True,
-        notes="",
-        loop=False,
-        auto_next=False,
-        playback_rate=1.0,
-        reversed_playback_rate=1.0,
-        dedent_notes=True,
-        skip_animations=False,
-        direction="horizontal",
-        **kwargs,
-    ):
-        slide_checkpoint(
-            self,
-            phase=phase,
-            enabled=enabled,
-            slide_stop_mode=self.slide_stop_mode,
-            loop=loop,
-            auto_next=auto_next,
-            playback_rate=playback_rate,
-            reversed_playback_rate=reversed_playback_rate,
-            notes=notes,
-            dedent_notes=dedent_notes,
-            skip_animations=skip_animations,
-            direction=direction,
-            **kwargs,
-        )
-
+class OlapLab(SlideStyleMixin, BaseSlide):
+    # ─── Helpers ──────────────────────────────────────────────────────
     def construct(self):
         self.scene_title()
         self.scene_lab_overview()
@@ -93,8 +61,7 @@ class OlapLab(BaseSlide):
 
     # ─── Scene 2: Lab Overview ────────────────────────────────────────
     def scene_lab_overview(self):
-        header = make_label("What Will You Do?", font_size=30, color=GREEN)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("What Will You Do?", color=GREEN)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -109,25 +76,28 @@ class OlapLab(BaseSlide):
              "Run the same query on MySQL and Spark, compare 8 runs"),
         ]
 
+        GLOW = {1}
         rows = VGroup()
-        for icon_path, color, title, desc in steps:
-            icon = make_icon(icon_path, color=color, height=0.3)
-            t = make_label(title, font_size=15, color=color, weight=BOLD)
-            d = make_label(desc, font_size=11, color=GREY_A)
-            row_content = VGroup(icon, t, d).arrange(RIGHT, buff=0.15)
-            box = RoundedRectangle(
-                corner_radius=0.1, width=10.5, height=0.65,
-                fill_color=DARK_BG, fill_opacity=0.9,
-                stroke_color=color, stroke_width=1.2,
-            )
-            row_content.move_to(box.get_center())
-            glow = create_rect_glow(box, color=color)
-            rows.add(VGroup(glow, box, row_content))
+        glow_map = {}
+        color_map = {}
+        for j, (icon_path, color, title, desc) in enumerate(steps):
+            result = self._icon_row_card(icon_path, color, title, desc, glow=(j in GLOW))
+            if isinstance(result, tuple):
+                card, g = result
+                rows.add(card)
+                glow_map[j] = g
+                color_map[j] = color
+            else:
+                rows.add(result)
 
-        rows.arrange(DOWN, buff=0.15).next_to(header, DOWN, buff=0.5)
+        rows.arrange(DOWN, buff=0.15, aligned_edge=LEFT).next_to(header, DOWN, buff=0.5)
+        for idx, g in glow_map.items():
+            g.move_to(rows[idx])
 
         for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.5)
+            if i in glow_map:
+                self._play_glow_row(row, glow_map[i], color_map[i])
             self.wait(0.8)
             if i < len(rows) - 1:
                 self._next_slide(phase=True)
@@ -147,8 +117,7 @@ class OlapLab(BaseSlide):
 
     # ─── Scene 3: OLTP vs OLAP ───────────────────────────────────────
     def scene_oltp_vs_olap(self):
-        header = make_label("OLTP vs OLAP", font_size=30, color=ORANGE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("OLTP vs OLAP", color=ORANGE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -195,6 +164,7 @@ class OlapLab(BaseSlide):
         self.play(FadeIn(left_group, shift=RIGHT * 0.3))
         self.wait(1.5)
         self.play(FadeIn(right_group, shift=LEFT * 0.3))
+        self.play(Indicate(right_group, color=BLUE, scale_factor=1.04, run_time=0.7))
         self.wait(2)
 
         # VS label
@@ -216,8 +186,7 @@ class OlapLab(BaseSlide):
 
     # ─── Scene 4: TPC-H Benchmark Data ───────────────────────────────
     def scene_tpch_data(self):
-        header = make_label("TPC-H Benchmark Data", font_size=30, color=PURPLE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("TPC-H Benchmark Data", color=PURPLE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -272,8 +241,7 @@ class OlapLab(BaseSlide):
 
     # ─── Scene 5: What is ETL? ────────────────────────────────────────
     def scene_what_is_etl(self):
-        header = make_label("ETL: Extract, Transform, Load", font_size=30, color=GREEN)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("ETL: Extract, Transform, Load", color=GREEN)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -347,8 +315,7 @@ class OlapLab(BaseSlide):
 
     # ─── Scene 6: Apache NiFi ─────────────────────────────────────────
     def scene_apache_nifi(self):
-        header = make_label("Apache NiFi", font_size=30, color=ORANGE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Apache NiFi", color=ORANGE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -360,6 +327,7 @@ class OlapLab(BaseSlide):
         )
         quote.next_to(header, DOWN, buff=0.5)
         self.play(FadeIn(quote, shift=UP * 0.2))
+        self.play(Indicate(quote, color=YELLOW, scale_factor=1.05, run_time=0.7))
         self.wait(2)
 
         # Concept: Computational Graph with 3 processor types
@@ -437,8 +405,7 @@ class OlapLab(BaseSlide):
 
     # ─── Scene 7: NiFi Pipeline Detail ────────────────────────────────
     def scene_nifi_pipeline(self):
-        header = make_label("NiFi ETL Pipeline", font_size=30, color=BLUE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("NiFi ETL Pipeline", color=BLUE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -529,8 +496,7 @@ class OlapLab(BaseSlide):
 
     # ─── Scene 8: Parquet File Format ─────────────────────────────────
     def scene_parquet(self):
-        header = make_label("Apache Parquet", font_size=30, color=GREEN)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Apache Parquet", color=GREEN)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -801,8 +767,7 @@ class OlapLab(BaseSlide):
         self.wait(0.3)
 
         # ── Part C: How Spark Optimizes with Parquet ──────────────────
-        header2 = make_label("Apache Parquet", font_size=30, color=GREEN)
-        header2.to_edge(UP, buff=0.5)
+        header2 = self._section_header("Apache Parquet", color=GREEN)
         section_c = make_label("How Spark Optimizes with Parquet", font_size=18, color=YELLOW)
         section_c.next_to(header2, DOWN, buff=0.3)
         self.play(FadeIn(header2), FadeIn(section_c))
@@ -863,8 +828,7 @@ class OlapLab(BaseSlide):
 
     # ─── Scene 9: Star Schema ─────────────────────────────────────────
     def scene_star_schema(self):
-        header = make_label("Star Schema Design", font_size=30, color=YELLOW)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Star Schema Design", color=YELLOW)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -892,6 +856,7 @@ class OlapLab(BaseSlide):
         fact = VGroup(fact_glow, fact_rect, fact_content).move_to(DOWN * 0.5)
 
         self.play(FadeIn(fact, shift=UP * 0.3))
+        self.play(Indicate(fact, color=ORANGE, scale_factor=1.06, run_time=0.7))
         self.wait(1.5)
 
         # Dimension tables — star positions around fact
@@ -954,8 +919,7 @@ class OlapLab(BaseSlide):
 
     # ─── Scene 10: The SQL Query ──────────────────────────────────────
     def scene_sql_query(self):
-        header = make_label("The 6-Table Query", font_size=30, color=RED)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("The 6-Table Query", color=RED)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -1026,8 +990,7 @@ class OlapLab(BaseSlide):
 
     # ─── Scene 11: Deliverables ───────────────────────────────────────
     def scene_deliverables(self):
-        header = make_label("Deliverables", font_size=30, color=ORANGE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Deliverables", color=ORANGE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -1057,8 +1020,12 @@ class OlapLab(BaseSlide):
 
         rows.arrange(DOWN, buff=0.1).next_to(header, DOWN, buff=0.4)
 
+        GLOW = {2, 3}
         for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.4)
+            if i in GLOW:
+                color = items[i][1]
+                self.play(Indicate(row, color=color, scale_factor=1.04, run_time=0.6))
             self.wait(0.5)
             if i < len(rows) - 1:
                 self._next_slide(phase=True)

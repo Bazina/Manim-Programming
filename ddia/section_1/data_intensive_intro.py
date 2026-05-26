@@ -26,7 +26,6 @@ from manim import (
     Scene,
     VGroup,
     config,
-    BOLD,
     GREY_A,
     GREY_B,
     PURPLE_B,
@@ -42,7 +41,7 @@ try:
 except Exception:
     BaseSlide = Scene
 
-from libs.slide_controls import slide_checkpoint
+from libs.slide_style import SlideStyleMixin
 from libs.ddia_components import (
     DARK_BG,
     ICON_CHECK,
@@ -54,6 +53,7 @@ from libs.ddia_components import (
     ICON_STOPWATCH,
     ICON_STREAM,
     ICON_TUNING,
+    create_rect_glow,
     make_card,
     make_icon,
     make_icon_card,
@@ -63,40 +63,8 @@ from libs.ddia_components import (
 config.background_color = "#0D1117"
 
 
-class DataIntensiveIntro(BaseSlide):
-    slide_stop_mode = "phase"
-    max_duration_before_split_reverse = 4.0
-
-    def _next_slide(
-        self,
-        phase=False,
-        enabled=True,
-        notes="",
-        loop=False,
-        auto_next=False,
-        playback_rate=1.0,
-        reversed_playback_rate=1.0,
-        dedent_notes=True,
-        skip_animations=False,
-        direction="horizontal",
-        **kwargs,
-    ):
-        slide_checkpoint(
-            self,
-            phase=phase,
-            enabled=enabled,
-            slide_stop_mode=self.slide_stop_mode,
-            loop=loop,
-            auto_next=auto_next,
-            playback_rate=playback_rate,
-            reversed_playback_rate=reversed_playback_rate,
-            notes=notes,
-            dedent_notes=dedent_notes,
-            skip_animations=skip_animations,
-            direction=direction,
-            **kwargs,
-        )
-
+class DataIntensiveIntro(SlideStyleMixin, BaseSlide):
+    # ─── Helpers ──────────────────────────────────────────────────────
     def construct(self):
         self.scene_title()
         self.scene_comparison()
@@ -126,8 +94,7 @@ class DataIntensiveIntro(BaseSlide):
 
     # ─── Scene 2: Data-Intensive vs Compute-Intensive ─────────────────
     def scene_comparison(self):
-        header = make_label("Compute-Intensive vs Data-Intensive", font_size=30, color=ORANGE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Compute-Intensive vs Data-Intensive", color=ORANGE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -171,6 +138,13 @@ class DataIntensiveIntro(BaseSlide):
         self.play(FadeIn(right_group, shift=LEFT * 0.3))
         self.wait(2)
 
+        # Emphasize data-intensive side with glow bloom
+        right_glow = create_rect_glow(right_box, color=BLUE, max_opacity=0.28, spread=0.4)
+        self.add(right_glow)
+        right_glow.set_opacity(0)
+        self.bring_to_back(right_glow)
+        self._play_glow_row(right_group, right_glow, BLUE)
+
         # Emphasize data-intensive bullets one by one
         for i, bullet in enumerate(right_bullets):
             self.play(Indicate(bullet, color=YELLOW, scale_factor=1.3))
@@ -195,8 +169,7 @@ class DataIntensiveIntro(BaseSlide):
 
     # ─── Scene 3: Data Challenges — visual diagrams ───────────────────
     def scene_data_challenges(self):
-        header = make_label("Why Does This Matter?", font_size=30, color=YELLOW)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Why Does This Matter?", color=YELLOW)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -385,8 +358,7 @@ class DataIntensiveIntro(BaseSlide):
 
     # ─── Scene 4: The 5 Building Blocks ──────────────────────────────
     def scene_building_blocks(self):
-        header = make_label("5 Standard Building Blocks", font_size=30, color=GREEN)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("5 Standard Building Blocks", color=GREEN)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -414,7 +386,7 @@ class DataIntensiveIntro(BaseSlide):
         cards.arrange(RIGHT, buff=0.3).move_to(ORIGIN + UP * 0.2)
 
         # Scale down if too wide
-        if cards.get_width() > 12:
+        if cards.width > 12:
             cards.scale_to_fit_width(12)
 
         # Stagger fade in
@@ -441,6 +413,13 @@ class DataIntensiveIntro(BaseSlide):
         )
         self.wait(3)
 
+        # Emphasize Databases (first block) with glow bloom
+        db_glow = create_rect_glow(cards[0], color=BLUE, max_opacity=0.28, spread=0.35)
+        self.add(db_glow)
+        db_glow.set_opacity(0)
+        self.bring_to_back(db_glow)
+        self._play_glow_row(cards[0], db_glow, BLUE)
+
         # Highlight text
         bottom_text = make_label(
             "Applications compose these blocks to serve different needs",
@@ -455,8 +434,7 @@ class DataIntensiveIntro(BaseSlide):
 
     # ─── Scene 5: Architecture Diagram ────────────────────────────────
     def scene_architecture(self):
-        header = make_label("How They Fit Together", font_size=30, color=PURPLE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("How They Fit Together", color=PURPLE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -477,6 +455,13 @@ class DataIntensiveIntro(BaseSlide):
         self.wait(0.5)
         self.play(FadeIn(app_box, shift=RIGHT * 0.3))
         self.wait(0.5)
+
+        # Emphasize central application box with glow bloom
+        app_glow = create_rect_glow(app_rect, color=PURPLE, max_opacity=0.30, spread=0.4)
+        self.add(app_glow)
+        app_glow.set_opacity(0)
+        self.bring_to_back(app_glow)
+        self._play_glow_row(app_box, app_glow, PURPLE)
 
         # Arrow: Client → Application
         client_arrow = Arrow(
@@ -574,8 +559,7 @@ class DataIntensiveIntro(BaseSlide):
 
     # ─── Scene 6: Tricky Design Questions ─────────────────────────────
     def scene_design_questions(self):
-        header = make_label("The Hard Questions", font_size=32, color=RED)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("The Hard Questions", color=RED)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -590,25 +574,28 @@ class DataIntensiveIntro(BaseSlide):
              "What does a good API look like?"),
         ]
 
+        GLOW = {0}
         q_groups = VGroup()
-        for icon_path, color, title, desc in questions:
-            icon = make_icon(icon_path, color=color, height=0.4)
-            title_label = make_label(title, font_size=18, color=color, weight=BOLD)
-            desc_label = make_label(desc, font_size=14, color=GREY_A)
-
-            row_content = VGroup(icon, title_label, desc_label).arrange(RIGHT, buff=0.2)
-            row_box = RoundedRectangle(
-                corner_radius=0.12, width=10, height=0.7,
-                fill_color=DARK_BG, fill_opacity=0.9, stroke_color=color, stroke_width=1.5,
-            )
-            row_content.move_to(row_box.get_center())
-            q_groups.add(VGroup(row_box, row_content))
-
+        glow_map = {}
+        color_map = {}
+        for j, (icon_path, color, title, desc) in enumerate(questions):
+            result = self._icon_row_card(icon_path, color, title, desc, glow=(j in GLOW))
+            if isinstance(result, tuple):
+                card, g = result
+                q_groups.add(card)
+                glow_map[j] = g
+                color_map[j] = color
+            else:
+                q_groups.add(result)
         q_groups.arrange(DOWN, buff=0.2).move_to(ORIGIN + DOWN * 0.2)
+        for idx, g in glow_map.items():
+            g.move_to(q_groups[idx])
 
         # Stagger fade in
         for i, qg in enumerate(q_groups):
             self.play(FadeIn(qg, shift=LEFT * 0.3), run_time=0.6)
+            if i in glow_map:
+                self._play_glow_row(qg, glow_map[i], color_map[i])
             self.wait(0.5)
             if i < len(q_groups) - 1:
                 self._next_slide(phase=True)

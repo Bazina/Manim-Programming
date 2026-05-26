@@ -51,49 +51,18 @@ from libs.ddia_components import (
     ICON_SETTINGS,
     ICON_STOPWATCH,
     ICON_USER,
+    create_rect_glow,
     make_icon,
     make_icon_card,
     make_label,
 )
-from libs.slide_controls import slide_checkpoint
+from libs.slide_style import SlideStyleMixin
 
 config.background_color = "#0D1117"
 
 
-class Scalability(BaseSlide):
-    slide_stop_mode = "phase"
-    max_duration_before_split_reverse = 4.0
-
-    def _next_slide(
-        self,
-        phase=False,
-        enabled=True,
-        notes="",
-        loop=False,
-        auto_next=False,
-        playback_rate=1.0,
-        reversed_playback_rate=1.0,
-        dedent_notes=True,
-        skip_animations=False,
-        direction="horizontal",
-        **kwargs,
-    ):
-        slide_checkpoint(
-            self,
-            phase=phase,
-            enabled=enabled,
-            slide_stop_mode=self.slide_stop_mode,
-            loop=loop,
-            auto_next=auto_next,
-            playback_rate=playback_rate,
-            reversed_playback_rate=reversed_playback_rate,
-            notes=notes,
-            dedent_notes=dedent_notes,
-            skip_animations=skip_animations,
-            direction=direction,
-            **kwargs,
-        )
-
+class Scalability(SlideStyleMixin, BaseSlide):
+    # ─── Helpers ──────────────────────────────────────────────────────
     def construct(self):
         self.scene_title()
         self.scene_describing_load()
@@ -126,8 +95,7 @@ class Scalability(BaseSlide):
 
     # ─── Scene 2: Describing Load ─────────────────────────────────────
     def scene_describing_load(self):
-        header = make_label("Describing Load", font_size=30, color=BLUE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Describing Load", color=BLUE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -143,41 +111,33 @@ class Scalability(BaseSlide):
         # Load parameter examples as icon cards
         params = [
             (ICON_LIGHTNING, ORANGE, "Requests/sec", "Web server throughput"),
-            (ICON_DATABASE, BLUE, "Read/Write\nRatio", "DB workload shape"),
+            (ICON_DATABASE, BLUE, "Read/Write Ratio", "DB workload shape"),
             (ICON_USER, GREEN, "Active Users", "Concurrent sessions"),
-            (ICON_STOPWATCH, PURPLE, "Cache Hit\nRate", "% served from cache"),
+            (ICON_STOPWATCH, PURPLE, "Cache Hit Rate", "% served from cache"),
         ]
 
+        GLOW = {0}
         cards = VGroup()
-        for icon_path, color, title, desc in params:
-            ic = make_icon(icon_path, color=color, height=0.35)
-            t = make_label(title, font_size=13, color=color, weight=BOLD)
-            d = make_label(desc, font_size=10, color=GREY_A)
-            content = VGroup(ic, t, d).arrange(DOWN, buff=0.1)
-            box = RoundedRectangle(
-                corner_radius=0.12,
-                width=2.6,
-                height=1.7,
-                fill_color=DARK_BG,
-                fill_opacity=0.9,
-                stroke_color=color,
-                stroke_width=1.5,
-            )
-            content.move_to(box.get_center())
-            cards.add(VGroup(box, content))
+        glow_map = {}
+        color_map = {}
+        for j, (icon_path, color, title, desc) in enumerate(params):
+            result = self._icon_row_card(icon_path, color, title, desc, glow=(j in GLOW))
+            if isinstance(result, tuple):
+                card, g = result
+                cards.add(card)
+                glow_map[j] = g
+                color_map[j] = color
+            else:
+                cards.add(result)
 
-        cards.arrange(RIGHT, buff=0.25).next_to(quote, DOWN, buff=0.5)
-
-        self.play(
-            AnimationGroup(
-                *[FadeIn(c, shift=UP * 0.3) for c in cards],
-                lag_ratio=0.15,
-            )
-        )
-        self.wait(2)
+        cards.arrange(DOWN, buff=0.18, aligned_edge=LEFT).next_to(quote, DOWN, buff=0.45)
+        for idx, g in glow_map.items():
+            g.move_to(cards[idx])
 
         for i, c in enumerate(cards):
-            self.play(Indicate(c, color=YELLOW, scale_factor=1.05), run_time=0.4)
+            self.play(FadeIn(c, shift=UP * 0.3), run_time=0.4)
+            if i in glow_map:
+                self._play_glow_row(c, glow_map[i], color_map[i])
             self.wait(0.3)
             if i < len(cards) - 1:
                 self._next_slide(phase=True)
@@ -197,8 +157,7 @@ class Scalability(BaseSlide):
 
     # ─── Scene 3: Describing Performance ──────────────────────────────
     def scene_describing_performance(self):
-        header = make_label("Describing Performance", font_size=30, color=GREEN)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Describing Performance", color=GREEN)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -276,8 +235,7 @@ class Scalability(BaseSlide):
 
     # ─── Scene 4: Percentiles ─────────────────────────────────────────
     def scene_percentiles(self):
-        header = make_label("Why Percentiles Matter", font_size=30, color=PURPLE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Why Percentiles Matter", color=PURPLE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -357,34 +315,22 @@ class Scalability(BaseSlide):
         self.play(Create(p99_line), FadeIn(p99_label))
         self.wait(2)
 
-        # Tail latency callout
-        tail_box = RoundedRectangle(
-            corner_radius=0.1,
-            width=4.5,
-            height=0.8,
-            fill_color=DARK_BG,
-            fill_opacity=0.95,
-            stroke_color=RED,
-            stroke_width=1.5,
-        )
+        # Tail latency callout — plain text, no box
         tail_text = make_label(
             "Tail latencies (p99.9) affect\nyour most valuable customers",
-            font_size=13,
+            font_size=14,
             color=RED,
         )
-        tail_text.move_to(tail_box.get_center())
-        tail_group = VGroup(tail_box, tail_text)
-        tail_group.to_edge(DOWN, buff=0.4)
+        tail_text.to_edge(DOWN, buff=0.45)
 
-        self.play(FadeIn(tail_group, shift=UP * 0.2))
+        self.play(FadeIn(tail_text, shift=UP * 0.2))
         self.wait(3)
         self._next_slide()
         self.play(FadeOut(*self.mobjects))
 
     # ─── Scene 5: Scale Up vs Scale Out ───────────────────────────────
     def scene_scale_up_vs_out(self):
-        header = make_label("Coping with Load", font_size=30, color=ORANGE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Coping with Load", color=ORANGE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -430,6 +376,7 @@ class Scalability(BaseSlide):
                 width=1.2,
                 height=0.8,
                 font_size=8,
+                glow=False,
             )
             small_servers.add(s)
         small_servers.arrange_in_grid(rows=2, cols=3, buff=0.12)
@@ -467,8 +414,7 @@ class Scalability(BaseSlide):
 
     # ─── Scene 6: Elastic vs Manual Scaling ───────────────────────────
     def scene_elastic_vs_manual(self):
-        header = make_label("Elastic vs Manual Scaling", font_size=30, color=TEAL)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Elastic vs Manual Scaling", color=TEAL)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -522,7 +468,12 @@ class Scalability(BaseSlide):
             RIGHT * 3 + DOWN * 0.3
         )
 
+        elastic_glow = create_rect_glow(elastic_box, color=GREEN, max_opacity=0.22, spread=0.3)
+        self.add(elastic_glow)
+        self.bring_to_back(elastic_glow)
+        elastic_glow.set_opacity(0)
         self.play(FadeIn(elastic_group, shift=RIGHT * 0.3))
+        self.play(FadeIn(elastic_glow))
         self.wait(2)
         self.play(FadeIn(manual_group, shift=LEFT * 0.3))
         self.wait(2)
@@ -541,8 +492,7 @@ class Scalability(BaseSlide):
 
     # ─── Scene 7: No Magic Scaling Sauce ──────────────────────────────
     def scene_no_magic_sauce(self):
-        header = make_label("No Magic Scaling Sauce", font_size=30, color=RED)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("No Magic Scaling Sauce", color=RED)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -573,7 +523,7 @@ class Scalability(BaseSlide):
             stroke_width=1.5,
         )
         left_content.move_to(left_box.get_center())
-        left_card = VGroup(left_box, left_content).move_to(LEFT * 3 + DOWN * 0.5)
+        left_card = VGroup(left_box, left_content).move_to(LEFT * 3 + UP * 0.4)
 
         # Right: 3 req/min × 2 GB
         right_label = make_label("System B", font_size=16, color=ORANGE, weight=BOLD)
@@ -592,16 +542,16 @@ class Scalability(BaseSlide):
             stroke_width=1.5,
         )
         right_content.move_to(right_box.get_center())
-        right_card = VGroup(right_box, right_content).move_to(RIGHT * 3 + DOWN * 0.5)
+        right_card = VGroup(right_box, right_content).move_to(RIGHT * 3 + UP * 0.4)
 
         self.play(FadeIn(left_card, shift=RIGHT * 0.3))
         self.wait(1.5)
         self.play(FadeIn(right_card, shift=LEFT * 0.3))
         self.wait(2)
 
-        # Same throughput badge in center
-        same_badge = make_label("≈ Same data throughput!", font_size=16, color=GREEN)
-        same_badge.move_to(ORIGIN + DOWN * 0.5)
+        # Same throughput badge — placed BELOW the cards so it doesn't overlap them
+        same_badge = make_label("≈ Same data throughput!", font_size=18, color=GREEN)
+        same_badge.move_to(DOWN * 1.5)
         self.play(FadeIn(same_badge, scale=1.3))
         self.wait(1)
 
@@ -611,7 +561,7 @@ class Scalability(BaseSlide):
             font_size=16,
             color=RED,
         )
-        diff_label.next_to(same_badge, DOWN, buff=0.3)
+        diff_label.next_to(same_badge, DOWN, buff=0.2)
         self.play(FadeIn(diff_label, shift=UP * 0.2))
         self.wait(2)
 
@@ -622,7 +572,7 @@ class Scalability(BaseSlide):
             color=GREY_A,
         )
         takeaway.to_edge(DOWN, buff=0.4)
-        self.play(FadeIn(takeaway, shift=UP * 0.2))
+        self.play(FadeIn(takeaway, shift=UP * 0.2), Indicate(takeaway, color=YELLOW, scale_factor=1.05))
         self.wait(3)
         self._next_slide()
         self.play(FadeOut(*self.mobjects))
@@ -646,7 +596,7 @@ class Scalability(BaseSlide):
             lbl = make_label(label_text, font_size=12, color=color)
             g = VGroup(ic, lbl).arrange(DOWN, buff=0.1)
             icons_row.add(g)
-        icons_row.arrange(RIGHT, buff=1.0).move_to(ORIGIN)
+        icons_row.arrange(RIGHT, buff=1.0).move_to(UP * 0.2)
 
         self.play(
             AnimationGroup(
@@ -662,7 +612,7 @@ class Scalability(BaseSlide):
             font_size=18,
             color=GREY_A,
         )
-        takeaway.move_to(DOWN * 1.5)
+        takeaway.to_edge(DOWN, buff=0.7)
         self.play(FadeIn(takeaway, shift=UP * 0.2))
         self.wait(4)
         self._next_slide()

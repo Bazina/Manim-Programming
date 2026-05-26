@@ -8,7 +8,6 @@ from manim import (
     Scene,
     VGroup,
     RoundedRectangle,
-    Rectangle,
     Arrow,
     FadeIn,
     FadeOut,
@@ -39,7 +38,7 @@ try:
 except Exception:
     BaseSlide = Scene
 
-from libs.slide_controls import slide_checkpoint
+from libs.slide_style import SlideStyleMixin
 from libs.ddia_components import (
     DARK_BG,
     ICON_DATABASE,
@@ -48,6 +47,7 @@ from libs.ddia_components import (
     make_label,
     make_icon,
     make_code_text,
+    create_rect_glow,
 )
 
 config.background_color = "#0D1117"
@@ -82,40 +82,8 @@ MYSQL_T2C = {
 }
 
 
-class Lab2IDFollowUp(BaseSlide):
-    slide_stop_mode = "phase"
-    max_duration_before_split_reverse = 4.0
-
-    def _next_slide(
-        self,
-        phase=False,
-        enabled=True,
-        notes="",
-        loop=False,
-        auto_next=False,
-        playback_rate=1.0,
-        reversed_playback_rate=1.0,
-        dedent_notes=True,
-        skip_animations=False,
-        direction="horizontal",
-        **kwargs,
-    ):
-        slide_checkpoint(
-            self,
-            phase=phase,
-            enabled=enabled,
-            slide_stop_mode=self.slide_stop_mode,
-            loop=loop,
-            auto_next=auto_next,
-            playback_rate=playback_rate,
-            reversed_playback_rate=reversed_playback_rate,
-            notes=notes,
-            dedent_notes=dedent_notes,
-            skip_animations=skip_animations,
-            direction=direction,
-            **kwargs,
-        )
-
+class Lab2IDFollowUp(SlideStyleMixin, BaseSlide):
+    # ─── Helpers (visual style) ───────────────────────────────────────
     def construct(self):
         self.scene_title()
         self.scene_the_question()
@@ -167,38 +135,36 @@ class Lab2IDFollowUp(BaseSlide):
 
     # ─── Scene 2: The Question ────────────────────────────────────────
     def scene_the_question(self):
-        header = make_label("The Design Question", font_size=30, color=ORANGE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("The Design Question", color=ORANGE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.5)
 
         options = [
-            (ICON_DATABASE, BLUE, "Auto-Increment ID", "BIGINT AUTO_INCREMENT PK"),
-            (ICON_STRUCTURE, GREEN, "Composite PK", "PRIMARY KEY (user_id, movie_id)"),
-            (ICON_CODE, PURPLE, "UUID", "CHAR(36) PRIMARY KEY"),
+            (ICON_DATABASE, BLUE, "Auto-Increment ID", "BIGINT AUTO_INCREMENT PK — two writers, same ID risk"),
+            (ICON_STRUCTURE, GREEN, "Composite PK", "PRIMARY KEY (user_id, movie_id) — enforces uniqueness"),
+            (ICON_CODE, PURPLE, "UUID", "CHAR(36) PRIMARY KEY — client-side generation"),
         ]
+        GLOW = {1}
         cards = VGroup()
-        for icon_path, color, title, sub in options:
-            ic = make_icon(icon_path, color=color, height=0.4)
-            t = make_label(title, font_size=13, color=color)
-            s = make_label(sub, font_size=10, color=GREY_A)
-            content = VGroup(ic, t, s).arrange(DOWN, buff=0.1)
-            box = RoundedRectangle(
-                corner_radius=0.12,
-                width=3.6,
-                height=1.9,
-                fill_color=DARK_BG,
-                fill_opacity=0.9,
-                stroke_color=color,
-                stroke_width=1.5,
-            )
-            content.move_to(box.get_center())
-            cards.add(VGroup(box, content))
-
-        cards.arrange(RIGHT, buff=0.5).move_to(DOWN * 0.2)
+        glow_map = {}
+        color_map = {}
+        for j, (icon_path, color, title, sub) in enumerate(options):
+            result = self._icon_row_card(icon_path, color, title, sub, glow=(j in GLOW))
+            if isinstance(result, tuple):
+                card, g = result
+                cards.add(card)
+                glow_map[j] = g
+                color_map[j] = color
+            else:
+                cards.add(result)
+        cards.arrange(DOWN, buff=0.18, aligned_edge=LEFT).move_to(DOWN * 0.2)
+        for idx, g in glow_map.items():
+            g.move_to(cards[idx])
 
         for i, card in enumerate(cards):
             self.play(FadeIn(card, shift=UP * 0.2), run_time=0.5)
+            if i in glow_map:
+                self._play_glow_row(card, glow_map[i], color_map[i])
             self.wait(0.4)
             if i < len(cards) - 1:
                 self._next_slide(phase=True)
@@ -216,8 +182,7 @@ class Lab2IDFollowUp(BaseSlide):
 
     # ─── Scene 3: Option A — Auto-Increment ──────────────────────────
     def scene_auto_increment(self):
-        header = make_label("Option A — Auto-Increment ID", font_size=28, color=BLUE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Option A — Auto-Increment ID", color=BLUE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.5)
 
@@ -235,6 +200,12 @@ class Lab2IDFollowUp(BaseSlide):
         code = make_code_text(sql, font_size=11, t2c=MYSQL_T2C)
         code.move_to(LEFT * 2.8 + DOWN * 0.3)
         self.play(FadeIn(code, shift=UP * 0.2))
+        # Emphasize DB-managed sequence
+        glow = create_rect_glow(code.bg, color=BLUE, max_opacity=0.22, spread=0.3)
+        self.add(glow)
+        self.bring_to_back(glow)
+        glow.set_opacity(0)
+        self.play(Indicate(code, color=BLUE, scale_factor=1.04, run_time=0.7), FadeIn(glow, run_time=1.0))
         self.wait(0.8)
 
         pros = [
@@ -287,10 +258,7 @@ class Lab2IDFollowUp(BaseSlide):
 
     # ─── Scene 4: Option B — Composite PK ────────────────────────────
     def scene_composite_pk(self):
-        header = make_label(
-            "Option B — Composite Primary Key", font_size=28, color=GREEN
-        )
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Option B — Composite Primary Key", color=GREEN)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.5)
 
@@ -306,6 +274,12 @@ class Lab2IDFollowUp(BaseSlide):
         code = make_code_text(sql, font_size=11, t2c=MYSQL_T2C)
         code.move_to(LEFT * 2.8 + DOWN * 0.3)
         self.play(FadeIn(code, shift=UP * 0.2))
+        # Emphasize (tenant_id, id) composite key
+        glow = create_rect_glow(code.bg, color=GREEN, max_opacity=0.22, spread=0.3)
+        self.add(glow)
+        self.bring_to_back(glow)
+        glow.set_opacity(0)
+        self.play(Indicate(code, color=GREEN, scale_factor=1.04, run_time=0.7), FadeIn(glow, run_time=1.0))
         self.play(Circumscribe(code.bg, color=GREEN, buff=0.05, run_time=1.5))
         self.wait(0.5)
 
@@ -353,8 +327,7 @@ class Lab2IDFollowUp(BaseSlide):
 
     # ─── Scene 5: Option C — UUID ─────────────────────────────────────
     def scene_uuid(self):
-        header = make_label("Option C — UUID Primary Key", font_size=28, color=PURPLE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Option C — UUID Primary Key", color=PURPLE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.5)
 
@@ -406,6 +379,8 @@ class Lab2IDFollowUp(BaseSlide):
         ).move_to(RIGHT * 3.4 + DOWN * 0.3)
 
         self.play(FadeIn(pros_group, shift=LEFT * 0.2))
+        # Emphasize decentralized generation
+        self.play(Indicate(pros_items[0], color=PURPLE, scale_factor=1.08, run_time=0.9))
         self.wait(0.5)
         self.play(FadeIn(cons_group, shift=LEFT * 0.2))
         self.wait(3)
@@ -414,12 +389,7 @@ class Lab2IDFollowUp(BaseSlide):
 
     # ─── Scene 6: Atomicity Deep-Dive ────────────────────────────────
     def scene_atomicity(self):
-        header = make_label(
-            "Atomicity: When Does the App Know the ID?",
-            font_size=25,
-            color=ORANGE,
-        )
-        header.to_edge(UP, buff=0.4)
+        header = self._section_header("Atomicity: When Does the App Know the ID?", color=ORANGE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.5)
 
@@ -562,6 +532,15 @@ class Lab2IDFollowUp(BaseSlide):
         self.play(Wiggle(ai_gap, scale_value=1.15, run_time=1.2))
         self.wait(1.2)
         self.play(FadeIn(uuid_full, shift=RIGHT * 0.2))
+        # Emphasize INSERT...RETURNING (ID known before write → single atomic batch)
+        u_glow = create_rect_glow(u2[0], color=PURPLE, max_opacity=0.22, spread=0.3)
+        self.add(u_glow)
+        self.bring_to_back(u_glow)
+        u_glow.set_opacity(0)
+        self.play(
+            Indicate(u2, color=PURPLE, scale_factor=1.08, run_time=0.7),
+            FadeIn(u_glow, run_time=1.0),
+        )
         self.play(Indicate(uuid_known, color=GREEN, run_time=1.2))
         self.wait(1.2)
         self.play(FadeIn(comp_full, shift=RIGHT * 0.2))
@@ -581,8 +560,7 @@ class Lab2IDFollowUp(BaseSlide):
 
     # ─── Scene 7: Side-by-Side Comparison ────────────────────────────
     def scene_comparison(self):
-        header = make_label("Side-by-Side Comparison", font_size=28, color=TEAL)
-        header.to_edge(UP, buff=0.4)
+        header = self._section_header("Side-by-Side Comparison", color=TEAL)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.5)
 
@@ -703,8 +681,7 @@ class Lab2IDFollowUp(BaseSlide):
 
     # ─── Scene 8: Verdict ────────────────────────────────────────────
     def scene_verdict(self):
-        header = make_label("Recommendation", font_size=30, color=GREEN)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Recommendation", color=GREEN)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.8)
 
@@ -726,6 +703,16 @@ class Lab2IDFollowUp(BaseSlide):
         rec_card = VGroup(rec_box, rec_content)
         rec_card.move_to(UP * 0.5)
         self.play(FadeIn(rec_card, shift=DOWN * 0.2))
+        # Emphasize the final answer
+        rec_glow = create_rect_glow(rec_box, color=GREEN, max_opacity=0.25, spread=0.35)
+        rec_glow.move_to(rec_card)
+        self.add(rec_glow)
+        self.bring_to_back(rec_glow)
+        rec_glow.set_opacity(0)
+        self.play(
+            Indicate(rec_card, color=GREEN, scale_factor=1.05, run_time=0.8),
+            FadeIn(rec_glow, run_time=1.0),
+        )
         self.play(Circumscribe(rec_box, color=GREEN, buff=0.05, run_time=1.5))
         self.wait(0.5)
 

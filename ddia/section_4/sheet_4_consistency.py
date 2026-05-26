@@ -50,11 +50,12 @@ from libs.ddia_components import (
     ICON_LOCK,
     ICON_SHIELD,
     ICON_USER,
+    create_rect_glow,
     make_code_text,
     make_label,
     make_icon,
 )
-from libs.slide_controls import slide_checkpoint
+from libs.slide_style import SlideStyleMixin
 
 config.background_color = "#0D1117"
 
@@ -70,10 +71,9 @@ def _tx(t):
     return _TL_X0 + t * (_TL_X1 - _TL_X0) / _T_MAX
 
 
-class Sheet4Consistency(BaseSlide):
+class Sheet4Consistency(SlideStyleMixin, BaseSlide):
 
     # Stop policy: "off", "scene", or "phase".
-    slide_stop_mode = "phase"
     # Avoid reverse-video generation to prevent PyAV malloc failures on long renders.
     max_duration_before_split_reverse = 8.0
 
@@ -87,38 +87,7 @@ class Sheet4Consistency(BaseSlide):
         self.scene_q5_monotonic()
         self.scene_closing()
 
-    def _next_slide(
-        self,
-        phase=False,
-        enabled=True,
-        notes="",
-        loop=False,
-        auto_next=False,
-        playback_rate=1.0,
-        reversed_playback_rate=1.0,
-        dedent_notes=True,
-        skip_animations=False,
-        direction="horizontal",
-        **kwargs,
-    ):
-        slide_checkpoint(
-            self,
-            phase=phase,
-            enabled=enabled,
-            slide_stop_mode=self.slide_stop_mode,
-            loop=loop,
-            auto_next=auto_next,
-            playback_rate=playback_rate,
-            reversed_playback_rate=reversed_playback_rate,
-            notes=notes,
-            dedent_notes=dedent_notes,
-            skip_animations=skip_animations,
-            direction=direction,
-            **kwargs,
-        )
-
-    # ─── Shared helpers ───────────────────────────────────────────────
-
+    # ─── Style helpers (parity with project_weather_stations) ─────────
     def _make_op(self, text, x_center, y, color, width=1.9, height=0.40, font_size=10):
         box = RoundedRectangle(
             corner_radius=0.07,
@@ -251,8 +220,7 @@ class Sheet4Consistency(BaseSlide):
 
     # ─── Scene 2: Q1 — Isolation vs Ordering ─────────────────────────
     def scene_q1_isolation(self):
-        header = make_label("Q1: Isolation vs. Ordering Guarantees", font_size=26, color=TEAL)
-        header.to_edge(UP, buff=0.35)
+        header = self._section_header("Q1: Isolation vs. Ordering Guarantees", color=TEAL)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.4)
 
@@ -359,7 +327,12 @@ class Sheet4Consistency(BaseSlide):
         self.wait(0.5)
         self.play(FadeIn(bad_group, shift=UP * 0.15))
         self.wait(0.5)
-        self.play(Indicate(b_t2_ret, color=RED, run_time=1.2))
+        # GLOW: dirty-read anomaly — the "aha" moment of Q1
+        anomaly_glow = create_rect_glow(b_t2_ret, color=RED, max_opacity=0.28, spread=0.32)
+        self.add(anomaly_glow)
+        anomaly_glow.set_opacity(0)
+        self.bring_to_back(anomaly_glow)
+        self._play_glow_row(b_t2_ret, anomaly_glow, RED)
 
         note = make_label(
             "Isolation = transaction scope  |  Ordering = per-operation visibility across nodes",
@@ -373,8 +346,7 @@ class Sheet4Consistency(BaseSlide):
 
     # ─── Scene 3: Q2 — History H (Linearizable) ──────────────────────
     def scene_q2_linearizable(self):
-        header = make_label("Q2: Is History H Linearizable?", font_size=26, color=TEAL)
-        header.to_edge(UP, buff=0.3)
+        header = self._section_header("Q2: Is History H Linearizable?", color=TEAL)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.4)
 
@@ -430,8 +402,18 @@ class Sheet4Consistency(BaseSlide):
         db2 = self._db_marker(1.8, "R=2", DB_Y, ORANGE)
         db1 = self._db_marker(2.5, "R=1", DB_Y, BLUE)
         db_markers = [db0, db2, db1]
+        # GLOW: timestamp resolution — db1 (R=1 final state) is the "aha" of Q2
+        GLOW = {2}
+        glow_map = {2: create_rect_glow(db1, color=BLUE, max_opacity=0.28, spread=0.3)}
+        color_map = {2: BLUE}
+        for idx, g in glow_map.items():
+            self.add(g)
+            self.bring_to_back(g)
+            g.set_opacity(0)
         for i, m in enumerate(db_markers):
             self.play(FadeIn(m), run_time=0.3)
+            if i in GLOW:
+                self._play_glow_row(m, glow_map[i], color_map[i])
             if i < len(db_markers) - 1:
                 self._next_slide(phase=True)
         self.wait(0.6)
@@ -452,8 +434,7 @@ class Sheet4Consistency(BaseSlide):
 
     # ─── Scene 4: Q2 — Making H Non-Linearizable ─────────────────────
     def scene_q2_non_linear(self):
-        header = make_label("Q2: Making H Non-Linearizable", font_size=26, color=RED)
-        header.to_edge(UP, buff=0.3)
+        header = self._section_header("Q2: Making H Non-Linearizable", color=RED)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.4)
 
@@ -535,8 +516,7 @@ class Sheet4Consistency(BaseSlide):
 
     # ─── Scene 5: Q3 — FIFO Queue ────────────────────────────────────
     def scene_q3_fifo(self):
-        header = make_label("Q3: FIFO Queue — Linearizable?", font_size=26, color=ORANGE)
-        header.to_edge(UP, buff=0.4)
+        header = self._section_header("Q3: FIFO Queue — Linearizable?", color=ORANGE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.4)
 
@@ -567,8 +547,21 @@ class Sheet4Consistency(BaseSlide):
         op_rows.align_to(hist_hdr, LEFT)
 
         self.play(FadeIn(hist_hdr))
+        # GLOW: history convergence — row[5] (C deq y) is where the FIFO violation crystallizes
+        GLOW = {5}
+        glow_map = {}
+        color_map = {}
+        for i in GLOW:
+            g = create_rect_glow(op_rows[i], color=RED, max_opacity=0.28, spread=0.3)
+            self.add(g)
+            self.bring_to_back(g)
+            g.set_opacity(0)
+            glow_map[i] = g
+            color_map[i] = RED
         for i, row in enumerate(op_rows):
             self.play(FadeIn(row, shift=RIGHT * 0.1), run_time=0.28)
+            if i in glow_map:
+                self._play_glow_row(row, glow_map[i], color_map[i])
             self.wait(0.08)
             if i < len(op_rows) - 1:
                 self._next_slide(phase=True)
@@ -631,8 +624,7 @@ class Sheet4Consistency(BaseSlide):
 
     # ─── Scene 6: Q4 — CAP Trade-off ─────────────────────────────────
     def scene_q4_cap(self):
-        header = make_label("Q4: Read-After-Write & CAP", font_size=26, color=PURPLE)
-        header.to_edge(UP, buff=0.4)
+        header = self._section_header("Q4: Read-After-Write & CAP", color=PURPLE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.4)
 
@@ -721,8 +713,7 @@ class Sheet4Consistency(BaseSlide):
 
     # ─── Scene 7: Q5 — Monotonic Reads ───────────────────────────────
     def scene_q5_monotonic(self):
-        header = make_label("Q5: Monotonic Reads — Timestamp Solution", font_size=22, color=GREEN)
-        header.to_edge(UP, buff=0.3)
+        header = self._section_header("Q5: Monotonic Reads — Timestamp Solution", color=GREEN)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(0.3)
 
@@ -783,6 +774,7 @@ class Sheet4Consistency(BaseSlide):
             language="sql",
             force_code_object=True,
             glow=False,
+            with_background=False,
         )
         ins_lbl.move_to([_tx(1.2), ROW_U1 + 0.5, 0])
         a_u1_l = _arr(1.5, ROW_U1, 2.3, ROW_L, TEAL)
@@ -816,6 +808,7 @@ class Sheet4Consistency(BaseSlide):
             language="sql",
             force_code_object=True,
             glow=False,
+            with_background=False,
         )
         q1.move_to([_tx(3.9), ROW_U2 - 0.38, 0])
         a_u2_f1 = _arr(3.6, ROW_U2, 4.3, ROW_F1, PURPLE)
@@ -834,6 +827,7 @@ class Sheet4Consistency(BaseSlide):
             language="sql",
             force_code_object=True,
             glow=False,
+            with_background=False,
         )
         q2.move_to([_tx(6.0), ROW_U2 - 0.38, 0])
         a_u2_f2 = _arr(5.7, ROW_U2, 6.2, ROW_F2, PURPLE)
@@ -856,8 +850,7 @@ class Sheet4Consistency(BaseSlide):
         self.play(FadeOut(*self.mobjects))
 
         # ── Phase 2: Fix with min_timestamp ──────────────────────────
-        header2 = make_label("Q5: Monotonic Reads — Timestamp Solution", font_size=22, color=GREEN)
-        header2.to_edge(UP, buff=0.3)
+        header2 = self._section_header("Q5: Monotonic Reads — Timestamp Solution", color=GREEN)
         sub2 = make_label(
             "With min_timestamp: stale replica blocks — reads can never go backward  ✓",
             font_size=9, color=GREEN,
@@ -884,6 +877,7 @@ class Sheet4Consistency(BaseSlide):
             language="sql",
             force_code_object=True,
             glow=False,
+            with_background=False,
         )
         ins_lbl2.move_to([_tx(1.2), ROW_U1 + 0.4, 0])
         a2_u1_l = _arr(1.5, ROW_U1, 2.3, ROW_L,  TEAL)
@@ -905,6 +899,7 @@ class Sheet4Consistency(BaseSlide):
             language="sql",
             force_code_object=True,
             glow=False,
+            with_background=False,
         )
         q2_1.move_to([_tx(3.9), ROW_U2 - 0.38, 0])
         a2_u2_f1 = _arr(3.6, ROW_U2, 4.3, ROW_F1, PURPLE)
@@ -921,6 +916,7 @@ class Sheet4Consistency(BaseSlide):
             language="sql",
             force_code_object=True,
             glow=False,
+            with_background=False,
         )
         q2_2.move_to([_tx(5.9), ROW_U2 - 0.38, 0])
         a2_u2_f2 = _arr(5.7, ROW_U2, 6.2, ROW_F2, PURPLE)
@@ -949,7 +945,7 @@ class Sheet4Consistency(BaseSlide):
         badge2 = self._verdict_badge(
             "Monotonic Reads guaranteed — T never goes backward  ✓", GREEN, width=7.8,
         )
-        badge2.to_edge(DOWN * 1.7, buff=0.3)
+        badge2.to_edge(DOWN, buff=0.3)
         self.play(FadeIn(badge2, shift=UP * 0.1))
         self.wait(4)
         self._next_slide()

@@ -40,7 +40,7 @@ try:
 except Exception:
     BaseSlide = Scene
 from libs.custom_colors import TRUE_RED
-from libs.slide_controls import slide_checkpoint
+from libs.slide_style import SlideStyleMixin
 from libs.ddia_components import (
     DARK_BG,
     ICON_BOMB,
@@ -54,6 +54,7 @@ from libs.ddia_components import (
     ICON_SHIELD,
     ICON_SIREN,
     ICON_USER,
+    create_rect_glow,
     make_icon,
     make_icon_card,
     make_label,
@@ -62,10 +63,7 @@ from libs.ddia_components import (
 config.background_color = "#0D1117"
 
 
-class Reliability(BaseSlide):
-    slide_stop_mode = "phase"
-    max_duration_before_split_reverse = 4.0
-
+class Reliability(SlideStyleMixin, BaseSlide):
     def construct(self):
         self.scene_title()
         self.scene_what_is_reliability()
@@ -76,37 +74,7 @@ class Reliability(BaseSlide):
         self.scene_why_it_matters()
         self.scene_closing()
 
-    def _next_slide(
-        self,
-        phase=False,
-        enabled=True,
-        notes="",
-        loop=False,
-        auto_next=False,
-        playback_rate=1.0,
-        reversed_playback_rate=1.0,
-        dedent_notes=True,
-        skip_animations=False,
-        direction="horizontal",
-        **kwargs,
-    ):
-        slide_checkpoint(
-            self,
-            phase=phase,
-            enabled=enabled,
-            slide_stop_mode=self.slide_stop_mode,
-            loop=loop,
-            auto_next=auto_next,
-            playback_rate=playback_rate,
-            reversed_playback_rate=reversed_playback_rate,
-            notes=notes,
-            dedent_notes=dedent_notes,
-            skip_animations=skip_animations,
-            direction=direction,
-            **kwargs,
-        )
-
-    # ─── Scene 1: Title ───────────────────────────────────────────────
+    # ─── Helpers ──────────────────────────────────────────────────────
     def scene_title(self):
         icon = make_icon(ICON_SHIELD, color=GREEN, height=1.2)
         title = make_label("Reliability", font_size=44, color=GREEN)
@@ -127,8 +95,7 @@ class Reliability(BaseSlide):
 
     # ─── Scene 2: What is Reliability? ────────────────────────────────
     def scene_what_is_reliability(self):
-        header = make_label("What Does Reliability Mean?", font_size=30, color=GREEN)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("What Does Reliability Mean?", color=GREEN)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -153,29 +120,29 @@ class Reliability(BaseSlide):
              "No unauthorized access"),
         ]
 
+        GLOW = {0, 2}
         cards = VGroup()
-        for icon_path, color, title, desc in expectations:
-            icon = make_icon(icon_path, color=color, height=0.35)
-            t = make_label(title, font_size=15, color=color, weight=BOLD)
-            d = make_label(desc, font_size=11, color=GREY_A)
-            content = VGroup(icon, t, d).arrange(DOWN, buff=0.1)
+        glow_map = {}
+        color_map = {}
+        for j, (icon_path, color, title, desc) in enumerate(expectations):
+            result = self._icon_row_card(icon_path, color, title, desc, glow=(j in GLOW))
+            if isinstance(result, tuple):
+                card, g = result
+                cards.add(card)
+                glow_map[j] = g
+                color_map[j] = color
+            else:
+                cards.add(result)
 
-            box = RoundedRectangle(
-                corner_radius=0.12, width=3, height=1.5,
-                fill_color=DARK_BG, fill_opacity=0.9,
-                stroke_color=color, stroke_width=1.5,
-            )
-            content.move_to(box.get_center())
-            cards.add(VGroup(box, content))
+        cards.arrange(DOWN, buff=0.15, aligned_edge=LEFT).next_to(definition, DOWN, buff=0.5)
+        for idx, g in glow_map.items():
+            g.move_to(cards[idx])
 
-        cards.arrange(RIGHT, buff=0.25).next_to(definition, DOWN, buff=0.5)
-
-        self.play(
-            AnimationGroup(
-                *[FadeIn(c, shift=UP * 1) for c in cards],
-                lag_ratio=0.15,
-            )
-        )
+        for i, c in enumerate(cards):
+            self.play(FadeIn(c, shift=LEFT * 0.3), run_time=0.45)
+            if i in glow_map:
+                self._play_glow_row(c, glow_map[i], color_map[i])
+            self.wait(0.25)
         self.wait(3)
 
         # Bottom highlight
@@ -191,8 +158,7 @@ class Reliability(BaseSlide):
 
     # ─── Scene 3: Fault vs Failure ────────────────────────────────────
     def scene_fault_vs_failure(self):
-        header = make_label("Fault ≠ Failure", font_size=32, color=ORANGE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Fault ≠ Failure", color=ORANGE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -261,8 +227,7 @@ class Reliability(BaseSlide):
 
     # ─── Scene 4: Hardware Faults ─────────────────────────────────────
     def scene_hardware_faults(self):
-        header = make_label("1. Hardware Faults", font_size=30, color=TRUE_RED)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("1. Hardware Faults", color=TRUE_RED)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -321,8 +286,7 @@ class Reliability(BaseSlide):
 
     # ─── Scene 5: Software Errors ─────────────────────────────────────
     def scene_software_errors(self):
-        header = make_label("2. Software Errors", font_size=30, color=PURPLE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("2. Software Errors", color=PURPLE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -338,30 +302,32 @@ class Reliability(BaseSlide):
         # Examples as icon cards
         examples = [
             (ICON_BUG, TRUE_RED, "Kernel Bug",
-             "A bug crashes every\nserver with bad input"),
+             "A bug crashes every server with bad input"),
             (ICON_CODE, ORANGE, "Runaway Process",
-             "Uses all shared resources\n(CPU, memory, disk)"),
+             "Uses all shared resources (CPU, memory, disk)"),
             (ICON_BOMB, PURPLE, "Cascading Failure",
-             "One slow service\ntriggers chain reaction"),
+             "One slow service triggers chain reaction"),
             (ICON_SIREN, BLUE, "Leap Second",
-             "2012: Linux kernel bug\ncrashed many servers"),
+             "2012: Linux kernel bug crashed many servers"),
         ]
 
+        GLOW = {3}
         cards = VGroup()
-        for icon_path, color, title, desc in examples:
-            icon = make_icon(icon_path, color=color, height=0.35)
-            t = make_label(title, font_size=14, color=color, weight=BOLD)
-            d = make_label(desc, font_size=10, color=GREY_A)
-            content = VGroup(icon, t, d).arrange(DOWN, buff=0.1)
-            box = RoundedRectangle(
-                corner_radius=0.12, width=2.7, height=2.0,
-                fill_color=DARK_BG, fill_opacity=0.9,
-                stroke_color=color, stroke_width=1.5,
-            )
-            content.move_to(box.get_center())
-            cards.add(VGroup(box, content))
+        glow_map = {}
+        color_map = {}
+        for j, (icon_path, color, title, desc) in enumerate(examples):
+            result = self._icon_row_card(icon_path, color, title, desc, glow=(j in GLOW))
+            if isinstance(result, tuple):
+                card, g = result
+                cards.add(card)
+                glow_map[j] = g
+                color_map[j] = color
+            else:
+                cards.add(result)
 
-        cards.arrange(RIGHT, buff=0.2).move_to(DOWN * 0.5)
+        cards.arrange(DOWN, buff=0.15, aligned_edge=LEFT).next_to(diff_label, DOWN, buff=0.4)
+        for idx, g in glow_map.items():
+            g.move_to(cards[idx])
 
         self.play(
             AnimationGroup(
@@ -373,7 +339,10 @@ class Reliability(BaseSlide):
 
         # Indicate each
         for i, c in enumerate(cards):
-            self.play(Indicate(c, color=YELLOW, scale_factor=1.05), run_time=0.5)
+            if i in glow_map:
+                self._play_glow_row(c, glow_map[i], color_map[i])
+            else:
+                self.play(Indicate(c, color=YELLOW, scale_factor=1.05), run_time=0.5)
             self.wait(0.5)
             if i < len(cards) - 1:
                 self._next_slide(phase=True)
@@ -393,8 +362,7 @@ class Reliability(BaseSlide):
 
     # ─── Scene 6: Human Errors ────────────────────────────────────────
     def scene_human_errors(self):
-        header = make_label("3. Human Errors", font_size=30, color=ORANGE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("3. Human Errors", color=ORANGE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -421,24 +389,28 @@ class Reliability(BaseSlide):
              "Performance metrics, error rates, early warning signals"),
         ]
 
+        GLOW = {4}
         rows = VGroup()
-        for icon_path, color, title, desc in approaches:
-            icon = make_icon(icon_path, color=color, height=0.3)
-            t = make_label(title, font_size=15, color=color, weight=BOLD)
-            d = make_label(desc, font_size=11, color=GREY_A)
-            row_content = VGroup(icon, t, d).arrange(RIGHT, buff=0.15)
-            box = RoundedRectangle(
-                corner_radius=0.1, width=10.5, height=0.55,
-                fill_color=DARK_BG, fill_opacity=0.9,
-                stroke_color=color, stroke_width=1.2,
-            )
-            row_content.move_to(box.get_center())
-            rows.add(VGroup(box, row_content))
+        glow_map = {}
+        color_map = {}
+        for j, (icon_path, color, title, desc) in enumerate(approaches):
+            result = self._icon_row_card(icon_path, color, title, desc, glow=(j in GLOW))
+            if isinstance(result, tuple):
+                card, g = result
+                rows.add(card)
+                glow_map[j] = g
+                color_map[j] = color
+            else:
+                rows.add(result)
 
-        rows.arrange(DOWN, buff=0.12).next_to(quote, DOWN, buff=0.4)
+        rows.arrange(DOWN, buff=0.12, aligned_edge=LEFT).next_to(quote, DOWN, buff=0.4)
+        for idx, g in glow_map.items():
+            g.move_to(rows[idx])
 
         for i, row in enumerate(rows):
             self.play(FadeIn(row, shift=LEFT * 0.3), run_time=0.5)
+            if i in glow_map:
+                self._play_glow_row(row, glow_map[i], color_map[i])
             self.wait(0.5)
             if i < len(rows) - 1:
                 self._next_slide(phase=True)
@@ -449,8 +421,7 @@ class Reliability(BaseSlide):
 
     # ─── Scene 7: Why Reliability Matters ─────────────────────────────
     def scene_why_it_matters(self):
-        header = make_label("How Important Is Reliability?", font_size=30, color=TRUE_RED)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("How Important Is Reliability?", color=TRUE_RED)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
         self.wait(1)
 
@@ -485,6 +456,14 @@ class Reliability(BaseSlide):
 
         cards.arrange(RIGHT, buff=0.3).move_to(DOWN * 0.3)
 
+        GLOW = {2}
+        glow_map = {}
+        color_map = {}
+        for j, (_, _, color) in enumerate(impacts):
+            if j in GLOW:
+                glow_map[j] = create_rect_glow(cards[j], color=color)
+                color_map[j] = color
+
         self.play(
             AnimationGroup(
                 *[FadeIn(c, shift=UP * 0.3) for c in cards],
@@ -494,7 +473,10 @@ class Reliability(BaseSlide):
         self.wait(2)
 
         for i, c in enumerate(cards):
-            self.play(Indicate(c, color=YELLOW, scale_factor=1.05), run_time=0.5)
+            if i in glow_map:
+                self._play_glow_row(c, glow_map[i], color_map[i])
+            else:
+                self.play(Indicate(c, color=YELLOW, scale_factor=1.05), run_time=0.5)
             self.wait(0.5)
             if i < len(cards) - 1:
                 self._next_slide(phase=True)

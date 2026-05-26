@@ -46,7 +46,7 @@ try:
 except Exception:
     BaseSlide = Scene
 
-from libs.slide_controls import slide_checkpoint
+from libs.slide_style import SlideStyleMixin
 from libs.ddia_components import (
     FONT,
     SQL_T2C,
@@ -58,40 +58,8 @@ from libs.ddia_components import (
 config.background_color = "#0D1117"
 
 
-class TwitterFanOut(BaseSlide):
-    slide_stop_mode = "phase"
-    max_duration_before_split_reverse = 4.0
-
-    def _next_slide(
-        self,
-        phase=False,
-        enabled=True,
-        notes="",
-        loop=False,
-        auto_next=False,
-        playback_rate=1.0,
-        reversed_playback_rate=1.0,
-        dedent_notes=True,
-        skip_animations=False,
-        direction="horizontal",
-        **kwargs,
-    ):
-        slide_checkpoint(
-            self,
-            phase=phase,
-            enabled=enabled,
-            slide_stop_mode=self.slide_stop_mode,
-            loop=loop,
-            auto_next=auto_next,
-            playback_rate=playback_rate,
-            reversed_playback_rate=reversed_playback_rate,
-            notes=notes,
-            dedent_notes=dedent_notes,
-            skip_animations=skip_animations,
-            direction=direction,
-            **kwargs,
-        )
-
+class TwitterFanOut(SlideStyleMixin, BaseSlide):
+    # ─── Helpers ──────────────────────────────────────────────────────
     def construct(self):
         self.scene_title()
         self.scene_problem_setup()
@@ -114,8 +82,7 @@ class TwitterFanOut(BaseSlide):
 
     # ─── Scene 2: Problem Setup ───────────────────────────────────────
     def scene_problem_setup(self):
-        header = make_label("Twitter's Two Core Operations", font_size=32, color=ORANGE)
-        header.to_edge(UP, buff=0.6)
+        header = self._section_header("Twitter's Two Core Operations", color=ORANGE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
 
         # Post tweet card
@@ -164,8 +131,7 @@ class TwitterFanOut(BaseSlide):
 
     # ─── Scene 3: Approach 1 — Fan-out on Read (Pull) ────────────────
     def scene_approach_pull(self):
-        header = make_label("Approach 1: Fan-out on Read", font_size=30, color=BLUE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Approach 1: Fan-out on Read", color=BLUE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
 
         # User posting
@@ -304,8 +270,7 @@ class TwitterFanOut(BaseSlide):
 
     # ─── Scene 4: Approach 2 — Fan-out on Write (Push) ───────────────
     def scene_approach_push(self):
-        header = make_label("Approach 2: Fan-out on Write", font_size=30, color=PURPLE)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Approach 2: Fan-out on Write", color=PURPLE)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
 
         # User posts a tweet
@@ -478,8 +443,7 @@ class TwitterFanOut(BaseSlide):
 
     # ─── Scene 5: Hybrid Approach ─────────────────────────────────────
     def scene_hybrid(self):
-        header = make_label("Hybrid Approach", font_size=32, color=GREEN)
-        header.to_edge(UP, buff=0.5)
+        header = self._section_header("Hybrid Approach", color=GREEN)
         self.play(AddTextLetterByLetter(header, time_per_char=0.04))
 
         # Divider
