@@ -4,14 +4,34 @@
 
 A Manim slide deck that follows one booking of **room 101** through three services (Booking, Payment, Accounting) and shows how we keep them consistent: first inside one database, then with **2PC**, then with a **Saga**, and finally with a **distributed lock + fencing token**.
 
-No real system runs. Every "log line" and "table row" on screen is an animated mobject.
+Every "log line" and "table row" on screen is an animated mobject, but each one mirrors the live demo in `~/TA/DDIA/distributed-transactions-demo` (Spring Boot services on one MySQL server). Scenes that have a matching script show a `demo/0X-….sh` tag under the header, so the class can run the same thing right after the slide.
+
+**Demo facts the deck follows**
+
+| Topic | In the demo |
+|---|---|
+| Databases | MySQL, one server, `bookingdb`, `paymentdb`, `accountingdb` |
+| 2PC | MySQL XA: `XA START · XA END · XA PREPARE · XA COMMIT / XA ROLLBACK`, `XA RECOVER`. The coordinator is `booking-service`, its log is `bookingdb.tx_log` (`PREPARING`, `COMMIT`, `ABORT`) |
+| Transaction ids | 2PC `bk-xxxxxxxx`, saga `sg-xxxxxxxx`, stored in every row's `transaction_id` |
+| Lock service | the `lock_lease` table, `token = token + 1` on every grant, never reset by expiry |
+| Users | user 1 has 500.00, user 2 has 50.00 (the real NO vote) |
+
+| Script | Scene(s) |
+|---|---|
+| `01-write-skew.sh` | 3 |
+| `02-materialized.sh` | 4b |
+| `03-serializable.sh` | 4 (the SERIALIZABLE row) |
+| `04-fencing.sh` | 19 |
+| `05-2pc.sh` | 7, 8 |
+| `06-2pc-in-doubt.sh` | 9, 10 |
+| `07-saga.sh` | 12–15 |
 
 **Sources**
 
 | Topic | DDIA pages |
 |---|---|
 | Write skew, booking example, phantoms, materializing conflicts | 249–251 |
-| Two-phase locking (2PL), predicate / index-range locks | 257–260 |
+| Two-phase locking (2PL), one slide: 2PL ≠ 2PC | 257 |
 | The leader and the lock, fencing tokens | 301–304 |
 | Atomic commit, 2PC, coordinator failure, XA, in-doubt locks | 353–364 |
 
@@ -28,11 +48,11 @@ Keep it consistent across all scenes so students learn the colors once.
 
 | Thing | Color | Icon / shape |
 |---|---|---|
-| Booking service + `booking_db` | `BLUE` | `ICON_SERVER` + `ICON_DATABASE` |
-| Payment service + `payment_db` | `ORANGE` | `ICON_SERVER` + `ICON_DATABASE` |
-| Accounting service + `accounting_db` | `PURPLE` | `ICON_SERVER` + `ICON_DATABASE` |
+| Booking service + `bookingdb` | `BLUE` | `ICON_SERVER` + `ICON_DATABASE` |
+| Payment service + `paymentdb` | `ORANGE` | `ICON_SERVER` + `ICON_DATABASE` |
+| Accounting service + `accountingdb` | `PURPLE` | `ICON_SERVER` + `ICON_DATABASE` |
 | Coordinator / orchestrator | `TEAL` | `ICON_STRUCTURE` |
-| Lock service (Redis) | `YELLOW` | `ICON_LOCK` |
+| Lock service (`lock_lease` table) | `YELLOW` | `ICON_LOCK` |
 | Success / commit | `GREEN` | `ICON_CHECK` |
 | Failure / abort / conflict | `RED` | `ICON_DANGER` |
 | Crash | `RED` | `ICON_BOMB` |
@@ -40,6 +60,9 @@ Keep it consistent across all scenes so students learn the colors once.
 | User | `GREY_A` | `make_user_icon` |
 
 **Recurring layouts**
+
+- **Tables**: `_table` (in this file), not `make_comparison_table`. Each row is one monospaced line with columns padded to a fixed width, so columns are left-aligned and every cell sits on the same baseline.
+- **Small text**: `make_label` is wrapped to render at 4× size and scale down. Pango spreads letters too far apart at small sizes, which made labels look flat and stretched.
 
 - **Service row**: the three service cards side by side (`make_icon_card`), each with its DB icon under it. Scenes 1, 2, 6, 7, 12 and 13 reuse it.
 - **Sequence rows**: one horizontal dashed row per actor (icon + label on the left), time flows **left → right** via the `_tx(t)` mapping, messages are diagonal `Arrow`s between rows with a small `make_label`. Same construction as `scene_q5_monotonic` in `section_4/sheet_4_consistency.py` (`_row`, `_arr`, `_msg`). Scenes 7–10 and 18–19 use it. This matches Figures 9-9, 9-10, 8-4 and 8-5 in the book.
@@ -78,43 +101,43 @@ Narration: each service owns its own database, so there is no single `COMMIT` th
 
 ### Scene 2: `scene_schema`
 
-**Goal:** show the minimal schema once so later scenes can point at it.
+**Goal:** show the schema from `demo/sql/00-schema.sql` once, so later scenes can point at it.
 
-Three `_code_box`es side by side under their service cards:
-
-```
-booking_db
-  rooms     (room_id PK, booked_by, fence_token)
-  bookings  (id PK, room_id, starts_at, ends_at,
-             user_id, status)
-            status ∈ PENDING | CONFIRMED | CANCELLED
-```
+Subtitle: *MySQL · one server · three databases*. Three schema cards side by side, one row per column, tags right-aligned:
 
 ```
-payment_db
-  wallets   (user_id PK, balance CHECK >= 0)
-  payments  (id PK, booking_id UNIQUE,
-             amount, status)
-            status ∈ CHARGED | REFUNDED
+bookingdb
+  rooms     room_id PK · name · fence_token (dimmed)
+  bookings  id PK · room_id, user_id · starts_at, ends_at
+            status ∈ PENDING · CONFIRMED · CANCELLED
+            transaction_id (bk- / sg-) · fence_token (dimmed)
+  + room_slot_lock · lock_lease · tx_log · saga_log
 ```
 
 ```
-accounting_db
-  ledger    (id PK, booking_id, kind, amount)
-            kind ∈ REVENUE | REVERSAL
-            UNIQUE (booking_id, kind)
-            append only
+paymentdb
+  wallets   user_id PK · balance CHECK (balance >= 0)
+  payments  id PK · booking_id UNIQUE · transaction_id · user_id, amount
+            status ∈ CHARGED · REFUNDED
 ```
 
-Then highlight three things in turn, each with a short caption:
+```
+accountingdb
+  ledger    id PK · booking_id · transaction_id · amount
+            kind ∈ REVENUE · REVERSAL
+            UNIQUE (booking_id, kind) · append only
+```
+
+Then highlight, each with a chip under its card:
 
 | Highlight | Caption |
 |---|---|
-| `CHECK >= 0` | this is how Payment can say **no** |
-| `booking_id UNIQUE` | a retry of the same step is a no-op |
-| `append only` | Accounting never deletes, it reverses |
+| `CHECK >= 0` | Payment can say **no** |
+| `booking_id UNIQUE` | a retry is a no-op |
+| `append only` | undo = add a REVERSAL |
+| `transaction_id` | every row carries the global tx id |
 
-`booked_by` and `fence_token` stay dimmed with a caption: *used in Part 4*.
+`fence_token` and the support tables are dimmed: *later*.
 
 ### Scene 2b: `scene_prerequisites`
 
@@ -126,7 +149,7 @@ Four icon cards, one per letter:
 - **Isolation**: two transactions running at once don't see each other's half-done work.
 - **Durability**: once `COMMIT` returns, the data survives a crash (the write-ahead log).
 
-Roadmap chips: *Part 1 → I on one database* · *Parts 2 and 3 → A across three databases* · *Part 4 → locks across machines*.
+Roadmap chips: *Isolation on one database* · *Atomicity across three databases* · *Locks across machines*.
 
 ---
 
@@ -163,44 +186,40 @@ Show the book's 3-step pattern as a small `_reveal_rows` list:
 1. Replay step 3 with `FOR UPDATE` appended.
 2. The query returns **0 rows**. A lock icon (`ICON_LOCK`, YELLOW) drops toward the empty result set and finds nothing to attach to. It fades out.
 3. Caption: *You can't lock a row that doesn't exist yet.* That row is a **phantom**.
+4. MySQL caveat (yellow note): at REPEATABLE READ, InnoDB's `FOR UPDATE` also locks the index gap (a next-key lock), so on MySQL it does block the phantom. That is the same mechanism `SERIALIZABLE` uses in `03-serializable.sh`.
 
 Then a `make_comparison_table` with three fixes:
 
 | Fix | Idea | Note |
 |---|---|---|
-| Materialize the conflict | lock the `rooms` row for room 101 first, so there is something to lock | last resort, leaks locking into the data model |
-| `SERIALIZABLE` | the database detects the conflict and aborts one | in Postgres this is **SSI**, not 2PL |
-| Exclusion constraint | the DB rejects overlapping ranges for the same room | what we'd use in production (`EXCLUDE USING gist`) |
+| Materialize the conflict | lock `room_slot_lock` rows first | `02-materialized.sh`, last resort |
+| `SERIALIZABLE` | InnoDB locks the gap, one aborts, retry | `03-serializable.sh` (glowing row) |
+| Exclusion constraint | the DB rejects overlapping ranges | Postgres only, MySQL has none |
 
 Glow the last row.
 
 ### Scene 4b: `scene_materialize_conflicts`
 
-**Goal:** expand the first fix from Scene 4 (p. 251).
+**Goal:** expand the first fix from Scene 4 (p. 251), exactly as `02-materialized.sh` runs it.
 
-1. A `room_slots` grid for room 101, one cell per 15 minutes from 11:00 to 13:45. Caption: *created ahead for the next 6 months, it stores nothing*.
-2. T1 (Alice) runs `SELECT … FROM room_slots WHERE room_id = 101 AND slot >= '12:00' AND slot < '13:00' FOR UPDATE`. Four cells turn blue with lock icons.
-3. T2 (Bob) wants 12:30–13:30. An orange frame covers its four cells, the two overlapping ones flash RED, and a chip says *T2 waits*.
-4. T1 checks bookings, INSERTs, and commits, which releases its locks. T2 takes its cells, re-checks bookings, sees Alice's row, and backs off. Footnote: *run it in READ COMMITTED so T2's re-check sees T1's row*. Under snapshot isolation the re-check would still read the old snapshot.
+1. A `room_slot_lock` grid for room 101, one cell per 15 minutes from 11:00 to 13:45. Caption: *seeded for today and tomorrow (192 rows per room), it stores nothing*.
+2. T1 runs `SELECT slot_start FROM room_slot_lock WHERE room_id = 101 AND slot_start >= '12:00' AND slot_start < '13:00' ORDER BY slot_start FOR UPDATE`. Four cells turn blue with lock icons.
+3. T2 is the same request at the same moment (the script fires both at once). An orange frame covers the same four cells, the 12:00 cell flashes RED: *T2 waits on the 12:00 row, ORDER BY keeps everyone in the same order*.
+4. T1 checks bookings, INSERTs, commits, and releases its locks. T2 takes the slot rows, checks bookings, sees T1's row, and answers *room already booked*. One row in `bookings`. Footnote: *InnoDB takes T2's snapshot at its first plain SELECT, after the wait, so the check sees T1's row.*
 5. The catch, as three cards:
-   - lock size: one row per room serializes every booking of that room, 15-minute slots are 96 rows per room per day
+   - lock size: one row per room serializes every booking of that room, the demo's 15-minute slots are 96 rows per room per day
    - concurrency leaks into the data model
-   - hard to get right, so it's a last resort. Prefer `SERIALIZABLE` or an exclusion constraint.
+   - hard to get right, so it's a last resort. Prefer `SERIALIZABLE` (`03-serializable.sh`), or in Postgres an exclusion constraint.
 
 ### Scene 5: `scene_two_phase_locking`
 
-**Goal:** 2PL in one picture, and set up why 2PC hurts later.
+**Goal:** one slide. 2PL is DDIA p.257, isolation on one database, not a distributed transaction topic. We only keep two facts from it.
 
-1. Two lock types as cards:
-   - **Shared (S)**: many readers at once
-   - **Exclusive (X)**: one writer, nobody else
-2. A 2×2 compatibility grid (S/X × S/X) where only S+S is green.
-3. **The two phases.** A small line chart titled *locks held* over time: it rises while the transaction runs (the *growing* phase), stays flat, then drops to 0 at `COMMIT` (the *shrinking* phase). Put a label on each phase.
-4. **Predicate lock** (p. 259): a shaded range on a timeline of room 101, 12:00–13:00. An `INSERT` arrow from another transaction hits the range and stops. Caption: *the lock covers rows that don't exist yet*. Then show the index-range approximation: the shaded area grows to "all of room 101". Caption: *safe because it locks more, not less*.
-5. **Deadlock**: two transactions, two rows, crossed "waits for" arrows forming a cycle. The DB picks one, and it turns RED with **aborted, retry**.
-6. Callout box (`TEAL` border): **2PL ≠ 2PC.** 2PL gives isolation on one DB. 2PC gives atomic commit across many.
-
-Closing line: *Locks are held until commit.* Keep this line on screen as the scene fades, because Scene 9 brings it back.
+1. Header: **2PL ≠ 2PC**.
+2. Two cards:
+   - **2PL: two-phase locking (p.257):** isolation on one database. Take locks while the transaction runs, release them all at COMMIT. SERIALIZABLE in InnoDB works this way.
+   - **2PC: two-phase commit (p.354):** atomic commit across many databases. Prepare everywhere, then commit everywhere. That is the rest of the deck.
+3. Closing line: **Locks are held until commit.** Hint: *it comes back when the 2PC coordinator crashes* (Scene 9, DDIA p.362).
 
 ---
 
@@ -216,7 +235,7 @@ Closing line: *Locks are held until commit.* Keep this line on screen as the sce
    - crash before `COMMIT` is on disk → on restart there is no commit record, so all 4 writes are undone
    - crash after → the commit record is found, so all 4 are kept
    - caption: *one disk, one commit record, one decision*
-4. **Now split it:** `hotel_db` splits into `booking_db`, `payment_db` and `accounting_db`, each with its own log ending in `COMMIT ?`. Badge: *three disks, three commit records, which one is the commit point?* Then three lines: each database can only commit its own part · one can say yes while another says no or crashes · nobody is in charge of the final answer. That leads straight into Scene 6.
+4. **Now split it:** `hotel_db` splits into `bookingdb`, `paymentdb` and `accountingdb`, each with its own log ending in `COMMIT ?`. Badge: *three disks, three commit records, which one is the commit point?* Then three lines: each database can only commit its own part · one can say yes while another says no or crashes · nobody is in charge of the final answer. That leads straight into Scene 6.
 
 ### Scene 6: `scene_why_not_one_phase`
 
@@ -235,23 +254,23 @@ Three small failure chips under it, from the book's list:
 
 ### Scene 7: `scene_2pc_happy_path`
 
-**Goal:** recreate Figure 9-9 with our services.
+**Goal:** recreate Figure 9-9 with the demo's `Coordinator`. Tag: `05-2pc.sh`.
 
-**Sequence rows** (top → bottom): Coordinator, booking_db, payment_db, accounting_db. The log panel sits underneath, full width.
+**Sequence rows** (top → bottom): Coordinator, bookingdb, paymentdb, accountingdb. The log panel sits underneath, full width.
 
 | # | Message | Log line |
 |---|---|---|
-| 1 | coord → all: writes inside local tx `gid=bk-7f2` | `COORD    begin gid=bk-7f2` |
-| 2 | | `BOOKING  INSERT booking CONFIRMED` |
-| 3 | | `PAYMENT  wallet -120, INSERT payment` |
-| 4 | | `ACCOUNT  INSERT ledger REVENUE 120` |
-| 5 | coord → all: **prepare** | |
-| 6 | all → coord: **yes** (three green arrows) | `BOOKING/PAYMENT/ACCOUNT  PREPARE TRANSACTION 'bk-7f2' → yes` |
-| 7 | coord writes decision to its own disk | `COORD    tx_log bk-7f2 = COMMIT` |
-| 8 | coord → all: **commit** | `…  COMMIT PREPARED 'bk-7f2'` |
+| 1 | | `COORD  bk-7f2 begin, room 101 for user 1, amount 120.00` |
+| 2 | | `COORD  tx_log bk-7f2 = PREPARING` |
+| 3 | coord → booking: prepare, booking → coord: YES | `BOOKING  XA START · INSERT booking CONFIRMED · XA END · XA PREPARE → YES` |
+| 4 | coord → payment: prepare, payment → coord: YES | `PAYMENT  XA START · INSERT payment · wallet -120.00 · XA PREPARE → YES` |
+| 5 | coord → accounting: prepare, accounting → coord: YES | `ACCOUNT  XA START · ledger REVENUE 120.00 · XA PREPARE → YES` |
+| 6 | coord writes the decision | `COORD  tx_log bk-7f2 = COMMIT, the decision is on disk` |
+| 7 | coord → all: `XA COMMIT` | `ALL  XA COMMIT 'bk-7f2' … locks released` |
 
-- At step 7, freeze for a beat and glow the coordinator's disk icon. Label: **commit point**.
-- Draw a **lock bar** along each participant lifeline from step 1 to step 8. Label it *locks held*.
+- Participants are asked **one at a time**, as in `Coordinator.collectVotes`. Each one does its writes inside the prepare call.
+- Each participant's **lock bar** starts when it writes and stretches with time until `XA COMMIT`.
+- At step 6, glow the coordinator's disk icon. Label: **commit point**.
 
 Then two "points of no return" cards (p. 358):
 1. A participant that votes **yes** gives up the right to abort.
@@ -261,42 +280,40 @@ Optional light touch: the book's wedding analogy as one line, *"I do" = yes vote
 
 ### Scene 8: `scene_2pc_vote_no`
 
-**Goal:** show how an abort goes.
+**Goal:** show how an abort goes, as in run 2 of `05-2pc.sh`.
 
-- Same lanes. At prepare time Payment's arrow comes back RED: **no**. Log line: `PAYMENT  CHECK violation, balance 50 < 120`.
-- The coordinator logs `tx_log bk-8a1 = ABORT` and sends **abort** to all three.
-- Booking and Accounting roll back. Their pending rows fade out of the mini tables.
-- Result: *nothing happened anywhere.* GREEN check. That's atomicity doing its job.
+- `bk-8a1`, room 102, user 2 (balance 50.00), amount 120.00. `tx_log = PREPARING`.
+- Booking votes YES.
+- Payment's debit fails `chk_balance_non_negative`, it rolls back its own branch and votes **NO**. Its lock bar ends there.
+- Accounting gets a grey *never asked* chip: the coordinator stops at the first NO.
+- `tx_log bk-8a1 = ABORT`, then `XA ROLLBACK` goes to booking only, the one branch still prepared.
+- Result badge: *nothing for room 102 anywhere ✓*.
 
 ### Scene 9: `scene_2pc_coordinator_crash`
 
-**Goal:** recreate Figure 9-10 and make the *in-doubt* pain visible.
+**Goal:** recreate Figure 9-10 the way `06-2pc-in-doubt.sh` does it.
 
-1. Replay prepare, where all three vote **yes**.
-2. The coordinator gets an `ICON_BOMB` and its lifeline turns dashed grey. Nothing more comes from it.
-3. Each participant shows a status chip: **IN DOUBT**, plus a stopwatch that keeps counting (`00:01 … 20:00`, a `DecimalNumber` driven by a `ValueTracker`).
-4. The lock bars keep growing to the right, past the edge of the timeline.
-5. A new transaction arrives at payment_db: `UPDATE wallets … user u1`. Its arrow stops at the lock bar and a stopwatch appears. Label: **blocked**.
-6. Caption (p. 358): *timing out doesn't help, the participant can't know if the others committed.*
-7. Beat: "restart payment_db". The DB icon blinks off and on. The chip still says **IN DOUBT** and the lock bar is still there. Caption: *a correct 2PC keeps the lock even across restarts* (p. 363).
+1. Chip: `fail-mode = CRASH_AFTER_VOTES`. `tx_log bk-9c4 = PREPARING`, then all three prepare and vote YES, one at a time.
+2. The coordinator gets an `ICON_BOMB` (log: *everyone voted yes and I am walking away*). No decision is written.
+3. Each participant gets an **IN DOUBT** chip, and a stopwatch counts up while the lock bars keep growing. Log: `XA RECOVER lists bk-9c4 for booking, payment and accounting`.
+4. An unrelated session runs `UPDATE wallets SET balance = balance WHERE user_id = 1` with `innodb_lock_wait_timeout = 5`. Its arrow stops at payment's lock bar. Log: `ERROR 1205 after 5s: Lock wait timeout exceeded`.
+5. Beat: restart paymentdb. The chip still says **IN DOUBT**: *after a restart XA RECOVER still lists bk-9c4, the locks are still held* (p. 363).
 
 Callback: bring back the Scene 5 line *Locks are held until commit.*, now with the extra line *… and commit is waiting on a dead coordinator.*
 
 ### Scene 10: `scene_2pc_recovery`
 
-**Goal:** show how recovery works, and how the escape hatch breaks things.
+**Goal:** show `POST /admin/recover`, and how the escape hatch breaks things.
 
-**Beat A: recovery**
-- The coordinator comes back and reads its `tx_log`.
-  - Case 1: no decision for `bk-7f2`, so it sends **abort** to all.
-  - Case 2: `COMMIT` is logged but only booking got it, so it sends **commit** to payment and accounting.
-- For case 2, pause on the in-between state first: the booking table shows CONFIRMED while the payment table is still empty. Caption: *atomic commit, but not atomic visibility.*
+**Beat A: recovery** (`Coordinator.recover` reads `tx_log`)
+- Case 1: `tx_log bk-9c4 = PREPARING`, so no decision was ever written → recover as **ABORT**, `XA ROLLBACK` to all. The blocked `UPDATE wallets` now finishes in milliseconds.
+- Case 2 (`fail-mode = COMMIT_LOST_TO_PAYMENT`): `tx_log bk-7f2 = COMMIT`, booking and accounting committed, but the commit message to payment was lost. Pause on the in-between state: booking CONFIRMED and ledger REVENUE are visible, payment is still IN DOUBT. Caption: *atomic commit, but not atomic visibility.* Then recover sends `XA COMMIT` to payment. Branches that already finished answer `XAER_NOTA`, which the code skips.
 
-**Beat B: heuristic decision**
-- An admin icon runs `ROLLBACK PREPARED` on payment_db by hand.
-- The coordinator later sends commit, and payment answers `does not exist`.
+**Beat B: heuristic decision** (not a script, but it can be typed into `mysql`)
+- An admin runs `XA ROLLBACK 'bk-7f2','payment'` by hand.
+- The coordinator later sends `XA COMMIT` and payment answers `XAER_NOTA`. The code treats that as already done, so nobody notices.
 - End state: booking CONFIRMED, ledger REVENUE, **no payment**. Everything flashes RED.
-- Caption (p. 363): *"heuristic" is a polite word for "probably broke atomicity".*
+- Caption (p. 363): *"heuristic" is a polite word for "probably broke atomicity". The coordinator never notices.*
 
 ### Scene 11: `scene_2pc_cost`
 
@@ -312,7 +329,7 @@ Use `_reveal_rows` with icons:
 | `ICON_STOPWATCH` | Extra fsyncs + round trips. MySQL distributed tx reported **>10× slower** |
 | `ICON_BOMB` | One participant down → the whole transaction fails. It **amplifies failures** |
 
-Footer: *XA / JTA is the standard API for this across Postgres, MySQL, ActiveMQ …*, which links back to the JMS lab.
+Footer: *XA / JTA is the standard API for this across Postgres, MySQL, ActiveMQ …*
 
 ---
 
@@ -320,69 +337,73 @@ Footer: *XA / JTA is the standard API for this across Postgres, MySQL, ActiveMQ 
 
 ### Scene 12: `scene_saga_intro`
 
-**Goal:** show the idea with a steps + compensations table.
+**Goal:** show the idea with a steps + compensations table, using `SagaOrchestrator`'s step names. Tag: `07-saga.sh`.
 
 1. Put the service row back. Each service now commits **its own local transaction** right away.
-2. An orchestrator (TEAL, the booking service) sits on top with a `saga_log` `_code_box`.
+2. An orchestrator (TEAL, the booking service) sits on top with a `saga_log` panel (one row per step, saga ids look like `sg-xxxxxxxx`).
 3. `make_comparison_table`:
 
 | Step | Service | Action | Compensation |
 |---|---|---|---|
-| 1 | Booking | `INSERT booking PENDING` | set `CANCELLED` |
-| 2 | Payment | charge $120 | refund, set `REFUNDED` |
-| 3 | Accounting | ledger `REVENUE` | ledger `REVERSAL` |
-| 4 | Booking | set `CONFIRMED` | none, this is the end |
+| 1 reserve | Booking | lock slots, `INSERT booking PENDING` | set `CANCELLED` |
+| 2 charge | Payment | `INSERT payment`, wallet -120 | refund, set `REFUNDED` |
+| 3 ledger | Accounting | ledger `REVENUE` | ledger `REVERSAL` |
+| 4 confirm | Booking | set `CONFIRMED` | none, this is the end |
 
 Caption (p. 355): *a compensation is a **new** transaction, not a rollback.*
 
 ### Scene 13: `scene_saga_happy_path`
 
-- The orchestrator sends step 1 → a row appears in the booking mini table (PENDING, yellow).
-- Step 2 → a payment row appears (CHARGED).
-- Step 3 → a ledger row appears (REVENUE).
-- Step 4 → the booking row turns CONFIRMED (green).
-- Each step appends to `saga_log`: `bk-7f2 step 1 done`, and so on.
+- Run 1 of `07-saga.sh`. Step 1 → `booking 1 PENDING` (yellow). Step 2 → `booking 1 CHARGED 120.00`. Step 3 → `booking 1 REVENUE 120.00`. Step 4 → the booking row turns CONFIRMED (green).
+- Each step adds a `saga_log` line: `1 reserve DONE`, `2 charge DONE`, …
 - Contrast with 2PC: the rows appear **one by one**, not together, and no lock bars span the whole flow.
 
 ### Scene 14: `scene_saga_failures`
 
-**Beat A: payment fails**
-- Steps: 1 ✓, 2 ✗ (`balance 50 < 120`).
-- A backward arrow (RED, dashed) runs from the orchestrator to Booking: compensation → `CANCELLED`.
-- Final tables: booking CANCELLED, no payment, no ledger row.
+**Beat A: payment fails** (user 2, not in the script, but the code handles it)
+- Steps: 1 ✓, 2 ✗ (*user 2: CHECK, 50 < 120*). `saga_log`: `2 charge FAILED`.
+- A dashed RED arrow from the orchestrator to Booking: `1 reserve COMPENSATED` → `CANCELLED`.
+- Final: booking CANCELLED, no payment, no ledger row.
 
-**Beat B: accounting is down**
-- Steps: 1 ✓, 2 ✓, 3 ✗ (accounting card greyed out with `ICON_DANGER`, *unreachable*).
-- Two backward arrows run in reverse order: refund payment, then cancel booking.
-- Caption: *undo in reverse order.*
+**Beat B: step 3 fails** (run 2 of `07-saga.sh`, `failAt=3`)
+- Steps: 1 ✓, 2 ✓, 3 ✗ (*failAt=3, failing on purpose*).
+- Two dashed arrows in reverse order: `2 charge COMPENSATED` (REFUNDED), then `1 reserve COMPENSATED` (CANCELLED).
+- Caption: *undo in reverse order. The refund is a new state, not a deleted row.*
 
 ### Scene 15: `scene_saga_crash_and_retry`
 
-**Beat A: the orchestrator crashes**
-- After step 2 the orchestrator gets `ICON_BOMB`.
-- It restarts, reads `saga_log` (`step 2 done`), and continues at step 3. Caption: *the saga log is what lets us resume.*
+**Beat A: the orchestrator is killed** (run 3, `killAt=2`, amount 50.00)
+- After step 2 the orchestrator gets `ICON_BOMB`. `saga_log`: *dies, nothing compensated*. Caption: *the middle state, booking PENDING and the money already gone. 2PC never shows this.*
+- `POST /saga/{id}/resume` reads `saga_log` (last DONE is step 2) and carries on with step 3 and step 4.
 
-**Beat B: duplicate message**
-- The step 2 message arrives twice (two arrows, the second slightly offset).
-- The second one hits `booking_id UNIQUE` and bounces back GREY. Log: `PAYMENT  already charged, no-op`.
-- Caption: *every step and every compensation must be idempotent.* This links back to the **Idempotent Receiver** in sheet 6.
+**Beat B: duplicate message** (run 4)
+- The same charge is sent again. `INSERT IGNORE` hits `booking_id UNIQUE`, it bounces back GREY. Log: `payment  already charged, no-op`, and the balance does not change.
+- Caption: *every step and every compensation must be idempotent.*
 
 ### Scene 16: `scene_saga_no_isolation`
 
 **Goal:** show the anomaly and its countermeasure.
 
 1. Freeze mid-saga after step 3.
-2. A "reader" (a reporting query, `ICON_CHART`) looks at the tables and sees a **PENDING** booking and a **REVENUE** row. Its report says *+$120 today*.
-3. Then step 4 fails and compensations run: a **REVERSAL** row appears. The report is now wrong. Flash it RED.
+2. A "reader" (a reporting query, `ICON_CHART`) sees a **PENDING** booking and a **REVENUE** row. Its report says *+$120 today*.
+3. Then step 4 fails (`failAt=4`) and compensations run: a **REVERSAL** row appears, the payment is REFUNDED, the booking CANCELLED. The report is now wrong. Flash it RED.
 4. Caption: *Saga = ACD, no I.* Other readers see the middle.
-5. **Countermeasure: semantic lock.** A second user tries to book room 101 while the first booking is PENDING. The exclusion constraint (`status <> 'CANCELLED'`) rejects it. Caption: *PENDING acts as our lock.*
+5. **Countermeasure: semantic lock.** Bob tries to book room 101 while the first booking is PENDING and gets *room already booked*. Show the overlap check from step 1 reserve:
+
+```sql
+SELECT COUNT(*) FROM bookings
+ WHERE room_id = 101 AND status <> 'CANCELLED'
+   AND starts_at < :end AND ends_at > :start
+```
+
+Caption: *status <> 'CANCELLED' counts PENDING, so PENDING acts as our lock.*
 
 ### Scene 17: `scene_saga_orchestration_vs_choreography`
 
 Two panels side by side:
 
-- **Orchestration**: the orchestrator in the middle with arrows out to each service. Label: *the Process Manager pattern (sheet 6)*.
-- **Choreography**: no center. The services publish and consume events on a Kafka topic strip (`ICON_KAFKA` from `section_7/project_weather_stations.py`) (`booking.created → payment.charged → ledger.recorded`). Label: *events over Kafka (lab 4)*.
+- **Orchestration**: the orchestrator in the middle with arrows out to each service. Label: *the Process Manager pattern · what the demo uses*.
+- **Choreography**: no center. The services publish and consume events on a Kafka topic strip (`ICON_KAFKA` from `section_7/project_weather_stations.py`) (`booking.created → payment.charged → ledger.recorded`). Label: *events over Kafka*.
 
 A small comparison under them:
 
@@ -392,7 +413,7 @@ A small comparison under them:
 | Easy to follow | yes | harder as steps grow |
 | Coupling | services know the orchestrator | services only know events |
 
-Footer: failed messages that can't be retried go to a **Dead Letter Channel** (sheet 6).
+Footer: failed messages that can't be retried go to a **Dead Letter Channel**.
 
 ---
 
@@ -400,55 +421,47 @@ Footer: failed messages that can't be retried go to a **Dead Letter Channel** (s
 
 ### Scene 18: `scene_lock_without_fencing`
 
-**Goal:** recreate Figure 8-4 with our booking service.
+**Goal:** recreate Figure 8-4 with the demo's lock.
 
-**Setup:** two booking service instances, **A** and **B** (both BLUE, labeled), a **lock service** (YELLOW), and **storage** (`booking_db`, the `rooms` row for 101 with `booked_by = ∅`).
-
-Why a lock here: *imagine the resource can't protect itself, like a file or an external system.* The `rooms.booked_by` column plays that role.
-
-**Sequence rows** (top → bottom): A, Lock service, B, Storage. Same layout as Figure 8-4.
+**Sequence rows** (top → bottom): client 1, `lock_lease`, client 2, bookingdb. Subtitle: *without the token check, the write is a plain INSERT, nothing in bookings stops a second one.*
 
 | # | Event |
 |---|---|
-| 1 | A → lock: `acquire room:101` → **ok, lease 5s** (a lease bar starts draining next to A) |
-| 2 | A's icon freezes: greyed, a snowflake or pause glyph, label **GC pause** |
-| 3 | The lease bar drains to 0 → *lease expired* |
-| 4 | B → lock: `acquire room:101` → **ok** |
-| 5 | B → storage: `booked_by = B` ✓ (and B's user was charged) |
-| 6 | A unfreezes, still thinks it holds the lock. Thought bubble: *"I still have the lock"* |
-| 7 | A → storage: `booked_by = A` ✓ (overwrites B) |
+| 1 | client 1 → lock_lease: `acquire room:101` → **ok, lease 3s** (the lease bar grows with time) |
+| 2 | client 1 greys out: **5s pause** |
+| 3 | the lease bar turns RED → *expired* |
+| 4 | client 2 → lock_lease: `acquire room:101` → **ok** |
+| 5 | client 2 → bookingdb: `INSERT booking` → *booking for user 2* |
+| 6 | client 1 wakes up, still thinks it holds the lock: *"I still have the lock"* |
+| 7 | client 1 → bookingdb: `INSERT booking` → *booking for user 1* |
 
-End: the `rooms` row shows `A` while B's user paid. Flash RED. Caption: **B's booking is lost.**
-
-Caption (p. 302): *a node can't trust its own sense of time. The lease expired while it was paused.*
+End: badge *Room 101 booked twice for 15:00–16:00 ✗*. Caption (p. 302): *a node can't trust its own sense of time. The lease expired while it was paused.*
 
 ### Scene 19: `scene_lock_with_fencing`
 
-**Goal:** recreate Figure 8-5.
-
-Replay Scene 18 with one change: every grant comes with a **fencing token** that only ever goes up.
+**Goal:** recreate Figure 8-5, as `04-fencing.sh` runs it.
 
 | # | Event |
 |---|---|
-| 1 | A acquires → **token 33** |
-| 2 | GC pause, lease expires |
-| 3 | B acquires → **token 34** |
-| 4 | B writes with 34. Storage remembers `fence_token = 34` ✓ |
-| 5 | A wakes and writes with 33. Storage sees `33 < 34` → **rejected** ✗ |
+| 1 | client 1 acquires → **token 1**, 3s lease |
+| 2 | 5s pause, the lease expires |
+| 3 | client 2 acquires → **token 2** |
+| 4 | client 2 writes with token 2: `rooms.fence_token` 0 → 2, booking for user 2 ✓ |
+| 5 | client 1 wakes and writes with token 1 → **stale fencing token 1** ✗ |
 
-Show the storage-side check as a `make_code_text` box next to the storage icon:
+Show the check from `BookingRepository.acceptToken` as a `make_code_text` box:
 
 ```sql
-UPDATE rooms
-   SET booked_by = :who, fence_token = :t
- WHERE room_id = 101 AND fence_token < :t
+UPDATE rooms SET fence_token = :t
+ WHERE room_id = 101 AND fence_token < :t;
+-- 1 row: INSERT the booking   0 rows: reject
 ```
 
-Result chips: `B → 1 row` (GREEN), `A → 0 rows` (RED).
+Result chips: `client 2, token 2 → 1 row` (GREEN), `client 1, token 1 → 0 rows` (RED).
 
 Two closing cards:
-1. **The check lives in the storage, not the client.** A honestly believes it has the lock.
-2. **Where tokens come from:** Redis `INCR` is enough for the demo. In real systems use ZooKeeper (`zxid`) or etcd (revision), which are linearizable and fault tolerant.
+1. **The check lives in the storage, not the client.** Client 1 honestly believes it has the lock. Only bookingdb can say no.
+2. **Tokens only ever go up:** `lock_lease` does `token = token + 1` on every grant and expiry never resets it. Real systems use ZooKeeper (`zxid`) or etcd (revision), which are linearizable and fault tolerant.
 
 Footnote line (p. 304): fencing protects against **mistaken** nodes, not **lying** ones (Byzantine faults are out of scope).
 
