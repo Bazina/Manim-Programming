@@ -116,6 +116,41 @@ C_COORD = TEAL
 C_LOCK = YELLOW
 
 
+# ── Topics: the agenda, and the cases each topic walks through ─────────
+TOPICS = [
+    ("Races and locks", RED, "DDIA p.249–260, 301–304", [
+        ("Write skew: room 101 booked twice", "01-write-skew.sh"),
+        ("Phantoms, and the fixes: SERIALIZABLE, exclusion constraint", "03-serializable.sh"),
+        ("Fix: materializing conflicts", "02-materialized.sh"),
+        ("A lock across machines: the paused client", ""),
+        ("Fencing tokens", "04-fencing.sh"),
+        ("2PL is not 2PC", ""),
+    ]),
+    ("Two-phase commit", TEAL, "DDIA p.353–364", [
+        ("The easy case: one database, one commit record", ""),
+        ("Why not just send COMMIT?", ""),
+        ("Happy path", "05-2pc.sh"),
+        ("One participant says no", "05-2pc.sh"),
+        ("The coordinator crashes: in doubt, locks held", "06-2pc-in-doubt.sh"),
+        ("Recovery, and a commit that got lost", "06-2pc-in-doubt.sh"),
+        ("Heuristic decisions", ""),
+        ("What 2PC costs", ""),
+    ]),
+    ("Saga", ORANGE, "", [
+        ("Steps and compensations", ""),
+        ("Happy path", "07-saga.sh"),
+        ("A step fails: undo in reverse order", "07-saga.sh"),
+        ("The orchestrator crashes, then a duplicate message", "07-saga.sh"),
+        ("No isolation, and the semantic lock", ""),
+        ("Orchestration vs choreography", ""),
+    ]),
+    ("Wrap up", GREEN, "", [
+        ("2PC vs Saga", ""),
+        ("Takeaways", ""),
+    ]),
+]
+
+
 def _tx(t):
     """Convert time unit to Manim x-coordinate."""
     return _TL_X0 + t * (_TL_X1 - _TL_X0) / _T_MAX
@@ -127,17 +162,22 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
     max_duration_before_split_reverse = 8.0
 
     def construct(self):
-        # Part 0: setup
+        # Setup
         self.scene_title()
+        self.scene_agenda()
         self.scene_story()
         self.scene_schema()
         self.scene_prerequisites()
-        # Part 1: one database
+        # Races and locks
+        self.scene_topic(0)
         self.scene_write_skew()
         self.scene_phantom()
         self.scene_materialize_conflicts()
+        self.scene_lock_without_fencing()
+        self.scene_lock_with_fencing()
         self.scene_two_phase_locking()
-        # Part 2: 2PC
+        # 2PC
+        self.scene_topic(1)
         self.scene_single_db_baseline()
         self.scene_why_not_one_phase()
         self.scene_2pc_happy_path()
@@ -145,17 +185,16 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
         self.scene_2pc_coordinator_crash()
         self.scene_2pc_recovery()
         self.scene_2pc_cost()
-        # Part 3: Saga
+        # Saga
+        self.scene_topic(2)
         self.scene_saga_intro()
         self.scene_saga_happy_path()
         self.scene_saga_failures()
         self.scene_saga_crash_and_retry()
         self.scene_saga_no_isolation()
         self.scene_saga_orchestration_vs_choreography()
-        # Part 4: distributed locks
-        self.scene_lock_without_fencing()
-        self.scene_lock_with_fencing()
-        # Part 5: wrap up
+        # Wrap up
+        self.scene_topic(3)
         self.scene_compare()
         self.scene_closing()
 
@@ -477,6 +516,15 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
         row.cells = [VGroup(*row[glyph_index[a]:glyph_index[b]]) for a, b in spans]
         return row
 
+    def _stack_rows(self, rows, pitch):
+        """Stack rows at a fixed pitch by their top edge. arrange() spaces by
+        bounding box, so a row with descenders (g, p, y) would sit lower."""
+        top = rows[0].get_top()[1]
+        left = rows[0].get_left()[0]
+        for i, row in enumerate(rows):
+            row.align_to([left, top - i * pitch, 0], UP).align_to([left, 0, 0], LEFT)
+        return rows
+
     def _table(self, headers, header_colors, rows, font_size=12, max_width=12.8, row_gap=0.34, gap=4):
         """Left-aligned monospaced table. Returns VGroup(header, divider, rows) like
         make_comparison_table, with header.cells for highlighting single columns."""
@@ -488,7 +536,7 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
         body = VGroup(*[
             self._mono_row([(r[c * 2], r[c * 2 + 1]) for c in range(cols)], widths, font_size) for r in rows
         ])
-        body.arrange(DOWN, buff=row_gap, aligned_edge=LEFT)
+        self._stack_rows(body, max(r.height for r in body) + row_gap)
         body.next_to(header, DOWN, buff=row_gap + 0.12, aligned_edge=LEFT)
         div = Line(header.get_corner(DOWN + LEFT) + DOWN * 0.12, header.get_corner(DOWN + LEFT) + DOWN * 0.12
                    + RIGHT * max(header.width, body.width), stroke_color=GREY_B, stroke_width=0.8)
@@ -556,22 +604,20 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
         self.play(FadeIn(stage, shift=UP * 0.1))
         return orch, svcs, tables, log
 
-    def _call(self, orch, svc, color, dashed=False, shift=0.0):
-        """Arrow from the orchestrator to a service icon.
-
-        It leaves from just under the orchestrator's label and points at the
-        centre of the service icon, stopping a fixed gap short of it, so straight
-        and diagonal arrows land the same way. shift slides it sideways
-        (perpendicular to its direction) so a call and its compensation sit side by side.
-        """
+    def _saga_ends(self, orch, svc):
+        """Centred end points between the orchestrator and a service icon: from just
+        under the orchestrator's label to a fixed gap short of the icon's centre."""
         start = orch.get_bottom() + DOWN * 0.1
         target = svc[0].get_center()
-        d = target - start
-        unit = d / np.linalg.norm(d)
-        end = target - unit * (svc[0].height / 2 + 0.18)
-        if shift:
-            normal = np.array([unit[1], -unit[0], 0.0])
-            start, end = start + normal * shift, end + normal * shift
+        unit = (target - start) / np.linalg.norm(target - start)
+        return start, target - unit * (svc[0].height / 2 + 0.18)
+
+    def _call(self, orch, svc, color, dashed=False, back=False):
+        """Arrow between the orchestrator and a service, centred on both ends.
+        back=True points it from the service to the orchestrator (a reply)."""
+        start, end = self._saga_ends(orch, svc)
+        if back:
+            start, end = end, start
         if dashed:
             a = self._dashed_arrow(start, end, color)
             self.play(Create(a), run_time=0.5)
@@ -606,6 +652,58 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
         self.play(FadeIn(sub, shift=UP * 0.2))
         self.play(FadeIn(cap))
         self._end_scene(3)
+
+    # ─── Agenda and topic openers ─────────────────────────────────────
+    def _topic_strip(self, active):
+        """The five topics along the bottom, the current one lit up."""
+        chips = VGroup()
+        for i, (name, color, _, _) in enumerate(TOPICS):
+            chip = self._chip(f"{i + 1}  {name}", color if i == active else GREY_B, font_size=10)
+            if i != active:
+                chip.set_opacity(0.45)
+            chips.add(chip)
+        chips.arrange(RIGHT, buff=0.25).move_to([0, -3.45, 0])
+        return chips
+
+    def scene_agenda(self):
+        self._header("What We Will Cover", color=TEAL)
+        widths = [5, 24, 16]
+        rows = VGroup(*[
+            self._mono_row([(f"{i + 1}", color), (name, color), (pages, GREY_B)], widths, 18)
+            for i, (name, color, pages, _) in enumerate(TOPICS)
+        ])
+        self._stack_rows(rows, 0.68).move_to([0, 0.2, 0])
+        for row in rows:
+            self.play(FadeIn(row, shift=RIGHT * 0.12), run_time=0.4)
+            self.wait(0.3)
+        note = make_label("Every case is one booking of room 101, and most have a demo script you can run after the slide.",
+                          font_size=11, color=GREY_B)
+        note.move_to([0, -2.6, 0])
+        self.play(FadeIn(note))
+        self._end_scene()
+
+    def scene_topic(self, index):
+        """Opens a topic with the list of cases it walks through, in order."""
+        name, color, pages, cases = TOPICS[index]
+        self._header(f"{index + 1}.  {name}", color=color)
+        if pages:
+            sub = make_label(pages, font_size=12, color=GREY_B).move_to([0, 2.85, 0])
+            self.play(FadeIn(sub))
+        widths = [5, max(len(c) for c, _ in cases) + 4, 20]
+        rows = VGroup(*[
+            self._mono_row([(f"{index + 1}.{i + 1}", color), (case, GREY_A),
+                            (f"demo/{script}" if script else "", GREY_B)], widths, 14)
+            for i, (case, script) in enumerate(cases)
+        ])
+        self._stack_rows(rows, 0.55).move_to([0, 0.15, 0])
+        if rows.width > 12.8:
+            rows.scale_to_fit_width(12.8)
+        strip = self._topic_strip(index)
+        self.play(FadeIn(strip))
+        for row in rows:
+            self.play(FadeIn(row, shift=RIGHT * 0.12), run_time=0.35)
+            self.wait(0.2)
+        self._end_scene()
 
     # ─── Scene 1: The story ───────────────────────────────────────────
     def scene_story(self):
@@ -815,9 +913,8 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
             self.wait(0.35)
         self._next_slide(phase=True)
         roadmap = VGroup(
-            self._chip("Isolation on one database", YELLOW, font_size=11),
+            self._chip("Isolation and locks", YELLOW, font_size=11),
             self._chip("Atomicity across three databases", TEAL, font_size=11),
-            self._chip("Locks across machines", C_LOCK, font_size=11),
         ).arrange(RIGHT, buff=0.3).move_to([0, -3.0, 0])
         self.play(AnimationGroup(*[FadeIn(r, shift=UP * 0.1) for r in roadmap], lag_ratio=0.25))
         self._end_scene()
@@ -1594,7 +1691,7 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
         self._saga_step(orch, svcs[0], tables[0], log, 1, "booking 1 PENDING", YELLOW, "DONE, PENDING")
         self._saga_step(orch, svcs[1], tables[1], log, 2, "booking 1 CHARGED 120.00", C_PAY)
         self._saga_step(orch, svcs[2], tables[2], log, 3, "booking 1 REVENUE 120.00", C_ACC)
-        a = self._call(orch, svcs[0], GREEN, shift=0.15)
+        a = self._call(orch, svcs[0], GREEN)
         self.play(self._swap_row(tables[0], 0, "booking 1 CONFIRMED", GREEN))
         self._log(log, "4 confirm", "DONE, CONFIRMED", GREEN)
         self.play(FadeOut(a), run_time=0.25)
@@ -1617,7 +1714,7 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
         self._log(log, "2 charge", "FAILED", RED, text_color=RED)
         self.play(FadeOut(a))
         self._next_slide(phase=True)
-        self._call(orch, svcs[0], RED, dashed=True, shift=-0.15)
+        self._call(orch, svcs[0], RED, dashed=True)
         self.play(self._swap_row(tables[0], 0, "booking 1 CANCELLED", RED))
         self._log(log, "1 reserve", "COMPENSATED", RED)
         cap = self._caption("Final: booking CANCELLED, no payment, no ledger row.", y=-2.4, font_size=12)
@@ -1636,10 +1733,10 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
         self._log(log, "3 ledger", "FAILED", RED, text_color=RED)
         self.play(FadeOut(a))
         self._next_slide(phase=True)
-        self._call(orch, svcs[1], RED, dashed=True, shift=-0.15)
+        self._call(orch, svcs[1], RED, dashed=True)
         self.play(self._swap_row(tables[1], 0, "booking 1 REFUNDED", RED))
         self._log(log, "2 charge", "COMPENSATED", RED)
-        self._call(orch, svcs[0], RED, dashed=True, shift=-0.15)
+        self._call(orch, svcs[0], RED, dashed=True)
         self.play(self._swap_row(tables[0], 0, "booking 1 CANCELLED", RED))
         self._log(log, "1 reserve", "COMPENSATED", RED)
         cap = self._caption("Undo in reverse order. The refund is a new state, not a deleted row.",
@@ -1665,7 +1762,7 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
         self._log(log, "resume", "last DONE is step 2", C_COORD)
         self.play(Indicate(log.lines[-2], color=RED), Indicate(log.lines[-1], color=C_COORD))
         self._saga_step(orch, svcs[2], tables[2], log, 3, "booking 1 REVENUE 50.00", C_ACC)
-        a = self._call(orch, svcs[0], GREEN, shift=0.15)
+        a = self._call(orch, svcs[0], GREEN)
         self.play(self._swap_row(tables[0], 0, "booking 1 CONFIRMED", GREEN))
         self._log(log, "4 confirm", "DONE, CONFIRMED", GREEN)
         self.play(FadeOut(a))
@@ -1677,11 +1774,10 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
         # duplicate message
         dup_lbl = make_label("run 4: the same charge sent again", font_size=9, color=C_PAY)
         dup_lbl.next_to(svcs[1], RIGHT, buff=0.35).shift(UP * 0.55)
-        self._call(orch, svcs[1], C_PAY, shift=0.15)
+        again = self._call(orch, svcs[1], C_PAY)
         self.play(FadeIn(dup_lbl))
-        bounce = self._dashed_arrow(svcs[1].get_top() + LEFT * 0.25 + UP * 0.05,
-                                    orch.get_bottom() + LEFT * 0.25 + DOWN * 0.05, GREY_B)
-        self.play(Create(bounce))
+        self.play(FadeOut(again), run_time=0.3)
+        self._call(orch, svcs[1], GREY_B, dashed=True, back=True)
         uniq = make_label("INSERT IGNORE: no-op", font_size=9, color=GREY_B)
         uniq.next_to(tables[1].rows[0], DOWN, buff=0.12)
         uniq.align_to(tables[1].rows[0], LEFT)
@@ -1713,20 +1809,21 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
         self.play(Transform(report, self._chip("revenue today: +$120", GREEN, font_size=10).move_to(report)))
         self._next_slide(phase=True)
 
-        a = self._call(orch, svcs[0], RED, shift=0.15)
+        a = self._call(orch, svcs[0], RED)
         fail = make_label("step 4 fails (failAt=4)", font_size=9, color=RED)
         fail.move_to([_COLS[0], 2.35, 0])
         self.play(FadeIn(fail), FadeOut(a))
-        self._call(orch, svcs[2], RED, dashed=True, shift=-0.15)
+        self._call(orch, svcs[2], RED, dashed=True)
         self._add_row(tables[2], "booking 1 REVERSAL 120.00", RED)
-        self._call(orch, svcs[1], RED, dashed=True, shift=-0.15)
+        self._call(orch, svcs[1], RED, dashed=True)
         self.play(self._swap_row(tables[1], 0, "booking 1 REFUNDED", RED))
-        self._call(orch, svcs[0], RED, dashed=True, shift=-0.15)
+        self._call(orch, svcs[0], RED, dashed=True)
         self.play(self._swap_row(tables[0], 0, "booking 1 CANCELLED", RED))
-        wrong = make_label("the report is now wrong", font_size=10, color=RED).next_to(report, DOWN, buff=0.15)
+        wrong = make_label("already sent: +$120", font_size=10, color=RED).next_to(report, DOWN, buff=0.15)
         self.play(Indicate(report, color=RED))
         self.play(report[0].animate.set_stroke(RED), report[1].animate.set_color(RED), FadeIn(wrong))
-        cap = self._caption("Saga = ACD, no I. Other readers see the middle.", color=RED, y=-2.4, font_size=15)
+        cap = self._caption("The ledger nets to $0 now, but the report already went out with +$120. Saga = ACD, no I.",
+                            color=RED, y=-2.4, font_size=13)
         self.play(FadeIn(cap))
         self._next_slide(phase=True)
         self._clear()
