@@ -99,7 +99,7 @@ Right after the title. One row per topic: number, name (in the topic's color), D
 
 Each topic starts with a slide listing its cases in order (`1.1`, `1.2`, …), each with the demo script it mirrors, plus a strip along the bottom with the current topic lit up. The lists live in `TOPICS` at the top of the file:
 
-- **1 Races and locks:** write skew · phantoms and the fixes (SERIALIZABLE, exclusion constraint) · materializing conflicts · a lock across machines, the paused client (Scene 18) · fencing tokens (Scene 19) · 2PL is not 2PC
+- **1 Races and locks:** write skew · phantoms and the fixes (SERIALIZABLE, exclusion constraint) · materializing conflicts · let a constraint say no (UNIQUE, EXCLUDE) · a lock across machines, the paused client (Scene 18) · fencing tokens (Scene 19) · 2PL is not 2PC
 - **2 Two-phase commit:** the easy case on one database · why not just send COMMIT · happy path · one participant says no · the coordinator crashes · recovery and a lost commit · heuristic decisions · what 2PC costs
 - **3 Saga:** steps and compensations · happy path · a step fails · the orchestrator crashes, then a duplicate message · no isolation and the semantic lock · orchestration vs choreography
 - **4 Wrap up:** 2PC vs Saga · takeaways
@@ -228,10 +228,14 @@ Glow the last row.
 2. T1 runs `SELECT slot_start FROM room_slot_lock WHERE room_id = 101 AND slot_start >= '12:00' AND slot_start < '13:00' ORDER BY slot_start FOR UPDATE`. Four cells turn blue with lock icons.
 3. T2 is the same request at the same moment (the script fires both at once). An orange frame covers the same four cells, the 12:00 cell flashes RED: *T2 waits on the 12:00 row, ORDER BY keeps everyone in the same order*.
 4. T1 checks bookings, INSERTs, commits, and releases its locks. T2 takes the slot rows, checks bookings, sees T1's row, and answers *room already booked*. One row in `bookings`. Footnote: *InnoDB takes T2's snapshot at its first plain SELECT, after the wait, so the check sees T1's row.*
-5. The catch, as three cards:
-   - lock size: one row per room serializes every booking of that room, the demo's 15-minute slots are 96 rows per room per day
-   - concurrency leaks into the data model
-   - hard to get right, so it's a last resort. Prefer `SERIALIZABLE` (`03-serializable.sh`), or in Postgres an exclusion constraint.
+### Scene 4c: `scene_constraints`
+
+**Goal:** the better fix. Instead of locking rows by hand, turn the business rule into a data rule, so the database rejects the conflicting write itself, atomically, at any isolation level. This replaces the old "The Catch" cards.
+
+1. **Let the database say no.** One card with the idea, then two paths: *fixed slots → UNIQUE* and *any time range → EXCLUDE (Postgres)*. Caption: *materializing works, but every code path must remember to lock. A constraint can't be forgotten.*
+2. **Fixed slots: UNIQUE.** `slot_bookings` with `UNIQUE (room_id, slot_date, slot_time_id)`. Two concurrent inserts for slot 3: T1 is ok, T2 gets `ERROR 23505 unique_violation`. A booking that covers several slots inserts one row per slot in one transaction. Next beat: a partial unique index `WHERE status <> 'cancelled'`, so cancelled rows don't block the slot (Postgres, MySQL has no partial indexes).
+3. **Any range: EXCLUDE (Postgres).** A timeline where A 12:00–14:00 and B 13:00–15:00 overlap, and `UNIQUE (room_id, starts_at)` lets B in because 12:00 ≠ 13:00. Then `CREATE EXTENSION btree_gist` and `EXCLUDE USING gist (room_id WITH =, tsrange(starts_at, ends_at) WITH &&) WHERE (status <> 'CANCELLED')`. B gets `ERROR 23P01 exclusion_violation`. Notes: at the same moment, B's INSERT waits for A's transaction and then fails once A commits. No SERIALIZABLE, no retries, no lock table. `tsrange` is `[start, end)`, so 12–13 and 13–14 don't clash.
+4. **Which fix, when.** One table: materializing (your code must lock, pre-created lock rows) · SERIALIZABLE (database, aborts and retries) · UNIQUE (database, fixed slots, almost free) · EXCLUDE (database, any range, a GiST index, Postgres only). Footer: *the demo runs MySQL: UNIQUE works there, EXCLUDE does not exist.*
 
 ### Scene 5: `scene_two_phase_locking`
 
@@ -291,14 +295,8 @@ Three small failure chips under it, from the book's list:
 | 7 | coord → all: `XA COMMIT` | `ALL  XA COMMIT 'bk-7f2' … locks released` |
 
 - Participants are asked **one at a time**, as in `Coordinator.collectVotes`. Each one does its writes inside the prepare call.
-- Each participant's **lock bar** starts when it writes and stretches with time until `XA COMMIT`.
+- Each participant's **lock bar** starts when it writes and stretches with time until `XA COMMIT` (no label on the bar).
 - At step 6, glow the coordinator's disk icon. Label: **commit point**.
-
-Then two "points of no return" cards (p. 358):
-1. A participant that votes **yes** gives up the right to abort.
-2. Once the coordinator decides, that decision is final. It retries forever.
-
-Optional light touch: the book's wedding analogy as one line, *"I do" = yes vote, minister = coordinator*.
 
 ### Scene 8: `scene_2pc_vote_no`
 
@@ -327,7 +325,7 @@ Callback: bring back the Scene 5 line *Locks are held until commit.*, now with t
 
 **Goal:** show `POST /admin/recover`, and how the escape hatch breaks things.
 
-**Beat A: recovery** (`Coordinator.recover` reads `tx_log`)
+**Beat A: recovery** (`Coordinator.recover` reads `tx_log`). The chip says *coordinator restarts (POST /admin/recover)*: a real coordinator runs this recovery on startup, and the demo exposes it as an endpoint so it can be triggered on stage.
 - Case 1: `tx_log bk-9c4 = PREPARING`, so no decision was ever written → recover as **ABORT**, `XA ROLLBACK` to all. The blocked `UPDATE wallets` now finishes in milliseconds.
 - Case 2 (`fail-mode = COMMIT_LOST_TO_PAYMENT`): `tx_log bk-7f2 = COMMIT`, booking and accounting committed, but the commit message to payment was lost. Pause on the in-between state: booking CONFIRMED and ledger REVENUE are visible, payment is still IN DOUBT. Caption: *atomic commit, but not atomic visibility.* Then recover sends `XA COMMIT` to payment. Branches that already finished answer `XAER_NOTA`, which the code skips.
 

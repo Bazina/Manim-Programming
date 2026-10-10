@@ -122,6 +122,7 @@ TOPICS = [
         ("Write skew: room 101 booked twice", "01-write-skew.sh"),
         ("Phantoms, and the fixes: SERIALIZABLE, exclusion constraint", "03-serializable.sh"),
         ("Fix: materializing conflicts", "02-materialized.sh"),
+        ("Better: let a constraint say no (UNIQUE, EXCLUDE)", ""),
         ("A lock across machines: the paused client", ""),
         ("Fencing tokens", "04-fencing.sh"),
         ("2PL is not 2PC", ""),
@@ -173,6 +174,7 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
         self.scene_write_skew()
         self.scene_phantom()
         self.scene_materialize_conflicts()
+        self.scene_constraints()
         self.scene_lock_without_fencing()
         self.scene_lock_with_fencing()
         self.scene_two_phase_locking()
@@ -1121,28 +1123,170 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
                         font_size=9, color=YELLOW)
         rc.next_to(steps, DOWN, buff=0.2)
         self.play(FadeIn(rc))
-        self._next_slide(phase=True)
+        self._end_scene()
+
+    # ─── Scene 4c: Database constraints ───────────────────────────────
+    def _sql(self, text, font_size=13, language="sql"):
+        return make_code_text(text, font_size=font_size, language=language,
+                              force_code_object=True, glow=False)
+
+    def scene_constraints(self):
+        # Beat 1: the idea
+        self._header("Better: Let the Database Say No", color=GREEN)
+        idea = self._card("Turn the business rule into a data rule",
+                          "\"No two bookings of one room may overlap\" becomes part of the table definition.\n"
+                          "The database rejects the conflicting write itself, atomically,\n"
+                          "at any isolation level, whatever the application code does.",
+                          GREEN, width=11.0)
+        idea.move_to([0, 1.25, 0])
+        self.play(FadeIn(idea, shift=UP * 0.1))
+        paths = VGroup(
+            self._card("Fixed slots", "seats, tickets, 10:00–11:00 appointments\n→  UNIQUE constraint", C_BOOK,
+                       width=5.3),
+            self._card("Any time range", "hotel nights, rentals, 12:00–14:00\n→  EXCLUDE constraint (Postgres)", C_PAY,
+                       width=5.3),
+        ).arrange(RIGHT, buff=0.4).move_to([0, -0.9, 0])
+        self.play(AnimationGroup(*[FadeIn(c, shift=UP * 0.1) for c in paths], lag_ratio=0.3))
+        why = self._caption("Materializing works, but every code path must remember to lock. A constraint can't be forgotten.",
+                            color=GREY_B, y=-2.55, font_size=11)
+        self.play(FadeIn(why))
+        self._next_slide()
         self._clear()
 
-        # the trade-offs
-        self._header("Materializing Conflicts: The Catch", color=YELLOW)
-        cards = VGroup(
-            self._card("Pick the lock size",
-                       "One row per room is simple, but every booking of room 101 waits, even for another day.\n"
-                       "The demo uses 15-minute slots: precise, but 96 rows per room per day to pre-create.",
-                       C_BOOK, width=11.5),
-            self._card("Concurrency leaks into the data model",
-                       "room_slot_lock holds no business data. It exists only because the database couldn't\n"
-                       "lock a range for us. Every new kind of booking needs its own lock table.",
-                       C_PAY, width=11.5),
-            self._card("Hard to get right, so it's a last resort",
-                       "Forget one code path that skips the slot lock and the double booking is back.\n"
-                       "Prefer SERIALIZABLE (03-serializable.sh), or in Postgres an exclusion constraint.",
-                       RED, width=11.5),
-        ).arrange(DOWN, buff=0.3).move_to([0, -0.2, 0])
-        for c in cards:
-            self.play(FadeIn(c, shift=UP * 0.1), run_time=0.5)
-            self.wait(0.4)
+        # Beat 2: fixed slots → UNIQUE
+        self._header("Fixed Slots: UNIQUE", color=C_BOOK)
+        code = self._sql(
+            "CREATE TABLE slot_bookings (\n"
+            "  id           SERIAL PRIMARY KEY,\n"
+            "  room_id      INT  NOT NULL,\n"
+            "  slot_date    DATE NOT NULL,\n"
+            "  slot_time_id INT  NOT NULL,  -- 1 = 09:00, 2 = 10:00, ...\n"
+            "  user_id      INT  NOT NULL,\n"
+            "  status       TEXT NOT NULL DEFAULT 'confirmed',\n"
+            "  CONSTRAINT unique_room_slot\n"
+            "    UNIQUE (room_id, slot_date, slot_time_id)\n"
+            ");")
+        code.move_to([-3.4, 0.55, 0])
+        if code.get_left()[0] < -6.9:
+            code.shift(RIGHT * (-6.9 - code.get_left()[0]))
+        self.play(FadeIn(code, shift=UP * 0.1))
+
+        slots = VGroup()
+        for i, t in enumerate(["09:00", "10:00", "11:00", "12:00"]):
+            r = Rectangle(width=1.05, height=0.6, stroke_color=GREY_B, stroke_width=1.1,
+                          fill_color="#161B22", fill_opacity=1.0)
+            r.move_to([2.3 + i * 1.15, 1.35, 0])
+            slots.add(VGroup(r, make_label(t, font_size=10, color=GREY_B).next_to(r, DOWN, buff=0.08)))
+        room = make_label("room 101 · Oct 12", font_size=11, color=C_BOOK).next_to(slots, UP, buff=0.2)
+        self.play(FadeIn(slots), FadeIn(room))
+        target = slots[2][0]
+        a = self._chip("T1: INSERT (101, Oct 12, slot 3)", C_BOOK, font_size=10).move_to([4.05, 0.0, 0])
+        b = self._chip("T2: INSERT (101, Oct 12, slot 3)", C_PAY, font_size=10).move_to([4.05, -0.6, 0])
+        self.play(FadeIn(a), FadeIn(b))
+        self.play(target.animate.set_fill(C_BOOK, opacity=0.35).set_stroke(C_BOOK),
+                  Transform(a, self._chip("T1: INSERT ... ok", GREEN, font_size=10).move_to(a)))
+        self.play(Transform(b, self._chip("T2: ERROR 23505 unique_violation", RED, font_size=10).move_to(b)),
+                  Wiggle(target))
+        note = self._caption("A booking that covers several slots inserts one row per slot, in one transaction.",
+                             color=GREY_B, y=-1.45, font_size=10)
+        self.play(FadeIn(note))
+        self._next_slide(phase=True)
+
+        cancel = self._sql(
+            "-- cancelled rows must not block the slot forever\n"
+            "CREATE UNIQUE INDEX active_booking_idx\n"
+            "  ON slot_bookings (room_id, slot_date, slot_time_id)\n"
+            "  WHERE status <> 'cancelled';", font_size=12)
+        cancel.move_to([-1.6, -2.65, 0])
+        tag = self._chip("partial index: Postgres. MySQL has no partial indexes", GREY_B, font_size=9)
+        tag.next_to(cancel, RIGHT, buff=0.35)
+        self.play(FadeIn(cancel, shift=UP * 0.1), FadeIn(tag))
+        self._next_slide()
+        self._clear()
+
+        # Beat 3: any time range → EXCLUDE
+        self._header("Any Time Range: EXCLUDE (Postgres)", color=C_PAY)
+        x0, hour, ly = -4.0, 1.6, 1.25
+        axis = Line([x0, ly, 0], [x0 + 5 * hour, ly, 0], stroke_color=GREY_B, stroke_width=1.6)
+        ticks = VGroup()
+        for i, h in enumerate(["11:00", "12:00", "13:00", "14:00", "15:00", "16:00"]):
+            ticks.add(Line([x0 + i * hour, ly - 0.08, 0], [x0 + i * hour, ly + 0.08, 0],
+                           stroke_color=GREY_B, stroke_width=1.2))
+            ticks.add(make_label(h, font_size=10, color=GREY_B).move_to([x0 + i * hour, ly - 0.3, 0]))
+        room = make_label("room 101", font_size=11, color=C_BOOK).next_to(axis, LEFT, buff=0.25)
+
+        def bar(h0, h1, y, color, text, label_hour):
+            """A booking bar; the label sits in the hour that doesn't overlap."""
+            r = Rectangle(width=(h1 - h0) * hour, height=0.38, fill_color=color, fill_opacity=0.3,
+                          stroke_color=color, stroke_width=1.4)
+            r.move_to([x0 + (h0 + h1) / 2 * hour, y, 0])
+            lbl = make_label(text, font_size=10, color=color).move_to([x0 + (label_hour + 0.5) * hour, y, 0])
+            return VGroup(r, lbl)
+
+        existing = bar(1, 3, ly + 0.95, C_BOOK, "A 12:00–14:00", 1)
+        incoming = bar(2, 4, ly + 0.48, C_PAY, "B 13:00–15:00", 3)
+        self.play(Create(axis), FadeIn(ticks), FadeIn(room))
+        self.play(FadeIn(existing, shift=DOWN * 0.1))
+        self.play(FadeIn(incoming, shift=DOWN * 0.1))
+        overlap = Rectangle(width=hour, height=1.0, fill_color=RED, fill_opacity=0.18, stroke_color=RED,
+                            stroke_width=1.2).move_to([x0 + 2.5 * hour, ly + 0.72, 0])
+        amp = make_label("&&  overlap", font_size=12, color=RED).next_to(overlap, UP, buff=0.08)
+        self.play(FadeIn(overlap), FadeIn(amp))
+        miss = self._chip("UNIQUE (room_id, starts_at) lets B in: 12:00 ≠ 13:00", RED, font_size=10)
+        miss.move_to([0, ly - 0.75, 0])
+        self.play(FadeIn(miss))
+        self._next_slide(phase=True)
+
+        code = self._sql(
+            "CREATE EXTENSION IF NOT EXISTS btree_gist;  -- lets = and && share one GiST index\n"
+            "\n"
+            "ALTER TABLE bookings ADD CONSTRAINT no_overlapping_room_bookings\n"
+            "  EXCLUDE USING gist (\n"
+            "    room_id                      WITH =,   -- same room\n"
+            "    tsrange(starts_at, ends_at)  WITH &&   -- overlapping ranges\n"
+            "  ) WHERE (status <> 'CANCELLED');        -- cancelled ones don't count", font_size=12)
+        code.move_to([-2.2, -1.55, 0])
+        if code.get_left()[0] < -6.9:
+            code.shift(RIGHT * (-6.9 - code.get_left()[0]))
+        self.play(FadeIn(code, shift=UP * 0.1))
+        err = self._chip("B: ERROR 23P01\nexclusion_violation", RED, font_size=11)
+        err.next_to(code, RIGHT, buff=0.3)
+        self.play(FadeIn(err), Wiggle(incoming))
+        notes = VGroup(
+            make_label("At the same moment? B's INSERT waits for A's transaction, then fails once A commits.",
+                       font_size=10, color=GREY_A),
+            make_label("No SERIALIZABLE, no retries, no lock table. tsrange is [start, end): 12–13 and 13–14 don't clash.",
+                       font_size=10, color=GREY_B),
+        ).arrange(DOWN, buff=0.14).move_to([0, -3.25, 0])
+        self.play(FadeIn(notes))
+        self._next_slide()
+        self._clear()
+
+        # Beat 4: which fix, when
+        self._header("Which Fix, When", color=GREEN)
+        table = self._table(
+            ["Fix", "Works for", "Who enforces it", "Cost"],
+            [TEAL, GREY_A, GREY_A, GREY_A],
+            [
+                ("Materializing", GREY_A, "any range", GREY_A, "your code must lock", RED,
+                 "pre-created lock rows", GREY_B),
+                ("SERIALIZABLE", GREY_A, "anything", GREY_A, "the database", GREEN,
+                 "aborts and retries", GREY_B),
+                ("UNIQUE", GREEN, "fixed slots", GREY_A, "the database", GREEN,
+                 "almost none", GREEN),
+                ("EXCLUDE", GREEN, "any range", GREY_A, "the database", GREEN,
+                 "a GiST index, Postgres only", GREY_B),
+            ],
+            font_size=14,
+        )
+        table.move_to([0, 0.4, 0])
+        self.play(FadeIn(table[0]), Create(table[1]))
+        for row in table[2]:
+            self.play(FadeIn(row, shift=UP * 0.1), run_time=0.4)
+            self.wait(0.25)
+        mysql = self._caption("The demo runs MySQL: UNIQUE works there, EXCLUDE does not exist.",
+                              color=YELLOW, y=-2.4, font_size=12)
+        self.play(FadeIn(mysql))
         self._end_scene()
 
     # ─── Scene 5: 2PL is not 2PC ──────────────────────────────────────
@@ -1349,9 +1493,6 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
         self.play(FadeIn(p1))
         groups = []
         self._prepare(0.4, yc, yp[0], C_BOOK, groups)
-        lock_lbl = make_label("locks held", font_size=10, color=GREY_A)
-        lock_lbl.move_to([_tx(1.5), yp[0] - 0.3, 0])
-        self.play(FadeIn(lock_lbl), run_time=0.3)
         self._log(log, "BOOKING", "XA START · INSERT booking CONFIRMED · XA END · XA PREPARE → YES", C_BOOK)
         self._prepare(1.7, yc, yp[1], C_PAY, groups)
         self._log(log, "PAYMENT", "XA START · INSERT payment · wallet -120.00 · XA PREPARE → YES", C_PAY)
@@ -1377,26 +1518,6 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
         self._log(log, "ALL", "XA COMMIT 'bk-7f2' on booking, payment, accounting · locks released", GREEN)
         done = [make_icon(ICON_CHECK, color=GREEN, height=0.22).move_to([_tx(6.15), y, 0]) for y in yp]
         self.play(*[FadeIn(d, scale=0.6) for d in done])
-        self._next_slide(phase=True)
-        self._clear()
-
-        # points of no return
-        self._header("Two Points of No Return", color=TEAL)
-        c1 = self._card("1. A participant votes yes",
-                        "It gives up the right to abort. It must commit later if asked,\n"
-                        "even after a crash. That's why it writes everything to disk first.",
-                        C_PAY, width=10.5)
-        c2 = self._card("2. The coordinator decides",
-                        "The decision is final. If a commit request fails,\n"
-                        "the coordinator retries forever.",
-                        C_COORD, width=10.5)
-        VGroup(c1, c2).arrange(DOWN, buff=0.4).move_to([0, 0.5, 0])
-        self.play(FadeIn(c1, shift=UP * 0.1))
-        self.play(FadeIn(c2, shift=UP * 0.1))
-        wed = make_label('like a wedding: "I do" = yes vote, the minister = coordinator',
-                         font_size=11, color=GREY_B)
-        wed.move_to([0, -2.4, 0])
-        self.play(FadeIn(wed))
         self._end_scene()
 
     # ─── Scene 8: 2PC vote no ─────────────────────────────────────────
@@ -1539,8 +1660,11 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
         self._log(log, "MYSQL", "where scene 9 stopped: XA RECOVER lists bk-9c4 on all three", YELLOW)
         self._next_slide(phase=True)
 
-        back = self._chip("POST /admin/recover", C_COORD).move_to([_tx(3.4), yc + 0.38, 0])
+        back = self._chip("coordinator restarts (POST /admin/recover)", C_COORD, font_size=9)
+        back.move_to([_tx(2.9), yc + 0.38, 0])
         self.play(rows[0].animate.set_opacity(1.0), FadeIn(back), *self._grow_bars(bars, 4.5))
+        self._log(log, "COORD", "restarts: a real coordinator runs recovery on startup, the demo has a button for it",
+                  C_COORD)
         self._log(log, "COORD", "reads tx_log: bk-9c4 = PREPARING, no decision was ever written", C_COORD)
         self._fan(4.5, yc, 5.3, yp, RED, label="XA ROLLBACK", extra=self._grow_bars(bars, 5.3))
         self.play(*[b.animate.set_fill(opacity=0.06) for b in bars],
@@ -1561,7 +1685,8 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
         self._next_slide(phase=True)
         self.play(FadeOut(mid))
 
-        back = self._chip("POST /admin/recover", C_COORD).move_to([_tx(4.9), yc + 0.38, 0])
+        back = self._chip("coordinator restarts (POST /admin/recover)", C_COORD, font_size=9)
+        back.move_to([_tx(5.6), yc + 0.38, 0])
         self.play(FadeIn(back), *self._grow_bars(pay_bar, 4.9))
         commit = self._arr(4.9, yc, 5.6, yp[1], GREEN)
         self.play(GrowArrow(commit), *self._grow_bars(pay_bar, 5.6))
