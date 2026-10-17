@@ -101,7 +101,7 @@ Each topic starts with a slide listing its cases in order (`1.1`, `1.2`, …), e
 
 - **1 Races and locks:** write skew · phantoms and the fixes (SERIALIZABLE, exclusion constraint) · materializing conflicts · let a constraint say no (UNIQUE, EXCLUDE) · a lock across machines, the paused client (Scene 18) · fencing tokens (Scene 19) · 2PL is not 2PC
 - **2 Two-phase commit:** the easy case on one database · why not just send COMMIT · happy path · one participant says no · the coordinator crashes · recovery and a lost commit · heuristic decisions · what 2PC costs
-- **3 Saga:** steps and compensations · happy path · a step fails · the orchestrator crashes, then a duplicate message · no isolation and the semantic lock · orchestration vs choreography
+- **3 Saga:** steps and compensations · happy path · a step fails · the orchestrator crashes, then a duplicate message · no isolation: readers see the middle · orchestration vs choreography
 - **4 Wrap up:** 2PC vs Saga · takeaways
 
 Scenes 18 and 19 (distributed locks) play right after Scene 4b, as the last fix for the race on room 101. They are still described under their own heading below.
@@ -402,21 +402,13 @@ Caption (p. 355): *a compensation is a **new** transaction, not a rollback.*
 
 ### Scene 16: `scene_saga_no_isolation`
 
-**Goal:** show the anomaly and its countermeasure.
+**Goal:** show the anomaly: a reader acts on a middle state that a compensation later undoes.
 
 1. Freeze mid-saga after step 3.
 2. A "reader" (a reporting query, `ICON_CHART`) sees a **PENDING** booking and a **REVENUE** row. Its report says *+$120 today*.
 3. Then step 4 fails (`failAt=4`) and compensations run: a **REVERSAL** row appears, the payment is REFUNDED, the booking CANCELLED. The ledger nets to $0, but the report already went out with +$120: label *already sent: +$120*, flashed RED.
 4. Caption: *The ledger nets to $0 now, but the report already went out with +$120. Saga = ACD, no I.* A reader can act on a middle state that a compensation later undoes.
-5. **Countermeasure: semantic lock.** Bob tries to book room 101 while the first booking is PENDING and gets *room already booked*. Show the overlap check from step 1 reserve:
 
-```sql
-SELECT COUNT(*) FROM bookings
- WHERE room_id = 101 AND status <> 'CANCELLED'
-   AND starts_at < :end AND ends_at > :start
-```
-
-Caption: *status <> 'CANCELLED' counts PENDING, so PENDING acts as our lock.*
 
 ### Scene 17: `scene_saga_orchestration_vs_choreography`
 

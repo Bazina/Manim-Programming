@@ -142,7 +142,7 @@ TOPICS = [
         ("Happy path", "07-saga.sh"),
         ("A step fails: undo in reverse order", "07-saga.sh"),
         ("The orchestrator crashes, then a duplicate message", "07-saga.sh"),
-        ("No isolation, and the semantic lock", ""),
+        ("No isolation: readers see the middle", ""),
         ("Orchestration vs choreography", ""),
     ]),
     ("Wrap up", GREEN, "", [
@@ -1949,35 +1949,6 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
         self.play(report[0].animate.set_stroke(RED), report[1].animate.set_color(RED), FadeIn(wrong))
         cap = self._caption("The ledger nets to $0 now, but the report already went out with +$120. Saga = ACD, no I.",
                             color=RED, y=-2.4, font_size=13)
-        self.play(FadeIn(cap))
-        self._next_slide(phase=True)
-        self._clear()
-
-        # countermeasure: semantic lock
-        self._header("Countermeasure: Semantic Lock", color=GREEN)
-        orch, svcs, tables, _ = self._saga_stage(with_log=False)
-        a = self._call(orch, svcs[0], YELLOW)
-        self._add_row(tables[0], "room 101 PENDING", YELLOW)
-        self.play(FadeOut(a))
-        bob = self._node(ICON_USER, "Bob", GREY_A, icon_h=0.4)
-        bob.move_to([-6.45, 0.85, 0])
-        self.play(FadeIn(bob))
-        try_arrow = Arrow(bob.get_right(), svcs[0].get_left(), buff=0.2, stroke_width=1.8,
-                          color=GREY_A, tip_length=0.14)
-        bob_req = make_label("room 101", font_size=9, color=GREY_A).next_to(try_arrow, UP, buff=0.08)
-        self.play(GrowArrow(try_arrow), FadeIn(bob_req))
-        rej = make_label("rejected: room already booked", font_size=10, color=RED)
-        rej.next_to(tables[0], DOWN, buff=0.15).align_to(tables[0], LEFT)
-        self.play(Wiggle(try_arrow), try_arrow.animate.set_color(RED), FadeIn(rej))
-        code = make_code_text(
-            "-- step 1 reserve: lock slots, then\nSELECT COUNT(*) FROM bookings\n WHERE room_id = 101 AND status <> 'CANCELLED'\n"
-            "   AND starts_at < :end AND ends_at > :start",
-            font_size=10, language="sql", force_code_object=True, glow=False,
-        )
-        code.move_to([0.6, -2.5, 0])
-        self.play(FadeIn(code))
-        cap = make_label("status <> 'CANCELLED' counts PENDING, so PENDING acts as our lock.", font_size=12, color=GREEN)
-        cap.next_to(code, DOWN, buff=0.2)
         self.play(FadeIn(cap))
         self._end_scene()
 
