@@ -99,7 +99,7 @@ Right after the title. One row per topic: number, name (in the topic's color), D
 
 Each topic starts with a slide listing its cases in order (`1.1`, `1.2`, …), each with the demo script it mirrors, plus a strip along the bottom with the current topic lit up. The lists live in `TOPICS` at the top of the file:
 
-- **1 Races and locks:** write skew · phantoms and the fixes (SERIALIZABLE, exclusion constraint) · materializing conflicts · let a constraint say no (UNIQUE, EXCLUDE) · a lock across machines, the paused client (Scene 18) · fencing tokens (Scene 19) · 2PL is not 2PC
+- **1 Races and locks:** lost update · write skew · phantoms and the fixes (SERIALIZABLE, exclusion constraint) · materializing conflicts · let a constraint say no (UNIQUE, EXCLUDE) · a lock across machines, the paused client (Scene 18) · fencing tokens (Scene 19) · 2PL is not 2PC
 - **2 Two-phase commit:** the easy case on one database · why not just send COMMIT · happy path · one participant says no · the coordinator crashes · recovery and a lost commit · heuristic decisions · what 2PC costs
 - **3 Saga:** steps and compensations · happy path · a step fails · the orchestrator crashes, then a duplicate message · no isolation: readers see the middle · orchestration vs choreography
 - **4 Wrap up:** 2PC vs Saga · takeaways
@@ -176,6 +176,25 @@ Roadmap chips: *Isolation on one database* · *Atomicity across three databases*
 ---
 
 ## Part 1 — One Database First (p. 249–260)
+
+### Scene 2c: `scene_lost_update`
+
+**Goal:** the simplest race first (DDIA p.242), so write skew has something to be compared with.
+
+1. Same timeline layout as Scene 3. T1 (a booking, 120) and T2 (another charge, 50) on user 1's wallet, starting at 500.00.
+2. Both `SELECT balance` → 500. Note: *both computed from 500*.
+3. T1 sets 380 and commits, then T2 sets 450 and commits. The `wallets · user 1` row goes 500 → 380 → 450.
+4. Badge: *Should be 330.00. T1's debit of 120 is lost ✗*. Caption: *Both wrote the same row. The second write was computed from a stale read.*
+5. **Fixing Lost Updates** table:
+
+| Fix | How | Note |
+|---|---|---|
+| Atomic write | `SET balance = balance - 120` | what the demo does (glows) |
+| Explicit lock | `SELECT ... FOR UPDATE`, then `UPDATE` | T2 waits for T1 |
+| Compare-and-set | `... WHERE balance = 500` | 0 rows means retry |
+| Auto-detection | Postgres REPEATABLE READ aborts one | MySQL InnoDB does not |
+
+Bridge caption: *All of these work because both transactions wrote the same row. Next: two transactions, two different rows.*
 
 ### Scene 3: `scene_write_skew`
 

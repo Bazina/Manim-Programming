@@ -119,6 +119,7 @@ C_LOCK = YELLOW
 # ── Topics: the agenda, and the cases each topic walks through ─────────
 TOPICS = [
     ("Races and locks", RED, "DDIA p.249–260, 301–304", [
+        ("Lost update: two debits, one lost", ""),
         ("Write skew: room 101 booked twice", "01-write-skew.sh"),
         ("Phantoms, and the fixes: SERIALIZABLE, exclusion constraint", "03-serializable.sh"),
         ("Fix: materializing conflicts", "02-materialized.sh"),
@@ -171,6 +172,7 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
         self.scene_prerequisites()
         # Races and locks
         self.scene_topic(0)
+        self.scene_lost_update()
         self.scene_write_skew()
         self.scene_phantom()
         self.scene_materialize_conflicts()
@@ -924,6 +926,82 @@ class DistributedTransactions(SlideStyleMixin, BaseSlide):
     # ═════════════════════════════════════════════════════════════════
     # Part 1: One database first (p. 249–260)
     # ═════════════════════════════════════════════════════════════════
+
+    # ─── Scene 2c: Lost update ────────────────────────────────────────
+    def scene_lost_update(self):
+        """DDIA p.242. A read-modify-write cycle run twice at once: both write the
+        same row, the second write is computed from a stale read and clobbers the first."""
+        self._header("Lost Update: Two Debits, One Lost", color=RED)
+        sub = make_label("read-modify-write · user 1's wallet · balance 500.00 · DDIA p.242",
+                         font_size=10, color=GREY_B)
+        sub.move_to([0, 2.75, 0])
+
+        Y1, Y2, YDB = 1.5, 0.1, -1.35
+        r1 = self._client_row("1", "T1 booking, 120", Y1, C_BOOK)
+        r2 = self._client_row("2", "T2 another charge, 50", Y2, C_PAY)
+        db = self._db_row("wallets · user 1", YDB)
+        time_lbl = make_label("time →", font_size=9, color=GREY_B)
+        time_lbl.move_to([_TL_X1 + 0.2, Y1 + 0.4, 0])
+        start = self._db_marker(0.1, "500", YDB, color=GREY_A)
+        self.play(FadeIn(sub), FadeIn(r1), FadeIn(r2), FadeIn(db), FadeIn(time_lbl), FadeIn(start))
+        self._next_slide(phase=True)
+
+        steps = [
+            (0.4, 1.9, "SELECT balance", "500", Y1, C_BOOK),
+            (1.1, 2.6, "SELECT balance", "500", Y2, C_PAY),
+            (3.1, 5.0, "SET balance = 380 · COMMIT", "", Y1, C_BOOK),
+            (5.4, 7.3, "SET balance = 450 · COMMIT", "", Y2, C_PAY),
+        ]
+        for i, (t0, t1, op, ret, y, color) in enumerate(steps):
+            box, ret_lbl = self._op_box(t0, t1, op, ret, y, color)
+            self.play(FadeIn(box, shift=RIGHT * 0.1), run_time=0.4)
+            if ret:
+                self.play(FadeIn(ret_lbl), run_time=0.25)
+            if i == 1:
+                note = make_label("both computed from 500", font_size=10, color=YELLOW)
+                note.move_to([_tx(2.4), (Y1 + Y2) / 2, 0])
+                self.play(FadeIn(note))
+                self._next_slide(phase=True)
+            if i == 2:
+                self.play(FadeIn(self._db_marker(t1, "380", YDB, color=C_BOOK)))
+            if i == 3:
+                last = self._db_marker(t1, "450", YDB, color=RED)
+                self.play(FadeIn(last))
+                self.play(Indicate(last, color=RED))
+
+        badge = self._verdict_badge("Should be 330.00. T1's debit of 120 is lost  ✗", RED, width=7.6)
+        badge.move_to([0, -2.45, 0])
+        cap = self._caption("Both wrote the same row. The second write was computed from a stale read.",
+                            y=-3.25, font_size=11)
+        self.play(FadeIn(badge, shift=UP * 0.1))
+        self.play(FadeIn(cap))
+        self._next_slide()
+        self._clear()
+
+        # the fixes
+        self._header("Fixing Lost Updates", color=GREEN)
+        table = self._table(
+            ["Fix", "How", "Note"],
+            [TEAL, GREY_A, GREY_A],
+            [
+                ("Atomic write", GREEN, "SET balance = balance - 120", GREEN, "what the demo does", GREEN),
+                ("Explicit lock", GREY_A, "SELECT ... FOR UPDATE, then UPDATE", GREY_A, "T2 waits for T1", GREY_B),
+                ("Compare-and-set", GREY_A, "... WHERE balance = 500", GREY_A, "0 rows means retry", GREY_B),
+                ("Auto-detection", GREY_A, "Postgres REPEATABLE READ aborts one", GREY_A,
+                 "MySQL InnoDB does not", RED),
+            ],
+            font_size=14,
+        )
+        table.move_to([0, 0.5, 0])
+        self.play(FadeIn(table[0]), Create(table[1]))
+        for row in table[2]:
+            self.play(FadeIn(row, shift=UP * 0.1), run_time=0.4)
+            self.wait(0.25)
+        self._play_glow(table[2][0], GREEN, pad=0.3)
+        bridge = self._caption("All of these work because both transactions wrote the same row. Next: two transactions,"
+                               " two different rows.", color=YELLOW, y=-2.4, font_size=12)
+        self.play(FadeIn(bridge))
+        self._end_scene()
 
     # ─── Scene 3: Write skew ──────────────────────────────────────────
     def scene_write_skew(self):
